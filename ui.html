@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design System JSON Maker</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #5558e3;
+            --primary-light: rgba(99, 102, 241, 0.1);
+            --bg-dark: #1a1a1a;
+            --bg-card: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-hover: #f3f4f6;
+            --border: #e5e7eb;
+            --border-light: #f0f0f0;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 13px;
+            line-height: 1.5;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            background: var(--bg-secondary);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 60px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            flex-shrink: 0;
+        }
+
+        .sidebar-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            font-size: 20px;
+        }
+
+        .sidebar-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .sidebar-icon:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .sidebar-icon.active {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .sidebar-divider {
+            width: 32px;
+            height: 1px;
+            background: var(--border);
+            margin: 12px 0;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-badge {
+            padding: 4px 10px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Content Area */
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .tab-content {
+            display: none;
+            width: 100%;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .empty-state-description {
+            font-size: 14px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: var(--bg-dark);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #000;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--text-muted);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Color Shades Grid */
+        .color-shades-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+        }
+
+        .color-shades-grid-small {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .color-swatch {
+            border-radius: var(--radius-sm);
+            padding: 16px 12px;
+            border: 1px solid var(--border-light);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .color-swatch-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 8px;
+            font-family: 'Monaco', monospace;
+        }
+
+        .color-swatch-value {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            font-family: 'Monaco', monospace;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ddd;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-switch input:checked+.toggle-slider {
+            background-color: var(--primary);
+        }
+
+        .toggle-switch input:checked+.toggle-slider:before {
+            transform: translateX(18px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-icon active" data-tab="foundations" onclick="switchTab(this)" title="Foundations">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                    <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                    <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                    <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                    <path
+                        d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+                </svg>
+            </div>
+            <div class="sidebar-icon" data-tab="components" onclick="switchTab(this)" title="Components">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                    <polyline points="7.5 4.21 12 6.81 16.5 4.21" />
+                    <polyline points="7.5 19.79 7.5 14.6 3 12" />
+                    <polyline points="21 12 16.5 14.6 16.5 19.79" />
+                    <polyline points="3 12 7.5 14.6 12 12 16.5 14.6 21 12" />
+                    <line x1="12" x2="12" y1="6.81" y2="12" />
+                </svg>
+            </div>
+            <div class="sidebar-icon" data-tab="themes" onclick="switchTab(this)" title="Themes">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+            </div>
+            <div class="sidebar-icon" data-tab="export" onclick="switchTab(this)" title="Export">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" x2="12" y1="15" y2="3" />
+                </svg>
+            </div>
+
+            <div class="sidebar-divider"></div>
+
+            <div class="sidebar-bottom">
+                <div class="sidebar-icon" onclick="resetDefaults()" title="Reset">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 1v6m0 6v6" />
+                        <path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24" />
+                        <path d="M1 12h6m6 0h6" />
+                        <path d="m4.93 19.07 4.24-4.24m5.66-5.66 4.24-4.24" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left">
+                    <div class="header-title">Design System JSON Maker</div>
+                    <div class="header-badge">v1.0.0</div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary btn-sm" id="reset-btn">Reset</button>
+                    <button class="btn btn-primary btn-sm" id="generate-json-btn">Generate JSON</button>
+                </div>
+            </div>
+
+            <!-- Content Wrapper -->
+            <div class="content-wrapper">
+                <div class="content">
+                    <!-- Foundations Tab -->
+                    <div class="tab-content active" id="foundations">
+                        <div style="max-width: 1200px; width: 100%;">
+                            <!-- Primary Color -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                                            <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                                            <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                                            <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                                            <path
+                                                d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+                                        </svg>
+                                        Primary Color
+                                    </div>
+                                    <input type="color" id="primaryColor" value="#6366f1"
+                                        onchange="generatePrimaryShades(this.value)"
+                                        style="width: 40px; height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
+                                </div>
+                                <div id="primaryShades" class="color-shades-grid"></div>
+                            </div>
+
+                            <!-- Secondary Color (Optional) -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                                            <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                                            <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                                            <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                                            <path
+                                                d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+                                        </svg>
+                                        Secondary Color (Optional)
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="secondaryToggle"
+                                                onchange="toggleSecondary(this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                        <input type="color" id="secondaryColor" value="#8b5cf6"
+                                            onchange="generateSecondaryShades(this.value)"
+                                            style="width: 40px; height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; opacity: 0.3;"
+                                            disabled>
+                                    </div>
+                                </div>
+                                <div id="secondaryShades" class="color-shades-grid" style="display: none;"></div>
+                            </div>
+
+                            <!-- Status Colors -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-title">Status Colors</div>
+                                </div>
+                                <div style="display: grid; gap: 16px;">
+                                    <!-- Success -->
+                                    <div>
+                                        <div
+                                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                            <span
+                                                style="font-size: 13px; font-weight: 500; color: var(--text-primary);">Success
+                                                (Green)</span>
+                                            <input type="color" id="successColor" value="#10b981"
+                                                onchange="generateSuccessShades(this.value)"
+                                                style="width: 40px; height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
+                                        </div>
+                                        <div id="successShades" class="color-shades-grid-small"></div>
+                                    </div>
+
+                                    <!-- Error -->
+                                    <div>
+                                        <div
+                                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                            <span
+                                                style="font-size: 13px; font-weight: 500; color: var(--text-primary);">Error
+                                                (Red)</span>
+                                            <input type="color" id="errorColor" value="#ef4444"
+                                                onchange="generateErrorShades(this.value)"
+                                                style="width: 40px; height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
+                                        </div>
+                                        <div id="errorShades" class="color-shades-grid-small"></div>
+                                    </div>
+
+                                    <!-- Warning/Process -->
+                                    <div>
+                                        <div
+                                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                            <span
+                                                style="font-size: 13px; font-weight: 500; color: var(--text-primary);">Warning/Process
+                                                (Orange)</span>
+                                            <input type="color" id="warningColor" value="#f59e0b"
+                                                onchange="generateWarningShades(this.value)"
+                                                style="width: 40px; height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
+                                        </div>
+                                        <div id="warningShades" class="color-shades-grid-small"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Neutral Colors -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-title">Neutral Colors</div>
+                                </div>
+                                <div id="neutralShades" class="color-shades-grid"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Components Tab -->
+                    <div class="tab-content" id="components">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🧩</div>
+                            <div class="empty-state-title">Components</div>
+                            <div class="empty-state-description">Buttons, inputs, and UI components</div>
+                        </div>
+                    </div>
+
+                    <!-- Themes Tab -->
+                    <div class="tab-content" id="themes">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🌈</div>
+                            <div class="empty-state-title">Themes</div>
+                            <div class="empty-state-description">Manage multiple design themes</div>
+                        </div>
+                    </div>
+
+                    <!-- Export Tab -->
+                    <div class="tab-content" id="export">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📤</div>
+                            <div class="empty-state-title">Export</div>
+                            <div class="empty-state-description">Generate and download your design system JSON</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Color shade generation utilities
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+
+        function generateShades(baseColor, count) {
+            const rgb = hexToRgb(baseColor);
+            if (!rgb) return [];
+
+            const shades = [];
+            // Position 5 (index 5) will be the base color (500 shade)
+            const baseIndex = 5;
+
+            for (let i = 0; i < count; i++) {
+                if (i === baseIndex) {
+                    // This is the base color (500)
+                    shades.push(baseColor);
+                } else if (i < baseIndex) {
+                    // Lighter shades (50-400)
+                    // Interpolate between white and base color
+                    const factor = (baseIndex - i) / baseIndex;
+                    const r = Math.round(rgb.r + (255 - rgb.r) * factor);
+                    const g = Math.round(rgb.g + (255 - rgb.g) * factor);
+                    const b = Math.round(rgb.b + (255 - rgb.b) * factor);
+                    shades.push(rgbToHex(r, g, b));
+                } else {
+                    // Darker shades (600-950)
+                    // Interpolate between base color and black
+                    const factor = (i - baseIndex) / (count - 1 - baseIndex);
+                    const r = Math.round(rgb.r * (1 - factor));
+                    const g = Math.round(rgb.g * (1 - factor));
+                    const b = Math.round(rgb.b * (1 - factor));
+                    shades.push(rgbToHex(r, g, b));
+                }
+            }
+            return shades;
+        }
+
+        function getContrastColor(hexColor) {
+            const rgb = hexToRgb(hexColor);
+            if (!rgb) return '#000000';
+            const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+            return brightness > 128 ? '#000000' : '#ffffff';
+        }
+
+        function renderColorShades(shades, prefix, container) {
+            let html = '';
+            const shadeNumbers = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+            shades.forEach((color, index) => {
+                const shadeName = `${prefix}-${shadeNumbers[index]}`;
+                const textColor = getContrastColor(color);
+                html += `
+          <div class="color-swatch" style="background: ${color};" onclick="copyToClipboard('${color}')">
+            <div style="height: 40px;"></div>
+            <div class="color-swatch-name" style="color: ${textColor};">${shadeName}</div>
+            <div class="color-swatch-value" style="color: ${textColor}; opacity: 0.8;">${color.toUpperCase()}</div>
+          </div>
+        `;
+            });
+            document.getElementById(container).innerHTML = html;
+        }
+
+        function renderSmallShades(shades, prefix, container) {
+            let html = '';
+            const labels = ['light', 'default', 'dark'];
+            shades.forEach((color, index) => {
+                const shadeName = `${prefix}-${labels[index]}`;
+                const textColor = getContrastColor(color);
+                html += `
+          <div class="color-swatch" style="background: ${color};" onclick="copyToClipboard('${color}')">
+            <div style="height: 40px;"></div>
+            <div class="color-swatch-name" style="color: ${textColor};">${shadeName}</div>
+            <div class="color-swatch-value" style="color: ${textColor}; opacity: 0.8;">${color.toUpperCase()}</div>
+          </div>
+        `;
+            });
+            document.getElementById(container).innerHTML = html;
+        }
+
+        // Generate primary shades
+        function generatePrimaryShades(color) {
+            const shades = generateShades(color, 11);
+            renderColorShades(shades, 'primary', 'primaryShades');
+        }
+
+        // Generate secondary shades
+        function generateSecondaryShades(color) {
+            const shades = generateShades(color, 11);
+            renderColorShades(shades, 'secondary', 'secondaryShades');
+        }
+
+        // Toggle secondary color
+        function toggleSecondary(enabled) {
+            const colorInput = document.getElementById('secondaryColor');
+            const shadesContainer = document.getElementById('secondaryShades');
+
+            if (enabled) {
+                colorInput.disabled = false;
+                colorInput.style.opacity = '1';
+                shadesContainer.style.display = 'grid';
+                generateSecondaryShades(colorInput.value);
+            } else {
+                colorInput.disabled = true;
+                colorInput.style.opacity = '0.3';
+                shadesContainer.style.display = 'none';
+            }
+        }
+
+        // Generate status color shades (3 shades each)
+        function generateSuccessShades(color) {
+            const rgb = hexToRgb(color);
+            const shades = [
+                rgbToHex(
+                    Math.min(255, rgb.r + 60),
+                    Math.min(255, rgb.g + 60),
+                    Math.min(255, rgb.b + 60)
+                ),
+                color,
+                rgbToHex(
+                    Math.max(0, rgb.r - 40),
+                    Math.max(0, rgb.g - 40),
+                    Math.max(0, rgb.b - 40)
+                )
+            ];
+            renderSmallShades(shades, 'success', 'successShades');
+        }
+
+        function generateErrorShades(color) {
+            const rgb = hexToRgb(color);
+            const shades = [
+                rgbToHex(
+                    Math.min(255, rgb.r + 60),
+                    Math.min(255, rgb.g + 60),
+                    Math.min(255, rgb.b + 60)
+                ),
+                color,
+                rgbToHex(
+                    Math.max(0, rgb.r - 40),
+                    Math.max(0, rgb.g - 40),
+                    Math.max(0, rgb.b - 40)
+                )
+            ];
+            renderSmallShades(shades, 'error', 'errorShades');
+        }
+
+        function generateWarningShades(color) {
+            const rgb = hexToRgb(color);
+            const shades = [
+                rgbToHex(
+                    Math.min(255, rgb.r + 60),
+                    Math.min(255, rgb.g + 60),
+                    Math.min(255, rgb.b + 60)
+                ),
+                color,
+                rgbToHex(
+                    Math.max(0, rgb.r - 40),
+                    Math.max(0, rgb.g - 40),
+                    Math.max(0, rgb.b - 40)
+                )
+            ];
+            renderSmallShades(shades, 'warning', 'warningShades');
+        }
+
+        // Generate neutral shades
+        function generateNeutralShades() {
+            const shades = [];
+            for (let i = 0; i < 11; i++) {
+                const value = Math.round(255 - (255 * i / 10));
+                shades.push(rgbToHex(value, value, value));
+            }
+            renderColorShades(shades, 'neutral', 'neutralShades');
+        }
+
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Could add a toast notification here
+                console.log('Copied:', text);
+            });
+        }
+
+        // Sidebar Navigation
+        function switchTab(icon) {
+            document.querySelectorAll('.sidebar-icon').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            icon.classList.add('active');
+            document.getElementById(icon.dataset.tab).classList.add('active');
+        }
+
+        function resetDefaults() {
+            if (confirm('Reset all settings to defaults?')) {
+                location.reload();
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('reset-btn').addEventListener('click', resetDefaults);
+
+        document.getElementById('generate-json-btn').addEventListener('click', () => {
+            alert('Generate JSON functionality');
+        });
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            generatePrimaryShades('#6366f1');
+            generateSuccessShades('#10b981');
+            generateErrorShades('#ef4444');
+            generateWarningShades('#f59e0b');
+            generateNeutralShades();
+        });
+    </script>
+</body>
+
+</html>
+```

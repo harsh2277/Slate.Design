@@ -120,7 +120,7 @@ function renderFoundations() {
 }
 
 function renderColorsSection() {
-  let html = '<div class="section"><div class="section-header" onclick="toggleSection(this)">';
+  let html = '<div class="section collapsed"><div class="section-header" onclick="toggleSection(this)">';
   html += '<div class="section-title">🎨 Colors System</div>';
   html += '<div class="section-toggle">▼</div></div>';
   html += '<div class="section-content"><table class="token-table"><thead><tr>';
@@ -150,7 +150,7 @@ function renderColorsSection() {
 }
 
 function renderSpacingSection() {
-  let html = '<div class="section"><div class="section-header" onclick="toggleSection(this)">';
+  let html = '<div class="section collapsed"><div class="section-header" onclick="toggleSection(this)">';
   html += '<div class="section-title">📏 Spacing System</div>';
   html += '<div class="section-toggle">▼</div></div>';
   html += '<div class="section-content"><table class="token-table"><thead><tr>';
@@ -171,7 +171,7 @@ function renderSpacingSection() {
 }
 
 function renderRadiusSection() {
-  let html = '<div class="section"><div class="section-header" onclick="toggleSection(this)">';
+  let html = '<div class="section collapsed"><div class="section-header" onclick="toggleSection(this)">';
   html += '<div class="section-title">⭕ Radius System</div>';
   html += '<div class="section-toggle">▼</div></div>';
   html += '<div class="section-content"><table class="token-table"><thead><tr>';
@@ -188,7 +188,7 @@ function renderRadiusSection() {
 }
 
 function renderTypographySection() {
-  let html = '<div class="section"><div class="section-header" onclick="toggleSection(this)">';
+  let html = '<div class="section collapsed"><div class="section-header" onclick="toggleSection(this)">';
   html += '<div class="section-title">🔤 Typography System</div>';
   html += '<div class="section-toggle">▼</div></div>';
   html += '<div class="section-content">';
@@ -218,7 +218,7 @@ function renderTypographySection() {
 }
 
 function renderShadowsSection() {
-  let html = '<div class="section"><div class="section-header" onclick="toggleSection(this)">';
+  let html = '<div class="section collapsed"><div class="section-header" onclick="toggleSection(this)">';
   html += '<div class="section-title">💫 Shadows & Borders</div>';
   html += '<div class="section-toggle">▼</div></div>';
   html += '<div class="section-content">';

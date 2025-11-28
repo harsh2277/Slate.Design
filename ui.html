@@ -308,6 +308,47 @@
             text-overflow: ellipsis;
         }
 
+        /* Spacing List */
+        .spacing-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+            gap: 6px;
+        }
+
+        .spacing-token {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 8px 6px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            gap: 4px;
+        }
+
+        .spacing-token:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            transform: translateY(-1px);
+        }
+
+        .spacing-token-name {
+            font-size: 8px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-family: 'Monaco', monospace;
+            text-align: center;
+        }
+
+        .spacing-token-value {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'Monaco', monospace;
+        }
+
         /* Card Styles */
         .card {
             background: var(--bg-card);
@@ -497,7 +538,7 @@
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-secondary btn-sm" id="reset-btn">Reset</button>
-                    <button class="btn btn-primary btn-sm" id="generate-json-btn">Generate JSON</button>
+                    <button class="btn btn-primary btn-sm" id="create-variable-btn">Create Variable</button>
                 </div>
             </div>
 
@@ -508,7 +549,7 @@
                     <div class="tab-content active" id="foundations">
                         <div style="max-width: 1200px; width: 100%;">
                             <!-- Primary Color -->
-                            <div class="card">
+                            <div class="card collapsed">
                                 <div class="card-header" onclick="toggleCard(this)">
                                     <div class="card-title">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
@@ -525,10 +566,12 @@
                                     </div>
                                     <div class="card-header-right">
                                         <input type="color" id="primaryColor" value="#6366f1"
-                                            onchange="generatePrimaryShades(this.value)" onclick="event.stopPropagation()"
+                                            onchange="generatePrimaryShades(this.value)"
+                                            onclick="event.stopPropagation()"
                                             style="width: 32px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
-                                        <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
                                             <polyline points="6 9 12 15 18 9"></polyline>
                                         </svg>
                                     </div>
@@ -539,7 +582,7 @@
                             </div>
 
                             <!-- Secondary Color (Optional) -->
-                            <div class="card">
+                            <div class="card collapsed">
                                 <div class="card-header" onclick="toggleCard(this)">
                                     <div class="card-title">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
@@ -561,11 +604,13 @@
                                             <span class="toggle-slider"></span>
                                         </label>
                                         <input type="color" id="secondaryColor" value="#8b5cf6"
-                                            onchange="generateSecondaryShades(this.value)" onclick="event.stopPropagation()"
+                                            onchange="generateSecondaryShades(this.value)"
+                                            onclick="event.stopPropagation()"
                                             style="width: 32px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; opacity: 0.3;"
                                             disabled>
-                                        <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
                                             <polyline points="6 9 12 15 18 9"></polyline>
                                         </svg>
                                     </div>
@@ -576,11 +621,12 @@
                             </div>
 
                             <!-- Status Colors -->
-                            <div class="card">
+                            <div class="card collapsed">
                                 <div class="card-header" onclick="toggleCard(this)">
                                     <div class="card-title">Status Colors</div>
-                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
                                         <polyline points="6 9 12 15 18 9"></polyline>
                                     </svg>
                                 </div>
@@ -632,16 +678,86 @@
                             </div>
 
                             <!-- Neutral Colors -->
-                            <div class="card">
+                            <div class="card collapsed">
                                 <div class="card-header" onclick="toggleCard(this)">
                                     <div class="card-title">Neutral Colors</div>
-                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
                                         <polyline points="6 9 12 15 18 9"></polyline>
                                     </svg>
                                 </div>
                                 <div class="card-body">
                                     <div id="neutralShades" class="color-shades-grid"></div>
+                                </div>
+                            </div>
+
+                            <!-- Spacing Tokens -->
+                            <div class="card">
+                                <div class="card-header" onclick="toggleCard(this)">
+                                    <div class="card-title">Spacing Tokens</div>
+                                    <div class="card-header-right">
+                                        <div style="display: flex; align-items: center; gap: 6px;" onclick="event.stopPropagation()">
+                                            <span style="font-size: 10px; font-weight: 500; color: var(--text-secondary);">Base</span>
+                                            <input type="number" id="spacingBaseUnit" value="4" min="1" max="16"
+                                                onchange="generateSpacingTokens()"
+                                                style="width: 45px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; text-align: center;">
+                                            <span style="font-size: 10px; color: var(--text-muted);">px</span>
+                                        </div>
+                                        <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="spacingPreview" class="spacing-list"></div>
+                                </div>
+                            </div>
+
+                            <!-- Radius Tokens -->
+                            <div class="card">
+                                <div class="card-header" onclick="toggleCard(this)">
+                                    <div class="card-title">Radius Tokens</div>
+                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="card-body">
+                                    <div id="radiusPreview" class="spacing-list"></div>
+                                </div>
+                            </div>
+
+                            <!-- Shadow Tokens -->
+                            <div class="card">
+                                <div class="card-header" onclick="toggleCard(this)">
+                                    <div class="card-title">Shadow Tokens</div>
+                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="card-body">
+                                    <div id="shadowPreview" class="spacing-list"></div>
+                                </div>
+                            </div>
+
+                            <!-- Stroke Tokens -->
+                            <div class="card">
+                                <div class="card-header" onclick="toggleCard(this)">
+                                    <div class="card-title">Stroke Tokens</div>
+                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="card-body">
+                                    <div id="strokePreview" class="spacing-list"></div>
                                 </div>
                             </div>
                         </div>
@@ -651,7 +767,7 @@
                         <div class="empty-state">
                             <div class="empty-state-icon">🧩</div>
                             <div class="empty-state-title">Components</div>
-                            <div class="empty-state-description">Buttons, inputs, and UI components</div>
+                            <div class="empty-state-description">Component library coming soon</div>
                         </div>
                     </div>
 
@@ -893,9 +1009,297 @@
         // Event Listeners
         document.getElementById('reset-btn').addEventListener('click', resetDefaults);
 
-        document.getElementById('generate-json-btn').addEventListener('click', () => {
-            alert('Generate JSON functionality');
+        document.getElementById('create-variable-btn').addEventListener('click', () => {
+            console.log('Create Variable button clicked');
+
+            // Collect all color data
+            const colorData = {
+                primary: collectColorShades('primary'),
+                secondary: document.getElementById('secondaryToggle').checked ? collectColorShades('secondary') : null,
+                success: collectStatusColors('success'),
+                error: collectStatusColors('error'),
+                warning: collectStatusColors('warning'),
+                neutral: collectColorShades('neutral')
+            };
+
+            // Collect spacing data
+            const spacingData = collectSpacingTokens();
+
+            // Collect radius data
+            const radiusData = collectRadiusTokens();
+
+            // Collect shadow data
+            const shadowData = collectShadowTokens();
+
+            // Collect stroke data
+            const strokeData = collectStrokeTokens();
+
+            console.log('Collected color data:', colorData);
+            console.log('Collected spacing data:', spacingData);
+            console.log('Collected radius data:', radiusData);
+            console.log('Collected shadow data:', shadowData);
+            console.log('Collected stroke data:', strokeData);
+
+            // Send message to plugin code to create variables
+            parent.postMessage({
+                pluginMessage: {
+                    type: 'create-variables',
+                    colors: colorData,
+                    spacing: spacingData,
+                    radius: radiusData,
+                    shadows: shadowData,
+                    strokes: strokeData
+                }
+            }, '*');
+
+            console.log('Message sent to plugin');
         });
+
+        // Helper function to collect color shades from the UI
+        function collectColorShades(prefix) {
+            console.log(`Collecting colors for: ${prefix}`);
+            const container = document.getElementById(`${prefix}Shades`);
+
+            if (!container) {
+                console.warn(`Container not found for: ${prefix}Shades`);
+                return null;
+            }
+
+            console.log(`Container found for ${prefix}, looking for swatches...`);
+            const swatches = container.querySelectorAll('.color-swatch');
+            console.log(`Found ${swatches.length} swatches for ${prefix}`);
+
+            const colors = {};
+
+            swatches.forEach((swatch, index) => {
+                const nameEl = swatch.querySelector('.color-swatch-name');
+                const valueEl = swatch.querySelector('.color-swatch-value');
+
+                const name = nameEl?.textContent?.trim();
+                const value = valueEl?.textContent?.trim();
+
+                console.log(`Swatch ${index}: name="${name}", value="${value}"`);
+
+                if (name && value) {
+                    colors[name] = value;
+                }
+            });
+
+            console.log(`Collected ${Object.keys(colors).length} colors for ${prefix}:`, colors);
+            return Object.keys(colors).length > 0 ? colors : null;
+        }
+
+        // Helper function to collect status colors
+        function collectStatusColors(type) {
+            console.log(`Collecting status colors for: ${type}`);
+            const container = document.getElementById(`${type}Shades`);
+
+            if (!container) {
+                console.warn(`Container not found for: ${type}Shades`);
+                return null;
+            }
+
+            const swatches = container.querySelectorAll('.color-swatch');
+            console.log(`Found ${swatches.length} swatches for ${type}`);
+
+            const colors = {};
+
+            swatches.forEach((swatch, index) => {
+                const nameEl = swatch.querySelector('.color-swatch-name');
+                const valueEl = swatch.querySelector('.color-swatch-value');
+
+                const name = nameEl?.textContent?.trim();
+                const value = valueEl?.textContent?.trim();
+
+                console.log(`Status swatch ${index}: name="${name}", value="${value}"`);
+
+                if (name && value) {
+                    colors[name] = value;
+                }
+            });
+
+            console.log(`Collected ${Object.keys(colors).length} status colors for ${type}:`, colors);
+            return Object.keys(colors).length > 0 ? colors : null;
+        }
+
+        // Generate spacing tokens
+        function generateSpacingTokens() {
+            const baseUnit = parseInt(document.getElementById('spacingBaseUnit').value) || 4;
+            const spacingValues = [0, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64];
+            
+            let html = '';
+            spacingValues.forEach(multiplier => {
+                const value = multiplier * baseUnit;
+                const tokenName = `${multiplier}`;
+                
+                html += `
+                    <div class="spacing-token" onclick="copyToClipboard('${value}px')" title="Click to copy ${value}px">
+                        <span class="spacing-token-name">spacing/${tokenName}</span>
+                        <span class="spacing-token-value">${value}px</span>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('spacingPreview').innerHTML = html;
+        }
+
+        // Collect spacing tokens for variable creation
+        function collectSpacingTokens() {
+            const baseUnit = parseInt(document.getElementById('spacingBaseUnit').value) || 4;
+            const spacingValues = [0, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64];
+            
+            const spacing = {};
+            spacingValues.forEach(multiplier => {
+                const value = multiplier * baseUnit;
+                const tokenName = `spacing-${multiplier}`;
+                spacing[tokenName] = value;
+            });
+            
+            return spacing;
+        }
+
+        // Generate radius tokens
+        function generateRadiusTokens() {
+            const radiusValues = [
+                { name: 'none', value: 0 },
+                { name: 'sm', value: 2 },
+                { name: 'base', value: 4 },
+                { name: 'md', value: 6 },
+                { name: 'lg', value: 8 },
+                { name: 'xl', value: 12 },
+                { name: '2xl', value: 16 },
+                { name: '3xl', value: 24 },
+                { name: 'full', value: 9999 }
+            ];
+            
+            let html = '';
+            radiusValues.forEach(({ name, value }) => {
+                const displayValue = value === 9999 ? '∞' : `${value}px`;
+                html += `
+                    <div class="spacing-token" onclick="copyToClipboard('${value}px')" title="Click to copy ${value}px">
+                        <span class="spacing-token-name">radius-${name}</span>
+                        <span class="spacing-token-value">${displayValue}</span>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('radiusPreview').innerHTML = html;
+        }
+
+        // Collect radius tokens for variable creation
+        function collectRadiusTokens() {
+            const radiusValues = [
+                { name: 'none', value: 0 },
+                { name: 'sm', value: 2 },
+                { name: 'base', value: 4 },
+                { name: 'md', value: 6 },
+                { name: 'lg', value: 8 },
+                { name: 'xl', value: 12 },
+                { name: '2xl', value: 16 },
+                { name: '3xl', value: 24 },
+                { name: 'full', value: 9999 }
+            ];
+            
+            const radius = {};
+            radiusValues.forEach(({ name, value }) => {
+                const tokenName = `radius-${name}`;
+                radius[tokenName] = value;
+            });
+            
+            return radius;
+        }
+
+        // Generate shadow tokens
+        function generateShadowTokens() {
+            const shadowValues = [
+                { name: 'none', value: 'none' },
+                { name: 'xs', value: '0 1px 2px rgba(0,0,0,0.05)' },
+                { name: 'sm', value: '0 1px 3px rgba(0,0,0,0.1)' },
+                { name: 'base', value: '0 2px 4px rgba(0,0,0,0.1)' },
+                { name: 'md', value: '0 4px 6px rgba(0,0,0,0.1)' },
+                { name: 'lg', value: '0 10px 15px rgba(0,0,0,0.1)' },
+                { name: 'xl', value: '0 20px 25px rgba(0,0,0,0.1)' },
+                { name: '2xl', value: '0 25px 50px rgba(0,0,0,0.15)' }
+            ];
+            
+            let html = '';
+            shadowValues.forEach(({ name, value }) => {
+                html += `
+                    <div class="spacing-token" onclick="copyToClipboard('${value}')" title="Click to copy">
+                        <span class="spacing-token-name">shadow-${name}</span>
+                        <span class="spacing-token-value">${name}</span>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('shadowPreview').innerHTML = html;
+        }
+
+        // Collect shadow tokens for variable creation
+        function collectShadowTokens() {
+            const shadowValues = [
+                { name: 'none', value: 'none' },
+                { name: 'xs', value: '0 1px 2px rgba(0,0,0,0.05)' },
+                { name: 'sm', value: '0 1px 3px rgba(0,0,0,0.1)' },
+                { name: 'base', value: '0 2px 4px rgba(0,0,0,0.1)' },
+                { name: 'md', value: '0 4px 6px rgba(0,0,0,0.1)' },
+                { name: 'lg', value: '0 10px 15px rgba(0,0,0,0.1)' },
+                { name: 'xl', value: '0 20px 25px rgba(0,0,0,0.1)' },
+                { name: '2xl', value: '0 25px 50px rgba(0,0,0,0.15)' }
+            ];
+            
+            const shadows = {};
+            shadowValues.forEach(({ name, value }) => {
+                const tokenName = `shadow-${name}`;
+                shadows[tokenName] = value;
+            });
+            
+            return shadows;
+        }
+
+        // Generate stroke tokens
+        function generateStrokeTokens() {
+            const strokeValues = [
+                { name: 'none', value: 0 },
+                { name: 'thin', value: 1 },
+                { name: 'base', value: 2 },
+                { name: 'medium', value: 3 },
+                { name: 'thick', value: 4 },
+                { name: 'heavy', value: 6 }
+            ];
+            
+            let html = '';
+            strokeValues.forEach(({ name, value }) => {
+                html += `
+                    <div class="spacing-token" onclick="copyToClipboard('${value}px')" title="Click to copy ${value}px">
+                        <span class="spacing-token-name">stroke-${name}</span>
+                        <span class="spacing-token-value">${value}px</span>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('strokePreview').innerHTML = html;
+        }
+
+        // Collect stroke tokens for variable creation
+        function collectStrokeTokens() {
+            const strokeValues = [
+                { name: 'none', value: 0 },
+                { name: 'thin', value: 1 },
+                { name: 'base', value: 2 },
+                { name: 'medium', value: 3 },
+                { name: 'thick', value: 4 },
+                { name: 'heavy', value: 6 }
+            ];
+            
+            const strokes = {};
+            strokeValues.forEach(({ name, value }) => {
+                const tokenName = `stroke-${name}`;
+                strokes[tokenName] = value;
+            });
+            
+            return strokes;
+        }
 
         // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
@@ -904,6 +1308,10 @@
             generateErrorShades('#ef4444');
             generateWarningShades('#f59e0b');
             generateNeutralShades();
+            generateSpacingTokens();
+            generateRadiusTokens();
+            generateShadowTokens();
+            generateStrokeTokens();
         });
     </script>
 </body>

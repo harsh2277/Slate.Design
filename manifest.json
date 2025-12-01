@@ -1,6 +1,6 @@
 {
-  "name": "Design System JSON Maker",
-  "id": "design-system-json-maker",
+  "name": "Design System Maker",
+  "id": "design-system-maker",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",

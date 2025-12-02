@@ -1,9 +1,10 @@
 {
   "name": "Design System Maker",
-  "id": "design-system-maker",
+  "id": "1577584937261419785",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
+  "documentAccess": "dynamic-page",
   "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": ["none"]

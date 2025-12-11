@@ -644,7 +644,7 @@ figma.ui.onmessage = async (msg) => {
             }
 
             // Get or create a variable collection
-            const collections = figma.variables.getLocalVariableCollections();
+            const collections = await figma.variables.getLocalVariableCollectionsAsync();
             let collection;
 
             // Check if "Design System Colors" collection exists
@@ -668,7 +668,7 @@ figma.ui.onmessage = async (msg) => {
             }
 
             // Helper function to create or update a variable
-            function createOrUpdateVariable(name, hexColor, collection) {
+            async function createOrUpdateVariable(name, hexColor, collection) {
                 if (!name || !hexColor) {
                     console.warn('Skipping variable - missing name or color:', name, hexColor);
                     return null;
@@ -677,7 +677,7 @@ figma.ui.onmessage = async (msg) => {
                 const rgb = hexToRgb(hexColor);
 
                 // Check if variable already exists
-                const existingVariables = figma.variables.getLocalVariables('COLOR');
+                const existingVariables = await figma.variables.getLocalVariablesAsync('COLOR');
                 const existingVar = existingVariables.find(v => v.name === name && v.variableCollectionId === collection.id);
 
                 if (existingVar) {
@@ -686,7 +686,7 @@ figma.ui.onmessage = async (msg) => {
                     return existingVar;
                 } else {
                     // Create new variable
-                    const variable = figma.variables.createVariable(name, collection.id, 'COLOR');
+                    const variable = figma.variables.createVariable(name, collection, 'COLOR');
                     variable.setValueForMode(collection.modes[0].modeId, rgb);
                     return variable;
                 }
@@ -699,60 +699,60 @@ figma.ui.onmessage = async (msg) => {
 
             // Primary colors
             if (colors.primary) {
-                Object.entries(colors.primary).forEach(([name, value]) => {
+                for (const [name, value] of Object.entries(colors.primary)) {
                     // Add "Primary/" prefix to group variables
                     const groupedName = `Primary/${name}`;
-                    createOrUpdateVariable(groupedName, value, collection);
+                    await createOrUpdateVariable(groupedName, value, collection);
                     createdCount++;
-                });
+                }
             }
 
             // Secondary colors (if enabled)
             if (colors.secondary) {
-                Object.entries(colors.secondary).forEach(([name, value]) => {
+                for (const [name, value] of Object.entries(colors.secondary)) {
                     // Add "Secondary/" prefix to group variables
                     const groupedName = `Secondary/${name}`;
-                    createOrUpdateVariable(groupedName, value, collection);
+                    await createOrUpdateVariable(groupedName, value, collection);
                     createdCount++;
-                });
+                }
             }
 
             // Status colors
             if (colors.success) {
-                Object.entries(colors.success).forEach(([name, value]) => {
+                for (const [name, value] of Object.entries(colors.success)) {
                     // Add "Success/" prefix to group variables
                     const groupedName = `Success/${name}`;
-                    createOrUpdateVariable(groupedName, value, collection);
+                    await createOrUpdateVariable(groupedName, value, collection);
                     createdCount++;
-                });
+                }
             }
 
             if (colors.error) {
-                Object.entries(colors.error).forEach(([name, value]) => {
+                for (const [name, value] of Object.entries(colors.error)) {
                     // Add "Error/" prefix to group variables
                     const groupedName = `Error/${name}`;
-                    createOrUpdateVariable(groupedName, value, collection);
+                    await createOrUpdateVariable(groupedName, value, collection);
                     createdCount++;
-                });
+                }
             }
 
             if (colors.warning) {
-                Object.entries(colors.warning).forEach(([name, value]) => {
+                for (const [name, value] of Object.entries(colors.warning)) {
                     // Add "Warning/" prefix to group variables
                     const groupedName = `Warning/${name}`;
-                    createOrUpdateVariable(groupedName, value, collection);
+                    await createOrUpdateVariable(groupedName, value, collection);
                     createdCount++;
-                });
+                }
             }
 
             // Neutral colors
             if (colors.neutral) {
-                Object.entries(colors.neutral).forEach(([name, value]) => {
+                for (const [name, value] of Object.entries(colors.neutral)) {
                     // Add "Neutral/" prefix to group variables
                     const groupedName = `Neutral/${name}`;
-                    createOrUpdateVariable(groupedName, value, collection);
+                    await createOrUpdateVariable(groupedName, value, collection);
                     createdCount++;
-                });
+                }
             }
 
             // Create spacing variables if spacing data exists
@@ -761,7 +761,7 @@ figma.ui.onmessage = async (msg) => {
             
             if (msg.spacing && Object.keys(msg.spacing).length > 0) {
                 // Get or create spacing variable collection
-                const existingSpacingCollection = figma.variables.getLocalVariableCollections().find(c => c.name === 'Design System Spacing');
+                const existingSpacingCollection = (await figma.variables.getLocalVariableCollectionsAsync()).find(c => c.name === 'Design System Spacing');
                 
                 if (existingSpacingCollection) {
                     spacingCollection = existingSpacingCollection;
@@ -770,19 +770,19 @@ figma.ui.onmessage = async (msg) => {
                 }
 
                 // Create spacing variables
-                Object.entries(msg.spacing).forEach(([name, value]) => {
+                for (const [name, value] of Object.entries(msg.spacing)) {
                     // Check if variable already exists
-                    const existingVariables = figma.variables.getLocalVariables('FLOAT');
+                    const existingVariables = await figma.variables.getLocalVariablesAsync('FLOAT');
                     const existingVar = existingVariables.find(v => v.name === name && v.variableCollectionId === spacingCollection.id);
 
                     if (existingVar) {
                         existingVar.setValueForMode(spacingCollection.modes[0].modeId, value);
                     } else {
-                        const variable = figma.variables.createVariable(name, spacingCollection.id, 'FLOAT');
+                        const variable = figma.variables.createVariable(name, spacingCollection, 'FLOAT');
                         variable.setValueForMode(spacingCollection.modes[0].modeId, value);
                     }
                     spacingCount++;
-                });
+                }
             }
 
             // Create radius variables if radius data exists
@@ -791,7 +791,7 @@ figma.ui.onmessage = async (msg) => {
             
             if (msg.radius && Object.keys(msg.radius).length > 0) {
                 // Get or create radius variable collection
-                const existingRadiusCollection = figma.variables.getLocalVariableCollections().find(c => c.name === 'Design System Radius');
+                const existingRadiusCollection = (await figma.variables.getLocalVariableCollectionsAsync()).find(c => c.name === 'Design System Radius');
                 
                 if (existingRadiusCollection) {
                     radiusCollection = existingRadiusCollection;
@@ -800,19 +800,19 @@ figma.ui.onmessage = async (msg) => {
                 }
 
                 // Create radius variables
-                Object.entries(msg.radius).forEach(([name, value]) => {
+                for (const [name, value] of Object.entries(msg.radius)) {
                     // Check if variable already exists
-                    const existingVariables = figma.variables.getLocalVariables('FLOAT');
+                    const existingVariables = await figma.variables.getLocalVariablesAsync('FLOAT');
                     const existingVar = existingVariables.find(v => v.name === name && v.variableCollectionId === radiusCollection.id);
 
                     if (existingVar) {
                         existingVar.setValueForMode(radiusCollection.modes[0].modeId, value);
                     } else {
-                        const variable = figma.variables.createVariable(name, radiusCollection.id, 'FLOAT');
+                        const variable = figma.variables.createVariable(name, radiusCollection, 'FLOAT');
                         variable.setValueForMode(radiusCollection.modes[0].modeId, value);
                     }
                     radiusCount++;
-                });
+                }
             }
 
             // Create stroke variables if stroke data exists
@@ -821,7 +821,7 @@ figma.ui.onmessage = async (msg) => {
             
             if (msg.strokes && Object.keys(msg.strokes).length > 0) {
                 // Get or create stroke variable collection
-                const existingStrokeCollection = figma.variables.getLocalVariableCollections().find(c => c.name === 'Design System Stroke');
+                const existingStrokeCollection = (await figma.variables.getLocalVariableCollectionsAsync()).find(c => c.name === 'Design System Stroke');
                 
                 if (existingStrokeCollection) {
                     strokeCollection = existingStrokeCollection;
@@ -830,19 +830,19 @@ figma.ui.onmessage = async (msg) => {
                 }
 
                 // Create stroke variables
-                Object.entries(msg.strokes).forEach(([name, value]) => {
+                for (const [name, value] of Object.entries(msg.strokes)) {
                     // Check if variable already exists
-                    const existingVariables = figma.variables.getLocalVariables('FLOAT');
+                    const existingVariables = await figma.variables.getLocalVariablesAsync('FLOAT');
                     const existingVar = existingVariables.find(v => v.name === name && v.variableCollectionId === strokeCollection.id);
 
                     if (existingVar) {
                         existingVar.setValueForMode(strokeCollection.modes[0].modeId, value);
                     } else {
-                        const variable = figma.variables.createVariable(name, strokeCollection.id, 'FLOAT');
+                        const variable = figma.variables.createVariable(name, strokeCollection, 'FLOAT');
                         variable.setValueForMode(strokeCollection.modes[0].modeId, value);
                     }
                     strokeCount++;
-                });
+                }
             }
 
             // Create shadow styles (Figma effect styles)
@@ -850,16 +850,16 @@ figma.ui.onmessage = async (msg) => {
             if (msg.shadows && Object.keys(msg.shadows).length > 0) {
                 console.log('Creating shadow styles:', msg.shadows);
                 
-                Object.entries(msg.shadows).forEach(([name, value]) => {
+                for (const [name, value] of Object.entries(msg.shadows)) {
                     if (value === 'none') {
                         // Skip 'none' shadow
                         console.log('Skipping none shadow');
-                        return;
+                        continue;
                     }
 
                     console.log('Processing shadow:', name, value);
 
-                    // Parse shadow value (e.g., "0 1px 2px rgba(0,0,0,0.05)" or "0 1 2 rgba(0,0,0,0.05)")
+                    // Parse shadow value (e.g., "0 1px 2px rgba(0,0,0,0.05)")
                     const shadowMatch = value.match(/(-?\d+)(?:px)?\s+(-?\d+)(?:px)?\s+(-?\d+)(?:px)?\s+rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
                     
                     if (shadowMatch) {
@@ -869,7 +869,7 @@ figma.ui.onmessage = async (msg) => {
                         try {
                             // Check if style already exists
                             const groupedName = `Shadow/${name.replace('shadow-', '')}`;
-                            const existingStyles = figma.getLocalEffectStyles();
+                            const existingStyles = await figma.getLocalEffectStylesAsync();
                             let style = existingStyles.find(s => s.name === groupedName);
                             
                             if (!style) {
@@ -903,18 +903,20 @@ figma.ui.onmessage = async (msg) => {
                             console.log('Successfully created/updated shadow style:', name);
                         } catch (error) {
                             console.error('Error creating shadow style:', name, error);
+                            figma.notify(`❌ Error creating shadow style ${name}: ${error.message}`);
                         }
                     } else {
                         console.warn('Could not parse shadow value:', name, value);
+                        figma.notify(`⚠️ Could not parse shadow value for ${name}: ${value}`);
                     }
-                });
+                }
                 
                 console.log('Total shadow styles created:', shadowCount);
             }
 
-            // Check if we created any variables
-            if (createdCount === 0 && spacingCount === 0 && radiusCount === 0 && strokeCount === 0) {
-                figma.notify('⚠️ No data found to create variables. Please expand sections and ensure tokens are generated.');
+            // Check if we created any variables or styles
+            if (createdCount === 0 && spacingCount === 0 && radiusCount === 0 && strokeCount === 0 && shadowCount === 0) {
+                figma.notify('⚠️ No data found to create variables or styles. Please expand sections and ensure tokens are generated.');
                 return;
             }
 
@@ -1479,7 +1481,7 @@ figma.ui.onmessage = async (msg) => {
             await figma.loadFontAsync({ family: "Inter", style: "Bold" });
             
             // STEP 1: CREATE FONT NAME VARIABLES
-            const collections = figma.variables.getLocalVariableCollections();
+            const collections = await figma.variables.getLocalVariableCollectionsAsync();
             let fontCollection = collections.find(c => c.name === 'Typography/Font Names');
             
             if (!fontCollection) {
@@ -1487,11 +1489,11 @@ figma.ui.onmessage = async (msg) => {
             }
             
             // Create primary font variable
-            const existingVars = figma.variables.getLocalVariables('STRING');
+            const existingVars = await figma.variables.getLocalVariablesAsync('STRING');
             let primaryFontVar = existingVars.find(v => v.name === 'font/primary' && v.variableCollectionId === fontCollection.id);
             
             if (!primaryFontVar) {
-                primaryFontVar = figma.variables.createVariable('font/primary', fontCollection.id, 'STRING');
+                primaryFontVar = figma.variables.createVariable('font/primary', fontCollection, 'STRING');
             }
             primaryFontVar.setValueForMode(fontCollection.modes[0].modeId, typography.primaryFont);
             
@@ -1501,7 +1503,7 @@ figma.ui.onmessage = async (msg) => {
                 secondaryFontVar = existingVars.find(v => v.name === 'font/secondary' && v.variableCollectionId === fontCollection.id);
                 
                 if (!secondaryFontVar) {
-                    secondaryFontVar = figma.variables.createVariable('font/secondary', fontCollection.id, 'STRING');
+                    secondaryFontVar = figma.variables.createVariable('font/secondary', fontCollection, 'STRING');
                 }
                 secondaryFontVar.setValueForMode(fontCollection.modes[0].modeId, typography.secondaryFont);
             }
@@ -1579,7 +1581,7 @@ figma.ui.onmessage = async (msg) => {
                     const styleName = `Primary/${key.toUpperCase()}/${weight.name}`;
                     
                     // Check if text style already exists
-                    const existingStyles = figma.getLocalTextStyles();
+                    const existingStyles = await figma.getLocalTextStylesAsync();
                     let textStyle = existingStyles.find(s => s.name === styleName);
                     
                     if (!textStyle) {
@@ -1621,7 +1623,7 @@ figma.ui.onmessage = async (msg) => {
                         const styleName = `Secondary/${key.toUpperCase()}/${weight.name}`;
                         
                         // Check if text style already exists
-                        const existingStyles = figma.getLocalTextStyles();
+                        const existingStyles = await figma.getLocalTextStylesAsync();
                         let textStyle = existingStyles.find(s => s.name === styleName);
                         
                         if (!textStyle) {

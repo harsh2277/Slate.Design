@@ -285,6 +285,7 @@
             cursor: pointer;
             background: var(--bg-card);
             overflow: hidden;
+            position: relative;
         }
 
         .color-swatch:hover {
@@ -293,11 +294,29 @@
             border-color: var(--text-primary);
         }
 
+        .color-swatch:hover::after {
+            content: 'Click to copy';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 500;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 10;
+        }
+
         .color-swatch-preview {
             width: 100%;
-            height: 40px;
+            height: 48px;
             border: none;
             border-bottom: 1px solid var(--border);
+            position: relative;
         }
 
         .color-swatch-name {
@@ -707,6 +726,20 @@
                                         Primary Color
                                     </div>
                                     <div class="card-header-right">
+                                        <div style="display: flex; align-items: center; gap: 8px;" onclick="event.stopPropagation()">
+                                            <span style="font-size: 10px; font-weight: 500; color: var(--text-secondary);">Shades</span>
+                                            <select id="primaryShadeCount" onchange="generatePrimaryShades(document.getElementById('primaryColor').value)"
+                                                style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; cursor: pointer;">
+                                                <option value="5">5</option>
+                                                <option value="10">10</option>
+                                                <option value="11" selected>11</option>
+                                                <option value="15">15</option>
+                                                <option value="20">20</option>
+                                                <option value="25">25</option>
+                                                <option value="30">30</option>
+                                                <option value="35">35</option>
+                                            </select>
+                                        </div>
                                         <input type="color" id="primaryColor" value="#0066FF"
                                             onchange="generatePrimaryShades(this.value)"
                                             onclick="event.stopPropagation()"
@@ -719,7 +752,14 @@
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                    <div id="primaryShades" class="color-shades-grid"></div>
+                                    <div style="margin-bottom: 16px;">
+                                        <div style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Light Mode</div>
+                                        <div id="primaryShades" class="color-shades-grid"></div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Dark Mode</div>
+                                        <div id="primaryShadesDark" class="color-shades-grid"></div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -745,6 +785,20 @@
                                                 onchange="toggleSecondary(this.checked)">
                                             <span class="toggle-slider"></span>
                                         </label>
+                                        <div style="display: flex; align-items: center; gap: 8px;" onclick="event.stopPropagation()">
+                                            <span style="font-size: 10px; font-weight: 500; color: var(--text-secondary);">Shades</span>
+                                            <select id="secondaryShadeCount" onchange="generateSecondaryShades(document.getElementById('secondaryColor').value)"
+                                                style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; cursor: pointer;" disabled>
+                                                <option value="5">5</option>
+                                                <option value="10">10</option>
+                                                <option value="11" selected>11</option>
+                                                <option value="15">15</option>
+                                                <option value="20">20</option>
+                                                <option value="25">25</option>
+                                                <option value="30">30</option>
+                                                <option value="35">35</option>
+                                            </select>
+                                        </div>
                                         <input type="color" id="secondaryColor" value="#8b5cf6"
                                             onchange="generateSecondaryShades(this.value)"
                                             onclick="event.stopPropagation()"
@@ -758,7 +812,14 @@
                                     </div>
                                 </div>
                                 <div class="card-body" style="display: none;">
-                                    <div id="secondaryShades" class="color-shades-grid"></div>
+                                    <div style="margin-bottom: 16px;">
+                                        <div style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Light Mode</div>
+                                        <div id="secondaryShades" class="color-shades-grid"></div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Dark Mode</div>
+                                        <div id="secondaryShadesDark" class="color-shades-grid"></div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -766,11 +827,25 @@
                             <div class="card collapsed">
                                 <div class="card-header" onclick="toggleCard(this)">
                                     <div class="card-title">Status Colors</div>
-                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <polyline points="6 9 12 15 18 9"></polyline>
-                                    </svg>
+                                    <div class="card-header-right">
+                                        <div style="display: flex; align-items: center; gap: 8px;" onclick="event.stopPropagation()">
+                                            <span style="font-size: 10px; font-weight: 500; color: var(--text-secondary);">Shades</span>
+                                            <select id="statusShadeCount" onchange="regenerateAllStatusShades()"
+                                                style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; cursor: pointer;">
+                                                <option value="3" selected>3</option>
+                                                <option value="5">5</option>
+                                                <option value="10">10</option>
+                                                <option value="11">11</option>
+                                                <option value="15">15</option>
+                                                <option value="20">20</option>
+                                            </select>
+                                        </div>
+                                        <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     <div style="display: grid; gap: 16px;">
@@ -802,18 +877,32 @@
                                             <div id="errorShades" class="color-shades-grid-small"></div>
                                         </div>
 
-                                        <!-- Warning/Process -->
+                                        <!-- Warning -->
                                         <div>
                                             <div
                                                 style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                                                 <span
-                                                    style="font-size: 12px; font-weight: 500; color: var(--text-primary);">Warning/Process
+                                                    style="font-size: 12px; font-weight: 500; color: var(--text-primary);">Warning
                                                     (Orange)</span>
                                                 <input type="color" id="warningColor" value="#FF9500"
                                                     onchange="generateWarningShades(this.value)"
                                                     style="width: 32px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
                                             </div>
                                             <div id="warningShades" class="color-shades-grid-small"></div>
+                                        </div>
+
+                                        <!-- Info -->
+                                        <div>
+                                            <div
+                                                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                                <span
+                                                    style="font-size: 12px; font-weight: 500; color: var(--text-primary);">Info
+                                                    (Blue)</span>
+                                                <input type="color" id="infoColor" value="#2196F3"
+                                                    onchange="generateInfoShades(this.value)"
+                                                    style="width: 32px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
+                                            </div>
+                                            <div id="infoShades" class="color-shades-grid-small"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -823,14 +912,37 @@
                             <div class="card collapsed">
                                 <div class="card-header" onclick="toggleCard(this)">
                                     <div class="card-title">Neutral Colors</div>
-                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <polyline points="6 9 12 15 18 9"></polyline>
-                                    </svg>
+                                    <div class="card-header-right">
+                                        <div style="display: flex; align-items: center; gap: 8px;" onclick="event.stopPropagation()">
+                                            <span style="font-size: 10px; font-weight: 500; color: var(--text-secondary);">Shades</span>
+                                            <select id="neutralShadeCount" onchange="generateNeutralShades()"
+                                                style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; cursor: pointer;">
+                                                <option value="5">5</option>
+                                                <option value="10">10</option>
+                                                <option value="11" selected>11</option>
+                                                <option value="15">15</option>
+                                                <option value="20">20</option>
+                                                <option value="25">25</option>
+                                                <option value="30">30</option>
+                                                <option value="35">35</option>
+                                            </select>
+                                        </div>
+                                        <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </div>
                                 </div>
                                 <div class="card-body">
-                                    <div id="neutralShades" class="color-shades-grid"></div>
+                                    <div style="margin-bottom: 16px;">
+                                        <div style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Light Mode</div>
+                                        <div id="neutralShades" class="color-shades-grid"></div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Dark Mode</div>
+                                        <div id="neutralShadesDark" class="color-shades-grid"></div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1181,15 +1293,16 @@
             if (!rgb) return [];
 
             const shades = [];
-            // Position 5 (index 5) will be the base color (500 shade)
-            const baseIndex = 5;
+            // For 11 shades, position 5 (index 5) will be the base color (500 shade)
+            // For other counts, adjust the base index proportionally
+            const baseIndex = Math.floor(count / 2);
 
             for (let i = 0; i < count; i++) {
                 if (i === baseIndex) {
-                    // This is the base color (500)
+                    // This is the base color
                     shades.push(baseColor);
                 } else if (i < baseIndex) {
-                    // Lighter shades (50-400)
+                    // Lighter shades
                     // Interpolate between white and base color
                     const factor = (baseIndex - i) / baseIndex;
                     const r = Math.round(rgb.r + (255 - rgb.r) * factor);
@@ -1197,7 +1310,7 @@
                     const b = Math.round(rgb.b + (255 - rgb.b) * factor);
                     shades.push(rgbToHex(r, g, b));
                 } else {
-                    // Darker shades (600-950)
+                    // Darker shades
                     // Interpolate between base color and black
                     const factor = (i - baseIndex) / (count - 1 - baseIndex);
                     const r = Math.round(rgb.r * (1 - factor));
@@ -1218,7 +1331,31 @@
 
         function renderColorShades(shades, prefix, container) {
             let html = '';
-            const shadeNumbers = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+            // Generate shade numbers dynamically based on count
+            const count = shades.length;
+            let shadeNumbers;
+            
+            if (count === 11) {
+                shadeNumbers = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+            } else if (count === 5) {
+                shadeNumbers = [100, 300, 500, 700, 900];
+            } else if (count === 10) {
+                shadeNumbers = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+            } else if (count === 15) {
+                shadeNumbers = [25, 50, 100, 150, 200, 300, 400, 500, 600, 700, 800, 850, 900, 925, 950];
+            } else if (count === 20) {
+                shadeNumbers = Array.from({length: 20}, (_, i) => (i + 1) * 50);
+            } else if (count === 25) {
+                shadeNumbers = Array.from({length: 25}, (_, i) => (i + 1) * 40);
+            } else if (count === 30) {
+                shadeNumbers = Array.from({length: 30}, (_, i) => Math.round((i + 1) * 33.33));
+            } else if (count === 35) {
+                shadeNumbers = Array.from({length: 35}, (_, i) => Math.round((i + 1) * 28.57));
+            } else {
+                // Default: generate sequential numbers
+                shadeNumbers = Array.from({length: count}, (_, i) => (i + 1) * Math.floor(1000 / count));
+            }
+            
             shades.forEach((color, index) => {
                 const shadeName = `${prefix}-${shadeNumbers[index]}`;
                 html += `
@@ -1234,7 +1371,26 @@
 
         function renderSmallShades(shades, prefix, container) {
             let html = '';
-            const labels = ['light', 'default', 'dark'];
+            const count = shades.length;
+            let labels;
+            
+            if (count === 3) {
+                labels = ['light', 'default', 'dark'];
+            } else if (count === 5) {
+                labels = ['lighter', 'light', 'default', 'dark', 'darker'];
+            } else if (count === 10) {
+                labels = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+            } else if (count === 11) {
+                labels = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+            } else if (count === 15) {
+                labels = [25, 50, 100, 150, 200, 300, 400, 500, 600, 700, 800, 850, 900, 925, 950];
+            } else if (count === 20) {
+                labels = Array.from({length: 20}, (_, i) => (i + 1) * 50);
+            } else {
+                // Default: generate sequential numbers
+                labels = Array.from({length: count}, (_, i) => (i + 1) * Math.floor(1000 / count));
+            }
+            
             shades.forEach((color, index) => {
                 const shadeName = `${prefix}-${labels[index]}`;
                 html += `
@@ -1250,8 +1406,13 @@
 
         // Generate primary shades
         function generatePrimaryShades(color) {
-            const shades = generateShades(color, 11);
+            const count = parseInt(document.getElementById('primaryShadeCount').value);
+            const shades = generateShades(color, count);
             renderColorShades(shades, 'primary', 'primaryShades');
+            
+            // Generate dark mode shades (reversed)
+            const darkShades = [...shades].reverse();
+            renderColorShades(darkShades, 'primary', 'primaryShadesDark');
             
             // Auto-sync button background color with primary color
             const buttonBgColor = document.getElementById('buttonBgColor');
@@ -1264,94 +1425,110 @@
 
         // Generate secondary shades
         function generateSecondaryShades(color) {
-            const shades = generateShades(color, 11);
+            const count = parseInt(document.getElementById('secondaryShadeCount').value);
+            const shades = generateShades(color, count);
             renderColorShades(shades, 'secondary', 'secondaryShades');
+            
+            // Generate dark mode shades (reversed)
+            const darkShades = [...shades].reverse();
+            renderColorShades(darkShades, 'secondary', 'secondaryShadesDark');
         }
 
         // Toggle secondary color
         function toggleSecondary(enabled) {
             const colorInput = document.getElementById('secondaryColor');
+            const shadeCountSelect = document.getElementById('secondaryShadeCount');
             const shadesContainer = document.getElementById('secondaryShades');
             const cardBody = shadesContainer.closest('.card-body');
 
             if (enabled) {
                 colorInput.disabled = false;
                 colorInput.style.opacity = '1';
+                shadeCountSelect.disabled = false;
                 shadesContainer.style.display = 'grid';
                 if (cardBody) cardBody.style.display = 'block';
                 generateSecondaryShades(colorInput.value);
             } else {
                 colorInput.disabled = true;
                 colorInput.style.opacity = '0.3';
+                shadeCountSelect.disabled = true;
                 shadesContainer.style.display = 'none';
                 // Hide the card body if secondary is disabled
                 if (cardBody) cardBody.style.display = 'none';
             }
         }
 
-        // Generate status color shades (3 shades each)
-        function generateSuccessShades(color) {
+        // Generate status color shades with dynamic count
+        function generateStatusShades(color, prefix, container) {
+            const count = parseInt(document.getElementById('statusShadeCount').value);
             const rgb = hexToRgb(color);
-            const shades = [
-                rgbToHex(
-                    Math.min(255, rgb.r + 60),
-                    Math.min(255, rgb.g + 60),
-                    Math.min(255, rgb.b + 60)
-                ),
-                color,
-                rgbToHex(
-                    Math.max(0, rgb.r - 40),
-                    Math.max(0, rgb.g - 40),
-                    Math.max(0, rgb.b - 40)
-                )
-            ];
-            renderSmallShades(shades, 'success', 'successShades');
+            let shades;
+            
+            if (count === 3) {
+                // Original 3-shade logic
+                shades = [
+                    rgbToHex(
+                        Math.min(255, rgb.r + 60),
+                        Math.min(255, rgb.g + 60),
+                        Math.min(255, rgb.b + 60)
+                    ),
+                    color,
+                    rgbToHex(
+                        Math.max(0, rgb.r - 40),
+                        Math.max(0, rgb.g - 40),
+                        Math.max(0, rgb.b - 40)
+                    )
+                ];
+            } else {
+                // Use the standard shade generation for other counts
+                shades = generateShades(color, count);
+            }
+            
+            renderSmallShades(shades, prefix, container);
+        }
+
+        function generateSuccessShades(color) {
+            generateStatusShades(color, 'success', 'successShades');
         }
 
         function generateErrorShades(color) {
-            const rgb = hexToRgb(color);
-            const shades = [
-                rgbToHex(
-                    Math.min(255, rgb.r + 60),
-                    Math.min(255, rgb.g + 60),
-                    Math.min(255, rgb.b + 60)
-                ),
-                color,
-                rgbToHex(
-                    Math.max(0, rgb.r - 40),
-                    Math.max(0, rgb.g - 40),
-                    Math.max(0, rgb.b - 40)
-                )
-            ];
-            renderSmallShades(shades, 'error', 'errorShades');
+            generateStatusShades(color, 'error', 'errorShades');
         }
 
         function generateWarningShades(color) {
-            const rgb = hexToRgb(color);
-            const shades = [
-                rgbToHex(
-                    Math.min(255, rgb.r + 60),
-                    Math.min(255, rgb.g + 60),
-                    Math.min(255, rgb.b + 60)
-                ),
-                color,
-                rgbToHex(
-                    Math.max(0, rgb.r - 40),
-                    Math.max(0, rgb.g - 40),
-                    Math.max(0, rgb.b - 40)
-                )
-            ];
-            renderSmallShades(shades, 'warning', 'warningShades');
+            generateStatusShades(color, 'warning', 'warningShades');
+        }
+
+        function generateInfoShades(color) {
+            generateStatusShades(color, 'info', 'infoShades');
+        }
+
+        // Regenerate all status shades when count changes
+        function regenerateAllStatusShades() {
+            const successColor = document.getElementById('successColor').value;
+            const errorColor = document.getElementById('errorColor').value;
+            const warningColor = document.getElementById('warningColor').value;
+            const infoColor = document.getElementById('infoColor').value;
+            
+            generateSuccessShades(successColor);
+            generateErrorShades(errorColor);
+            generateWarningShades(warningColor);
+            generateInfoShades(infoColor);
         }
 
         // Generate neutral shades
         function generateNeutralShades() {
+            const shadeCount = parseInt(document.getElementById('neutralShadeCount').value);
             const shades = [];
-            for (let i = 0; i < 11; i++) {
-                const value = Math.round(255 - (255 * i / 10));
+            for (let i = 0; i < shadeCount; i++) {
+                const value = Math.round(255 - (255 * i / (shadeCount - 1)));
                 shades.push(rgbToHex(value, value, value));
             }
             renderColorShades(shades, 'neutral', 'neutralShades');
+            
+            // Generate dark mode shades (reversed)
+            const darkShades = [...shades].reverse();
+            renderColorShades(darkShades, 'neutral', 'neutralShadesDark');
         }
 
         // Copy to clipboard
@@ -1395,6 +1572,7 @@
                 success: collectStatusColors('success'),
                 error: collectStatusColors('error'),
                 warning: collectStatusColors('warning'),
+                info: collectStatusColors('info'),
                 neutral: collectColorShades('neutral')
             };
 
@@ -1764,6 +1942,7 @@
             generateSuccessShades('#00C853');
             generateErrorShades('#FF3B30');
             generateWarningShades('#FF9500');
+            generateInfoShades('#2196F3');
             generateNeutralShades();
             generateSpacingTokens();
             generateRadiusTokens();
@@ -1848,32 +2027,11 @@
           html += '</div>';
           html += '<div class="card-body" style="padding: 20px; overflow: visible;">';
           
-          // Primary Font - Custom Searchable Dropdown
+          // Primary Font - Input Field
           html += '<div style="margin-bottom: 20px;">';
           html += '<label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Primary Font</label>';
-          html += '<div class="font-dropdown" id="primaryFontDropdown" style="position: relative;">';
-          html += '<div class="font-dropdown-selected" onclick="toggleFontDropdown(\'primary\')" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-weight: 500; background: white; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s;">';
-          html += '<span id="primaryFontSelected">' + state.typography.primaryFont + '</span>';
-          html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+          html += '<input type="text" id="primaryFontInput" value="' + state.typography.primaryFont + '" placeholder="Enter font name (e.g., Inter, Roboto)" onchange="updatePrimaryFont(this.value)" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-weight: 500; background: white; transition: all 0.2s;" onfocus="this.style.borderColor=\'var(--primary)\'" onblur="this.style.borderColor=\'var(--border)\'">';
           html += '</div>';
-          html += '<div class="font-dropdown-menu" id="primaryFontMenu" style="display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; z-index: 10000;">';
-          html += '<div style="padding: 8px; border-bottom: 1px solid var(--border-light);">';
-          html += '<input type="text" id="primaryFontSearch" placeholder="Search fonts..." oninput="filterFonts(\'primary\', this.value)" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;" onclick="event.stopPropagation()">';
-          html += '</div>';
-          html += '<div id="primaryFontList" style="max-height: 510px; overflow-y: auto;">';
-          
-          if (!window.availableFonts || window.availableFonts.length === 0) {
-            html += '<div style="padding: 12px; text-align: center; color: var(--text-secondary); font-size: 13px;">Loading fonts...</div>';
-          } else {
-            const uniqueFonts = [...new Set(window.availableFonts.map(f => f.family))].sort();
-            uniqueFonts.forEach(font => {
-              const isSelected = font === state.typography.primaryFont;
-              const escapedFont = font.replace(/'/g, "\\'");
-              html += '<div class="font-option" data-font="' + escapedFont + '" onclick="selectFont(\'primary\', \'' + escapedFont + '\')" style="padding: 10px 14px; cursor: pointer; font-size: 14px; line-height: 14px; transition: background 0.15s; ' + (isSelected ? 'background: var(--primary-light); color: var(--primary); font-weight: 600;' : '') + '" onmouseover="this.style.background=\'var(--bg-hover)\'" onmouseout="if(this.dataset.font !== \'' + escapedFont + '\') this.style.background=\'transparent\'">' + font + '</div>';
-            });
-          }
-          
-          html += '</div></div></div></div>';
           
           // Secondary Font (Optional)
           html += '<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">';
@@ -1881,30 +2039,10 @@
           html += '<label style="font-size: 12px; font-weight: 500; color: var(--text-primary); cursor: pointer;" onclick="document.getElementById(\'secondaryToggle\').click()">Secondary Font (Optional)</label>';
           html += '</div>';
           
-          // Secondary Font - Custom Searchable Dropdown
-          html += '<div class="font-dropdown" id="secondaryFontDropdown" style="position: relative; opacity: ' + (state.typography.secondaryEnabled ? '1' : '0.4') + '; pointer-events: ' + (state.typography.secondaryEnabled ? 'auto' : 'none') + ';">';
-          html += '<div class="font-dropdown-selected" onclick="toggleFontDropdown(\'secondary\')" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-weight: 500; background: white; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s;">';
-          html += '<span id="secondaryFontSelected">' + (state.typography.secondaryFont || 'Select font...') + '</span>';
-          html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+          // Secondary Font - Input Field
+          html += '<div style="margin-bottom: 20px; opacity: ' + (state.typography.secondaryEnabled ? '1' : '0.4') + '; pointer-events: ' + (state.typography.secondaryEnabled ? 'auto' : 'none') + ';">';
+          html += '<input type="text" id="secondaryFontInput" value="' + (state.typography.secondaryFont || '') + '" placeholder="Enter font name (e.g., Poppins, Montserrat)" onchange="updateSecondaryFont(this.value)" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-weight: 500; background: white; transition: all 0.2s;" onfocus="this.style.borderColor=\'var(--primary)\'" onblur="this.style.borderColor=\'var(--border)\'">';
           html += '</div>';
-          html += '<div class="font-dropdown-menu" id="secondaryFontMenu" style="display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; z-index: 10000;">';
-          html += '<div style="padding: 8px; border-bottom: 1px solid var(--border-light);">';
-          html += '<input type="text" id="secondaryFontSearch" placeholder="Search fonts..." oninput="filterFonts(\'secondary\', this.value)" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;" onclick="event.stopPropagation()">';
-          html += '</div>';
-          html += '<div id="secondaryFontList" style="max-height: 510px; overflow-y: auto;">';
-          
-          if (!window.availableFonts || window.availableFonts.length === 0) {
-            html += '<div style="padding: 12px; text-align: center; color: var(--text-secondary); font-size: 13px;">Loading fonts...</div>';
-          } else {
-            const uniqueFonts = [...new Set(window.availableFonts.map(f => f.family))].sort();
-            uniqueFonts.forEach(font => {
-              const isSelected = font === state.typography.secondaryFont;
-              const escapedFont = font.replace(/'/g, "\\'");
-              html += '<div class="font-option" data-font="' + escapedFont + '" onclick="selectFont(\'secondary\', \'' + escapedFont + '\')" style="padding: 10px 14px; cursor: pointer; font-size: 14px; line-height: 14px; transition: background 0.15s; ' + (isSelected ? 'background: var(--primary-light); color: var(--primary); font-weight: 600;' : '') + '" onmouseover="this.style.background=\'var(--bg-hover)\'" onmouseout="if(this.dataset.font !== \'' + escapedFont + '\') this.style.background=\'transparent\'">' + font + '</div>';
-            });
-          }
-          
-          html += '</div></div></div>';
           
           html += '</div></div>';
           
@@ -1981,97 +2119,6 @@
           }, '*');
         }
         
-        // Font dropdown functions
-        function toggleFontDropdown(type) {
-          const menu = document.getElementById(type + 'FontMenu');
-          const allMenus = document.querySelectorAll('.font-dropdown-menu');
-          
-          // Close all other dropdowns
-          allMenus.forEach(m => {
-            if (m.id !== type + 'FontMenu') {
-              m.style.display = 'none';
-            }
-          });
-          
-          // Toggle current dropdown
-          if (menu.style.display === 'none') {
-            menu.style.display = 'block';
-            // Focus search input
-            const searchInput = document.getElementById(type + 'FontSearch');
-            if (searchInput) {
-              setTimeout(() => searchInput.focus(), 100);
-            }
-          } else {
-            menu.style.display = 'none';
-          }
-        }
-        
-        function selectFont(type, fontName) {
-          if (type === 'primary') {
-            updatePrimaryFont(fontName);
-            document.getElementById('primaryFontSelected').textContent = fontName;
-          } else {
-            updateSecondaryFont(fontName);
-            document.getElementById('secondaryFontSelected').textContent = fontName;
-          }
-          
-          // Close dropdown
-          document.getElementById(type + 'FontMenu').style.display = 'none';
-        }
-        
-        function filterFonts(type, searchTerm) {
-          const listId = type + 'FontList';
-          const list = document.getElementById(listId);
-          const options = list.querySelectorAll('.font-option');
-          
-          searchTerm = searchTerm.toLowerCase();
-          
-          options.forEach(option => {
-            const fontName = option.dataset.font.toLowerCase();
-            if (fontName.includes(searchTerm)) {
-              option.style.display = 'block';
-            } else {
-              option.style.display = 'none';
-            }
-          });
-        }
-        
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-          const dropdowns = document.querySelectorAll('.font-dropdown');
-          let clickedInside = false;
-          
-          dropdowns.forEach(dropdown => {
-            if (dropdown.contains(event.target)) {
-              clickedInside = true;
-            }
-          });
-          
-          if (!clickedInside) {
-            document.querySelectorAll('.font-dropdown-menu').forEach(menu => {
-              menu.style.display = 'none';
-            });
-          }
-        });
-        
-        // Fetch available fonts from Figma
-        function fetchAvailableFonts() {
-          parent.postMessage({ 
-            pluginMessage: { 
-              type: 'get-available-fonts'
-            } 
-          }, '*');
-        }
-        
-        // Listen for font list from Figma
-        window.addEventListener('message', (event) => {
-          const msg = event.data.pluginMessage;
-          if (msg && msg.type === 'available-fonts') {
-            window.availableFonts = msg.fonts;
-            renderTypography();
-          }
-        });
-        
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', initializeTypography);
@@ -2081,7 +2128,6 @@
         
         function initializeTypography() {
           console.log('Initializing typography...');
-          fetchAvailableFonts();
           renderTypography();
           console.log('Typography initialized');
         }

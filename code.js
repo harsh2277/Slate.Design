@@ -714,16 +714,21 @@ figma.ui.onmessage = async (msg) => {
             // Create variables for each color category
             const colors = msg.colors;
 
-            // Primary colors
-            if (colors.primary) {
-                const primaryKeys = Object.keys(colors.primary);
-                const primaryValues = Object.values(colors.primary);
+            // Primary colors - dynamically create variables based on actual shades
+            if (colors.primary && colors.primary.light) {
+                const lightColors = colors.primary.light;
+                const darkColors = colors.primary.dark || lightColors; // Fallback to light if dark not provided
+                
+                const primaryKeys = Object.keys(lightColors);
+                const lightValues = Object.values(lightColors);
+                const darkValues = Object.values(darkColors);
+                
+                console.log(`Creating ${primaryKeys.length} primary color variables`);
                 
                 for (let i = 0; i < primaryKeys.length; i++) {
                     const name = primaryKeys[i];
-                    const lightValue = primaryValues[i];
-                    // Dark mode uses reversed order
-                    const darkValue = primaryValues[primaryKeys.length - 1 - i];
+                    const lightValue = lightValues[i];
+                    const darkValue = darkValues[i] || lightValue; // Use light value if dark not available
                     
                     const groupedName = `Primary/${name}`;
                     await createOrUpdateVariable(groupedName, lightValue, darkValue, collection, lightModeId, darkModeId);
@@ -731,16 +736,21 @@ figma.ui.onmessage = async (msg) => {
                 }
             }
 
-            // Secondary colors (if enabled)
-            if (colors.secondary) {
-                const secondaryKeys = Object.keys(colors.secondary);
-                const secondaryValues = Object.values(colors.secondary);
+            // Secondary colors (if enabled) - dynamically create variables based on actual shades
+            if (colors.secondary && colors.secondary.light) {
+                const lightColors = colors.secondary.light;
+                const darkColors = colors.secondary.dark || lightColors; // Fallback to light if dark not provided
+                
+                const secondaryKeys = Object.keys(lightColors);
+                const lightValues = Object.values(lightColors);
+                const darkValues = Object.values(darkColors);
+                
+                console.log(`Creating ${secondaryKeys.length} secondary color variables`);
                 
                 for (let i = 0; i < secondaryKeys.length; i++) {
                     const name = secondaryKeys[i];
-                    const lightValue = secondaryValues[i];
-                    // Dark mode uses reversed order
-                    const darkValue = secondaryValues[secondaryKeys.length - 1 - i];
+                    const lightValue = lightValues[i];
+                    const darkValue = darkValues[i] || lightValue; // Use light value if dark not available
                     
                     const groupedName = `Secondary/${name}`;
                     await createOrUpdateVariable(groupedName, lightValue, darkValue, collection, lightModeId, darkModeId);
@@ -748,9 +758,16 @@ figma.ui.onmessage = async (msg) => {
                 }
             }
 
-            // Status colors
+            // Status colors - dynamically create variables based on actual shades
             if (colors.success) {
-                for (const [name, value] of Object.entries(colors.success)) {
+                const successKeys = Object.keys(colors.success);
+                const successValues = Object.values(colors.success);
+                
+                console.log(`Creating ${successKeys.length} success color variables`);
+                
+                for (let i = 0; i < successKeys.length; i++) {
+                    const name = successKeys[i];
+                    const value = successValues[i];
                     const groupedName = `Success/${name}`;
                     await createOrUpdateVariable(groupedName, value, value, collection, lightModeId, darkModeId);
                     createdCount++;
@@ -758,7 +775,14 @@ figma.ui.onmessage = async (msg) => {
             }
 
             if (colors.error) {
-                for (const [name, value] of Object.entries(colors.error)) {
+                const errorKeys = Object.keys(colors.error);
+                const errorValues = Object.values(colors.error);
+                
+                console.log(`Creating ${errorKeys.length} error color variables`);
+                
+                for (let i = 0; i < errorKeys.length; i++) {
+                    const name = errorKeys[i];
+                    const value = errorValues[i];
                     const groupedName = `Error/${name}`;
                     await createOrUpdateVariable(groupedName, value, value, collection, lightModeId, darkModeId);
                     createdCount++;
@@ -766,32 +790,51 @@ figma.ui.onmessage = async (msg) => {
             }
 
             if (colors.warning) {
-                for (const [name, value] of Object.entries(colors.warning)) {
+                const warningKeys = Object.keys(colors.warning);
+                const warningValues = Object.values(colors.warning);
+                
+                console.log(`Creating ${warningKeys.length} warning color variables`);
+                
+                for (let i = 0; i < warningKeys.length; i++) {
+                    const name = warningKeys[i];
+                    const value = warningValues[i];
                     const groupedName = `Warning/${name}`;
                     await createOrUpdateVariable(groupedName, value, value, collection, lightModeId, darkModeId);
                     createdCount++;
                 }
             }
 
-            // Info colors
+            // Info colors - dynamically create variables based on actual shades
             if (colors.info) {
-                for (const [name, value] of Object.entries(colors.info)) {
+                const infoKeys = Object.keys(colors.info);
+                const infoValues = Object.values(colors.info);
+                
+                console.log(`Creating ${infoKeys.length} info color variables`);
+                
+                for (let i = 0; i < infoKeys.length; i++) {
+                    const name = infoKeys[i];
+                    const value = infoValues[i];
                     const groupedName = `Info/${name}`;
                     await createOrUpdateVariable(groupedName, value, value, collection, lightModeId, darkModeId);
                     createdCount++;
                 }
             }
 
-            // Neutral colors
-            if (colors.neutral) {
-                const neutralKeys = Object.keys(colors.neutral);
-                const neutralValues = Object.values(colors.neutral);
+            // Neutral colors - dynamically create variables based on actual shades
+            if (colors.neutral && colors.neutral.light) {
+                const lightColors = colors.neutral.light;
+                const darkColors = colors.neutral.dark || lightColors; // Fallback to light if dark not provided
+                
+                const neutralKeys = Object.keys(lightColors);
+                const lightValues = Object.values(lightColors);
+                const darkValues = Object.values(darkColors);
+                
+                console.log(`Creating ${neutralKeys.length} neutral color variables`);
                 
                 for (let i = 0; i < neutralKeys.length; i++) {
                     const name = neutralKeys[i];
-                    const lightValue = neutralValues[i];
-                    // Dark mode uses reversed order
-                    const darkValue = neutralValues[neutralKeys.length - 1 - i];
+                    const lightValue = lightValues[i];
+                    const darkValue = darkValues[i] || lightValue; // Use light value if dark not available
                     
                     const groupedName = `Neutral/${name}`;
                     await createOrUpdateVariable(groupedName, lightValue, darkValue, collection, lightModeId, darkModeId);
@@ -1159,13 +1202,13 @@ figma.ui.onmessage = async (msg) => {
                 return currentY + 162;
             }
 
-            // Create sections for each color group
-            if (colors.primary) {
-                yOffset = createSection("Primary", colors.primary, yOffset);
+            // Create sections for each color group (use light mode colors for display)
+            if (colors.primary && colors.primary.light) {
+                yOffset = createSection("Primary", colors.primary.light, yOffset);
             }
 
-            if (colors.secondary) {
-                yOffset = createSection("Secondary", colors.secondary, yOffset);
+            if (colors.secondary && colors.secondary.light) {
+                yOffset = createSection("Secondary", colors.secondary.light, yOffset);
             }
 
             if (colors.success) {
@@ -1184,8 +1227,8 @@ figma.ui.onmessage = async (msg) => {
                 yOffset = createSection("Info", colors.info, yOffset);
             }
 
-            if (colors.neutral) {
-                yOffset = createSection("Neutral", colors.neutral, yOffset);
+            if (colors.neutral && colors.neutral.light) {
+                yOffset = createSection("Neutral", colors.neutral.light, yOffset);
             }
 
             // Add spacing section if spacing data exists

@@ -1565,15 +1565,24 @@
         document.getElementById('create-variable-btn').addEventListener('click', () => {
             console.log('Create Variable button clicked');
 
-            // Collect all color data
+            // Collect all color data (both light and dark modes)
             const colorData = {
-                primary: collectColorShades('primary'),
-                secondary: document.getElementById('secondaryToggle').checked ? collectColorShades('secondary') : null,
+                primary: {
+                    light: collectColorShades('primary'),
+                    dark: collectColorShades('primaryDark', 'primaryShadesDark')
+                },
+                secondary: document.getElementById('secondaryToggle').checked ? {
+                    light: collectColorShades('secondary'),
+                    dark: collectColorShades('secondaryDark', 'secondaryShadesDark')
+                } : null,
                 success: collectStatusColors('success'),
                 error: collectStatusColors('error'),
                 warning: collectStatusColors('warning'),
                 info: collectStatusColors('info'),
-                neutral: collectColorShades('neutral')
+                neutral: {
+                    light: collectColorShades('neutral'),
+                    dark: collectColorShades('neutralDark', 'neutralShadesDark')
+                }
             };
 
             // Collect spacing data
@@ -1610,12 +1619,14 @@
         });
 
         // Helper function to collect color shades from the UI
-        function collectColorShades(prefix) {
-            console.log(`Collecting colors for: ${prefix}`);
-            const container = document.getElementById(`${prefix}Shades`);
+        function collectColorShades(prefix, containerId) {
+            // If containerId is provided, use it; otherwise construct from prefix
+            const containerIdToUse = containerId || `${prefix}Shades`;
+            console.log(`Collecting colors for: ${prefix} from container: ${containerIdToUse}`);
+            const container = document.getElementById(containerIdToUse);
 
             if (!container) {
-                console.warn(`Container not found for: ${prefix}Shades`);
+                console.warn(`Container not found for: ${containerIdToUse}`);
                 return null;
             }
 

@@ -10,22 +10,27 @@ const path = require('path');
 
 // Path to the Vuesax icons folder
 const VUESAX_BOLD_PATH = path.join(__dirname, 'Icons', 'Vuesax Icon', 'bold');
+const VUESAX_OUTLINE_PATH = path.join(__dirname, 'Icons', 'Vuesax Icon', 'outline');
 const OUTPUT_FILE = path.join(__dirname, 'Icon.js');
 
-console.log('🔍 Reading Vuesax icons from:', VUESAX_BOLD_PATH);
+console.log('🔍 Reading Vuesax icons...');
 
-// Read all SVG files from the bold folder
-function readVuesaxIcons() {
+// Read all SVG files from a folder
+function readIconsFromFolder(folderPath, categoryName) {
     const icons = [];
     
     try {
-        const files = fs.readdirSync(VUESAX_BOLD_PATH);
+        if (!fs.existsSync(folderPath)) {
+            console.warn(`⚠️  Folder not found: ${folderPath}`);
+            return icons;
+        }
+        
+        const files = fs.readdirSync(folderPath);
         
         for (const file of files) {
             if (file.endsWith('.svg')) {
-                const filePath = path.join(VUESAX_BOLD_PATH, file);
+                const filePath = path.join(folderPath, file);
                 const content = fs.readFileSync(filePath, 'utf-8');
-                const name = file.replace('.svg', '');
                 
                 icons.push({
                     name: file,
@@ -34,30 +39,39 @@ function readVuesaxIcons() {
             }
         }
         
-        console.log(`✅ Found ${icons.length} Vuesax icons`);
+        console.log(`✅ Found ${icons.length} ${categoryName} icons`);
         return icons;
     } catch (error) {
-        console.error('❌ Error reading Vuesax icons:', error.message);
+        console.error(`❌ Error reading ${categoryName} icons:`, error.message);
         return [];
     }
 }
 
 // Generate the Icon.js file
 function generateIconData() {
-    const vuesaxIcons = readVuesaxIcons();
+    const boldIcons = readIconsFromFolder(VUESAX_BOLD_PATH, 'Bold');
+    const outlineIcons = readIconsFromFolder(VUESAX_OUTLINE_PATH, 'Outline');
     
-    if (vuesaxIcons.length === 0) {
-        console.error('❌ No icons found. Make sure the Icons/Vuesax Icon/bold/ folder exists.');
+    if (boldIcons.length === 0 && outlineIcons.length === 0) {
+        console.error('❌ No icons found. Make sure the Icons/Vuesax Icon/ folder exists with bold and outline subfolders.');
         process.exit(1);
     }
     
     // Create the data structure
+    const categories = {};
+    
+    if (boldIcons.length > 0) {
+        categories["Bold"] = boldIcons;
+    }
+    
+    if (outlineIcons.length > 0) {
+        categories["Outline"] = outlineIcons;
+    }
+    
     const iconData = {
         vuesax: {
             name: "Vuesax",
-            categories: {
-                "Bold": vuesaxIcons
-            }
+            categories: categories
         }
     };
     
@@ -75,7 +89,11 @@ if (typeof module !== 'undefined' && module.exports) {
     
     // Write to Icon.js
     fs.writeFileSync(OUTPUT_FILE, fileContent, 'utf-8');
-    console.log(`✅ Generated ${OUTPUT_FILE} with ${vuesaxIcons.length} icons`);
+    
+    const totalIcons = boldIcons.length + outlineIcons.length;
+    console.log(`\n✅ Generated ${OUTPUT_FILE} with ${totalIcons} total icons`);
+    console.log(`   - Bold: ${boldIcons.length} icons`);
+    console.log(`   - Outline: ${outlineIcons.length} icons`);
     console.log('📦 Icon.js is ready to use in your Figma plugin!');
 }
 

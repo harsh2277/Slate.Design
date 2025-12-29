@@ -36,24 +36,82 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
         };
     }
 
-    // Helper to create icon placeholder
-    function createIconPlaceholder(color, size = 16) {
-        const icon = figma.createFrame();
-        icon.resize(size, size);
-        icon.fills = [];
-        icon.name = "Icon";
+    // Helper to create icon component from SVG
+    function createIconComponent(svgString, name, color, size = 16) {
+        const iconComponent = figma.createComponent();
+        iconComponent.name = name;
+        iconComponent.resize(size, size);
+        iconComponent.fills = [];
         
-        // Create a simple icon shape (circle)
-        const circle = figma.createEllipse();
-        circle.resize(size, size);
-        circle.fills = [{ type: 'SOLID', color: color }];
-        icon.appendChild(circle);
+        const svgNode = figma.createNodeFromSvg(svgString);
         
-        return icon;
+        // Resize to fit
+        const scaleX = size / svgNode.width;
+        const scaleY = size / svgNode.height;
+        const scale = Math.min(scaleX, scaleY);
+        svgNode.resize(svgNode.width * scale, svgNode.height * scale);
+        
+        // Center the SVG
+        svgNode.x = (size - svgNode.width) / 2;
+        svgNode.y = (size - svgNode.height) / 2;
+        
+        // Apply color to all vector paths (both fills and strokes for line icons)
+        function applyColorToNode(node) {
+            if (node.type === 'VECTOR') {
+                // Apply fill color if the node has fills
+                if (node.fills && node.fills !== figma.mixed && node.fills.length > 0) {
+                    node.fills = [{ type: 'SOLID', color: color }];
+                }
+                // Apply stroke color if the node has strokes (for line icons)
+                if (node.strokes && node.strokes !== figma.mixed && node.strokes.length > 0) {
+                    node.strokes = [{ type: 'SOLID', color: color }];
+                }
+            }
+            if ('children' in node) {
+                node.children.forEach(child => applyColorToNode(child));
+            }
+        }
+        applyColorToNode(svgNode);
+        
+        // Flatten the SVG node - move all vector children directly to component
+        if (svgNode.type === 'FRAME' || svgNode.type === 'GROUP') {
+            const children = [...svgNode.children];
+            children.forEach(child => {
+                // Adjust child position relative to component
+                child.x += svgNode.x;
+                child.y += svgNode.y;
+                iconComponent.appendChild(child);
+            });
+            svgNode.remove();
+        } else {
+            iconComponent.appendChild(svgNode);
+        }
+        
+        return iconComponent;
     }
-
+    
+    // Vuesax arrow icons SVG strings (Line/Outline style)
+    const arrowLeftSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M9.57 5.92993L3.5 11.9999L9.57 18.0699" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M20.5 12H3.67" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+    
+    const arrowRightSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M14.43 5.92993L20.5 11.9999L14.43 18.0699" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M3.5 12H20.33" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+    
+    // Create icon components (will be created once and reused)
     const baseRgb = hexToRgb(bgColor);
     const textRgb = hexToRgb(textColor);
+    
+    // Create icon components (will be created once and reused)
+    const leftIconComponent = createIconComponent(arrowLeftSVG, "Icon/arrow-left", textRgb, 16);
+    const rightIconComponent = createIconComponent(arrowRightSVG, "Icon/arrow-right", textRgb, 16);
+    
+    // Add icon components to page (they need to be on the page to create instances)
+    figma.currentPage.appendChild(leftIconComponent);
+    figma.currentPage.appendChild(rightIconComponent);
     
     // Secondary color (purple)
     const secondaryColorRgb = hexToRgb('#8b5cf6');
@@ -153,9 +211,28 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
                     button.itemSpacing = 8;
                     
                     // Add left icon (always add, visibility will be controlled by boolean property)
-                    const leftIcon = createIconPlaceholder(state.textColor, size.iconSize);
+                    const leftIcon = leftIconComponent.createInstance();
                     leftIcon.name = "LeftIcon";
+                    leftIcon.resize(size.iconSize, size.iconSize);
                     leftIcon.visible = false; // Default to hidden
+                    
+                    // Apply the correct color to the icon based on button text color
+                    function applyColorToIconInstance(iconInstance, color) {
+                        iconInstance.children.forEach(child => {
+                            if (child.type === 'VECTOR') {
+                                // Apply fill color if exists
+                                if (child.fills && child.fills !== figma.mixed && child.fills.length > 0) {
+                                    child.fills = [{ type: 'SOLID', color: color }];
+                                }
+                                // Apply stroke color if exists (for line icons)
+                                if (child.strokes && child.strokes !== figma.mixed && child.strokes.length > 0) {
+                                    child.strokes = [{ type: 'SOLID', color: color }];
+                                }
+                            }
+                        });
+                    }
+                    
+                    applyColorToIconInstance(leftIcon, state.textColor);
                     button.appendChild(leftIcon);
                     
                     // Add text
@@ -173,9 +250,12 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
                     button.appendChild(text);
                     
                     // Add right icon (always add, visibility will be controlled by boolean property)
-                    const rightIcon = createIconPlaceholder(state.textColor, size.iconSize);
+                    const rightIcon = rightIconComponent.createInstance();
                     rightIcon.name = "RightIcon";
+                    rightIcon.resize(size.iconSize, size.iconSize);
                     rightIcon.visible = false; // Default to hidden
+                    
+                    applyColorToIconInstance(rightIcon, state.textColor);
                     button.appendChild(rightIcon);
                     
                     // Add to current page and components array
@@ -202,6 +282,12 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
     // Remove background color
     componentSet.fills = [];
     
+    // Position icon components near the button component set
+    leftIconComponent.x = componentSet.x + componentSet.width + 100;
+    leftIconComponent.y = componentSet.y;
+    rightIconComponent.x = leftIconComponent.x + leftIconComponent.width + 20;
+    rightIconComponent.y = componentSet.y;
+    
     // Add boolean properties for LeftIcon and RightIcon and get their keys
     const leftIconPropKey = componentSet.addComponentProperty("LeftIcon", "BOOLEAN", false);
     const rightIconPropKey = componentSet.addComponentProperty("RightIcon", "BOOLEAN", false);
@@ -220,11 +306,11 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
         }
     });
     
-    // Center in viewport
-    figma.viewport.scrollAndZoomIntoView([componentSet]);
+    // Center in viewport (include icon components)
+    figma.viewport.scrollAndZoomIntoView([componentSet, leftIconComponent, rightIconComponent]);
     
     const totalVariants = sizes.length * variants.length * variants[0].states.length * iconConfigs.length;
-    figma.notify(`✅ Button component set created with 3 sizes, 4 variants, 4 states, and icon options (Left/Right)! Total: ${totalVariants} components`);
+    figma.notify(`✅ Button component set created with 3 sizes, 4 variants, 4 states, and swappable icon components! Total: ${totalVariants} components`);
 }
 
 // Function to create input component set
@@ -252,27 +338,102 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
         };
     }
 
-    // Helper to create icon placeholder
-    function createIconPlaceholder(color, size = 16) {
-        const icon = figma.createFrame();
-        icon.resize(size, size);
-        icon.fills = [];
-        icon.name = "Icon";
-        
-        // Create a simple icon shape (circle)
-        const circle = figma.createEllipse();
-        circle.resize(size, size);
-        circle.fills = [{ type: 'SOLID', color: color }];
-        icon.appendChild(circle);
-        
-        return icon;
-    }
-
+    // Convert colors first before using them
     const borderRgb = hexToRgb(borderColor);
     const textRgb = hexToRgb(textColor);
-    const primaryRgb = hexToRgb(primaryColor); // Use primary color from UI
+    const primaryRgb = hexToRgb(primaryColor);
     const successRgb = hexToRgb('#10b981');
     const errorRgb = hexToRgb('#ef4444');
+
+    // Helper to create icon component from SVG (line style)
+    function createIconComponent(svgString, name, color, size = 16) {
+        const iconComponent = figma.createComponent();
+        iconComponent.name = name;
+        iconComponent.resize(size, size);
+        iconComponent.fills = [];
+        
+        const svgNode = figma.createNodeFromSvg(svgString);
+        
+        // Resize to fit
+        const scaleX = size / svgNode.width;
+        const scaleY = size / svgNode.height;
+        const scale = Math.min(scaleX, scaleY);
+        svgNode.resize(svgNode.width * scale, svgNode.height * scale);
+        
+        // Center the SVG
+        svgNode.x = (size - svgNode.width) / 2;
+        svgNode.y = (size - svgNode.height) / 2;
+        
+        // Apply color to all vector paths (both fills and strokes for line icons)
+        function applyColorToNode(node) {
+            if (node.type === 'VECTOR') {
+                // Apply fill color if the node has fills
+                if (node.fills && node.fills !== figma.mixed && node.fills.length > 0) {
+                    node.fills = [{ type: 'SOLID', color: color }];
+                }
+                // Apply stroke color if the node has strokes (for line icons)
+                if (node.strokes && node.strokes !== figma.mixed && node.strokes.length > 0) {
+                    node.strokes = [{ type: 'SOLID', color: color }];
+                }
+            }
+            if ('children' in node) {
+                node.children.forEach(child => applyColorToNode(child));
+            }
+        }
+        applyColorToNode(svgNode);
+        
+        // Flatten the SVG node - move all vector children directly to component
+        if (svgNode.type === 'FRAME' || svgNode.type === 'GROUP') {
+            const children = [...svgNode.children];
+            children.forEach(child => {
+                // Adjust child position relative to component
+                child.x += svgNode.x;
+                child.y += svgNode.y;
+                iconComponent.appendChild(child);
+            });
+            svgNode.remove();
+        } else {
+            iconComponent.appendChild(svgNode);
+        }
+        
+        return iconComponent;
+    }
+    
+    // Line-style icons for input fields
+    const searchIconSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M11.5 21C16.7467 21 21 16.7467 21 11.5C21 6.25329 16.7467 2 11.5 2C6.25329 2 2 6.25329 2 11.5C2 16.7467 6.25329 21 11.5 21Z" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 22L20 20" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
+    const closeIconSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9.16998 14.83L14.83 9.17004" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14.83 14.83L9.16998 9.17004" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+    
+    // Create icon components
+    const searchIconComponent = createIconComponent(searchIconSVG, "Icon/search", textRgb, 16);
+    const closeIconComponent = createIconComponent(closeIconSVG, "Icon/close", textRgb, 16);
+    
+    // Add icon components to page
+    figma.currentPage.appendChild(searchIconComponent);
+    figma.currentPage.appendChild(closeIconComponent);
+    
+    // Helper function to apply color to icon instances
+    function applyColorToIconInstance(iconInstance, color) {
+        iconInstance.children.forEach(child => {
+            if (child.type === 'VECTOR') {
+                // Apply fill color if exists
+                if (child.fills && child.fills !== figma.mixed && child.fills.length > 0) {
+                    child.fills = [{ type: 'SOLID', color: color }];
+                }
+                // Apply stroke color if exists (for line icons)
+                if (child.strokes && child.strokes !== figma.mixed && child.strokes.length > 0) {
+                    child.strokes = [{ type: 'SOLID', color: color }];
+                }
+            }
+        });
+    }
     
     const spacing = 20;
     
@@ -487,9 +648,12 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
                 
                 // Add left icon only if type supports icons
                 if (type.showIcons) {
-                    const leftIcon = createIconPlaceholder(state.textColor, 16);
+                    const leftIcon = searchIconComponent.createInstance();
                     leftIcon.name = "LeftIcon";
+                    leftIcon.resize(16, 16);
                     leftIcon.visible = false; // Default to hidden
+                    
+                    applyColorToIconInstance(leftIcon, state.textColor);
                     input.appendChild(leftIcon);
                 }
                 
@@ -513,9 +677,12 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
                 
                 // Add right icon only if type supports icons
                 if (type.showIcons) {
-                    const rightIcon = createIconPlaceholder(state.textColor, 16);
+                    const rightIcon = closeIconComponent.createInstance();
                     rightIcon.name = "RightIcon";
+                    rightIcon.resize(16, 16);
                     rightIcon.visible = false; // Default to hidden
+                    
+                    applyColorToIconInstance(rightIcon, state.textColor);
                     input.appendChild(rightIcon);
                 }
                 
@@ -591,8 +758,14 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
         }
     });
     
+    // Position icon components near the input component set
+    searchIconComponent.x = componentSet.x + componentSet.width + 100;
+    searchIconComponent.y = componentSet.y;
+    closeIconComponent.x = searchIconComponent.x + searchIconComponent.width + 20;
+    closeIconComponent.y = componentSet.y;
+    
     // Center in viewport
-    figma.viewport.scrollAndZoomIntoView([componentSet]);
+    figma.viewport.scrollAndZoomIntoView([componentSet, searchIconComponent, closeIconComponent]);
     
     const totalVariants = types.length * states.length;
     figma.notify(`✅ Input component set created with ${types.length} types (Text, Textarea, OTP) × ${states.length} states = ${totalVariants} variants! OTP supports 4 or 6 digits via boolean property.`);
@@ -1788,10 +1961,12 @@ figma.ui.onmessage = async (msg) => {
             // Process each icon
             for (let i = 0; i < icons.length; i++) {
                 const icon = icons[i];
-                const svg = svgData[icon.name];
+                // Get SVG data using style prefix
+                const svgKey = `${icon.style}-${icon.name}`;
+                const svg = svgData[svgKey];
                 
                 if (!svg) {
-                    console.warn(`No SVG data for icon: ${icon.name}`);
+                    console.warn(`No SVG data for icon: ${svgKey}`);
                     continue;
                 }
                 

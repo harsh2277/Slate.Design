@@ -7,6 +7,9 @@
   "documentAccess": "dynamic-page",
   "editorType": ["figma"],
   "networkAccess": {
-    "allowedDomains": ["none"]
+    "allowedDomains": [
+      "https://raw.githubusercontent.com",
+      "https://api.github.com"
+    ]
   }
 }

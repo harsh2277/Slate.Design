@@ -877,6 +877,16 @@
                     </svg>
                     Typography
                 </div>
+                <div class="nav-tab" data-tab="icons" onclick="switchTab(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                        <line x1="9" y1="9" x2="9.01" y2="9" />
+                        <line x1="15" y1="9" x2="15.01" y2="9" />
+                    </svg>
+                    Icons
+                </div>
                 <div class="nav-tab" data-tab="export" onclick="switchTab(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1469,6 +1479,11 @@
                         <div id="typography-content"></div>
                     </div>
 
+                    <!-- Icons Tab -->
+                    <div class="tab-content" id="icons">
+                        <div id="iconLibraryContent"></div>
+                    </div>
+
                     <!-- Export Tab -->
                     <div class="tab-content" id="export">
                         <div class="empty-state">
@@ -1754,6 +1769,13 @@
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             tab.classList.add('active');
             document.getElementById(tab.dataset.tab).classList.add('active');
+            
+            // Initialize icon library when switching to icons tab
+            if (tab.dataset.tab === 'icons') {
+                if (typeof initIconLibrary === 'function') {
+                    initIconLibrary();
+                }
+            }
         }
 
         function resetDefaults() {
@@ -2351,6 +2373,1013 @@
           renderTypography();
           console.log('Typography initialized');
         }
+    </script>
+
+    <script>
+        // Icon Library UI Script
+        const ICON_LIBRARIES = {
+          'box-icons': {
+            name: 'Box Icons',
+            categories: {
+              'logos': {
+                name: 'Logos',
+                baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/logos'
+              },
+              'regular': {
+                name: 'Regular',
+                baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/regular'
+              },
+              'solid': {
+                name: 'Solid',
+                baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/solid'
+              }
+            }
+          },
+          'vuesax-icons': {
+            name: 'Vuesax Icons',
+            categories: {
+              'twotone': {
+                name: 'Twotone',
+                baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/twotone'
+              },
+              'outline': {
+                name: 'Outline',
+                baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/outline'
+              },
+              'linear': {
+                name: 'Linear',
+                baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/linear'
+              },
+              'bulk': {
+                name: 'Bulk',
+                baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bulk'
+              },
+              'broken': {
+                name: 'Broken',
+                baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/broken'
+              },
+              'bold': {
+                name: 'Bold',
+                baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bold'
+              }
+            }
+          }
+        };
+
+        let selectedLibrary = null;
+        let selectedCategory = null;
+        let iconCache = {};
+
+        function initIconLibrary() {
+          renderIconLibraryUI();
+        }
+
+        function renderIconLibraryUI() {
+          const container = document.getElementById('iconLibraryContent');
+          if (!container) return;
+          
+          container.innerHTML = `
+            <div style="max-width: 900px; margin: 0 auto;">
+              <div style="margin-bottom: 32px;">
+                <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+                  Icon Library
+                </h2>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 24px;">
+                  Select an icon library and optionally choose specific categories
+                </p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                  <div>
+                    <label style="display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px;">
+                      Select Icon Library
+                    </label>
+                    <select id="iconLibrarySelect" style="
+                      width: 100%;
+                      padding: 12px 16px;
+                      font-size: 14px;
+                      border: 2px solid var(--border);
+                      border-radius: var(--radius-md);
+                      background: var(--bg-card);
+                      color: var(--text-primary);
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+                      font-weight: 500;
+                    " onchange="onLibraryChange(this.value)">
+                      <option value="">Choose a library...</option>
+                      ${Object.entries(ICON_LIBRARIES).map(([id, library]) => `
+                        <option value="${id}">${library.name}</option>
+                      `).join('')}
+                    </select>
+                  </div>
+                  
+                  <div id="categoryDropdownContainer" style="display: none;">
+                    <label style="display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px;">
+                      Select Category (Optional)
+                    </label>
+                    <select id="iconCategorySelect" style="
+                      width: 100%;
+                      padding: 12px 16px;
+                      font-size: 14px;
+                      border: 2px solid var(--border);
+                      border-radius: var(--radius-md);
+                      background: var(--bg-card);
+                      color: var(--text-primary);
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+                      font-weight: 500;
+                    " onchange="onCategoryChange(this.value)">
+                      <option value="all">All Categories</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <button 
+                  id="generateAllBtn" 
+                  class="btn btn-primary" 
+                  onclick="generateIconsFromSelection()"
+                  disabled
+                  style="padding: 12px 24px; width: 100%;">
+                  📦 Generate Icons
+                </button>
+              </div>
+              
+              <div id="libraryInfo" style="display: none;">
+                <div style="
+                  background: var(--bg-card);
+                  border: 2px solid var(--border);
+                  border-radius: var(--radius-lg);
+                  padding: 24px;
+                  margin-bottom: 24px;
+                ">
+                  <h3 id="libraryName" style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);"></h3>
+                  <div id="categoryList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;"></div>
+                  <p id="libraryDescription" style="color: var(--text-secondary); font-size: 13px; line-height: 1.6;"></p>
+                </div>
+                
+                <div style="
+                  background: linear-gradient(135deg, var(--primary-light), var(--bg-accent));
+                  border: 1px solid var(--primary);
+                  border-radius: var(--radius-md);
+                  padding: 16px 20px;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                ">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary); flex-shrink: 0;">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 16v-4"/>
+                    <path d="M12 8h.01"/>
+                  </svg>
+                  <p id="infoMessage" style="color: var(--text-primary); font-size: 13px; line-height: 1.5; margin: 0;">
+                    Select "All Categories" to generate all icons, or choose a specific category to generate only those icons.
+                  </p>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        function onLibraryChange(libraryId) {
+          selectedLibrary = libraryId;
+          selectedCategory = null;
+          
+          const generateBtn = document.getElementById('generateAllBtn');
+          const libraryInfo = document.getElementById('libraryInfo');
+          const categoryDropdown = document.getElementById('categoryDropdownContainer');
+          const categorySelect = document.getElementById('iconCategorySelect');
+          
+          if (!libraryId) {
+            generateBtn.disabled = true;
+            libraryInfo.style.display = 'none';
+            categoryDropdown.style.display = 'none';
+            return;
+          }
+          
+          // Show category dropdown
+          categoryDropdown.style.display = 'block';
+          
+          // Populate category dropdown
+          const library = ICON_LIBRARIES[libraryId];
+          categorySelect.innerHTML = '<option value="all">All Categories</option>';
+          Object.entries(library.categories).forEach(([id, category]) => {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = category.name;
+            categorySelect.appendChild(option);
+          });
+          
+          generateBtn.disabled = false;
+          libraryInfo.style.display = 'block';
+          
+          document.getElementById('libraryName').textContent = library.name;
+          
+          const categoryList = document.getElementById('categoryList');
+          categoryList.innerHTML = Object.values(library.categories).map(cat => 
+            `<span class="badge badge-info">${cat.name}</span>`
+          ).join('');
+          
+          const categoryCount = Object.keys(library.categories).length;
+          document.getElementById('libraryDescription').textContent = 
+            `This library contains ${categoryCount} categories. You can generate all icons or select a specific category.`;
+        }
+        
+        function onCategoryChange(categoryId) {
+          selectedCategory = categoryId === 'all' ? null : categoryId;
+          
+          if (!selectedLibrary) return;
+          
+          const library = ICON_LIBRARIES[selectedLibrary];
+          const infoMessage = document.getElementById('infoMessage');
+          
+          if (categoryId === 'all') {
+            infoMessage.textContent = `This will generate all icons from all ${Object.keys(library.categories).length} categories. Each category will be created as a separate Component Set.`;
+          } else {
+            const category = library.categories[categoryId];
+            infoMessage.textContent = `This will generate all icons from the "${category.name}" category only.`;
+          }
+        }
+
+        function selectLibrary(libraryId) {
+          selectedLibrary = libraryId;
+          renderCategorySelection();
+        }
+
+        function renderCategorySelection() {
+          const container = document.getElementById('iconLibraryContent');
+          if (!container || !selectedLibrary) return;
+          
+          const library = ICON_LIBRARIES[selectedLibrary];
+          
+          container.innerHTML = `
+            <div style="max-width: 1000px; margin: 0 auto;">
+              <div style="margin-bottom: 24px;">
+                <button class="btn btn-secondary btn-sm" onclick="renderLibrarySelection()" style="margin-bottom: 16px;">
+                  ← Back to Libraries
+                </button>
+                <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+                  ${library.name}
+                </h2>
+                <p style="color: var(--text-secondary); font-size: 14px;">
+                  Select a category to browse icons
+                </p>
+              </div>
+              
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                ${Object.entries(library.categories).map(([id, category]) => `
+                  <div class="category-card" onclick="selectCategory('${id}')" style="
+                    background: var(--bg-card);
+                    border: 2px solid var(--border);
+                    border-radius: var(--radius-md);
+                    padding: 20px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    text-align: center;
+                  ">
+                    <div style="
+                      width: 48px;
+                      height: 48px;
+                      background: var(--primary-light);
+                      border-radius: var(--radius-md);
+                      margin: 0 auto 12px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 24px;
+                    ">
+                      📦
+                    </div>
+                    <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary);">
+                      ${category.name}
+                    </h3>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+          
+          const style = document.createElement('style');
+          style.textContent = `
+            .category-card:hover {
+              border-color: var(--primary) !important;
+              transform: translateY(-2px);
+              box-shadow: var(--shadow-md);
+            }
+          `;
+          document.head.appendChild(style);
+        }
+
+        async function selectCategory(categoryId) {
+          selectedCategory = categoryId;
+          await fetchAndRenderIcons();
+        }
+
+        async function fetchIconList(baseUrl) {
+          const cacheKey = baseUrl;
+          if (iconCache[cacheKey]) {
+            return iconCache[cacheKey];
+          }
+          
+          try {
+            // Method 1: Try GitHub API first
+            const urlParts = baseUrl.replace('https://raw.githubusercontent.com/', '').split('/');
+            const owner = urlParts[0];
+            const repo = urlParts[1];
+            const ref = urlParts[2];
+            const path = urlParts.slice(3).join('/');
+            
+            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${ref}`;
+            console.log('Fetching from API:', apiUrl);
+            console.log('Base URL:', baseUrl);
+            console.log('Parsed:', { owner, repo, ref, path });
+            
+            try {
+              const response = await fetch(apiUrl);
+              console.log('API Response status:', response.status);
+              
+              if (response.ok) {
+                const data = await response.json();
+                console.log('API Response data:', data);
+                
+                // Check if it's an array (directory listing)
+                if (Array.isArray(data)) {
+                  const svgFiles = data
+                    .filter(file => file.name && file.name.endsWith('.svg'))
+                    .map(file => file.name);
+                  
+                  if (svgFiles.length > 0) {
+                    console.log(`Found ${svgFiles.length} SVG files via API`);
+                    iconCache[cacheKey] = svgFiles;
+                    return svgFiles;
+                  }
+                } else {
+                  console.warn('API returned non-array data:', data);
+                }
+              } else {
+                const errorText = await response.text();
+                console.warn(`API returned ${response.status}:`, errorText);
+              }
+            } catch (apiError) {
+              console.warn('API method failed:', apiError);
+            }
+            
+            // Method 2: Fallback - Use a predefined list for known repos
+            console.log('Trying fallback method...');
+            const knownIcons = getKnownIconList(owner, repo, path);
+            if (knownIcons.length > 0) {
+              console.log(`Using known icon list: ${knownIcons.length} icons`);
+              iconCache[cacheKey] = knownIcons;
+              return knownIcons;
+            }
+            
+            console.error('No icons found via API or fallback');
+            return [];
+          } catch (error) {
+            console.error('Error fetching icon list:', error);
+            return [];
+          }
+        }
+        
+        function getKnownIconList(owner, repo, path) {
+          // Fallback icon lists for known repositories
+          console.log('getKnownIconList called with:', { owner, repo, path });
+          
+          // Generate icon names
+          const boxIconNames = generateBoxIconNames;
+          const vuesaxIconNames = generateVuesaxIconNames;
+          
+          const knownLists = {
+            // Box Icons
+            'harsh2277/Box-Icon/svg/logos': [
+              'bxl-500px.svg', 'bxl-adobe.svg', 'bxl-airbnb.svg', 'bxl-algolia.svg', 
+              'bxl-amazon.svg', 'bxl-android.svg', 'bxl-angular.svg', 'bxl-apple.svg',
+              'bxl-audible.svg', 'bxl-baidu.svg', 'bxl-behance.svg', 'bxl-bing.svg',
+              'bxl-bitcoin.svg', 'bxl-blogger.svg', 'bxl-bootstrap.svg', 'bxl-chrome.svg',
+              'bxl-codepen.svg', 'bxl-creative-commons.svg', 'bxl-css3.svg', 'bxl-dailymotion.svg',
+              'bxl-deviantart.svg', 'bxl-digg.svg', 'bxl-digitalocean.svg', 'bxl-discord.svg',
+              'bxl-discourse.svg', 'bxl-django.svg', 'bxl-docker.svg', 'bxl-dribbble.svg',
+              'bxl-dropbox.svg', 'bxl-drupal.svg', 'bxl-ebay.svg', 'bxl-edge.svg',
+              'bxl-etsy.svg', 'bxl-facebook.svg', 'bxl-figma.svg', 'bxl-firebase.svg',
+              'bxl-firefox.svg', 'bxl-flickr.svg', 'bxl-flutter.svg', 'bxl-foursquare.svg',
+              'bxl-git.svg', 'bxl-github.svg', 'bxl-gitlab.svg', 'bxl-google.svg',
+              'bxl-html5.svg', 'bxl-instagram.svg', 'bxl-javascript.svg', 'bxl-jquery.svg',
+              'bxl-linkedin.svg', 'bxl-medium.svg', 'bxl-messenger.svg', 'bxl-microsoft.svg',
+              'bxl-nodejs.svg', 'bxl-npm.svg', 'bxl-opera.svg', 'bxl-paypal.svg',
+              'bxl-pinterest.svg', 'bxl-python.svg', 'bxl-react.svg', 'bxl-reddit.svg',
+              'bxl-sass.svg', 'bxl-shopify.svg', 'bxl-skype.svg', 'bxl-slack.svg',
+              'bxl-snapchat.svg', 'bxl-spotify.svg', 'bxl-stackoverflow.svg', 'bxl-stripe.svg',
+              'bxl-telegram.svg', 'bxl-tiktok.svg', 'bxl-trello.svg', 'bxl-tumblr.svg',
+              'bxl-twitch.svg', 'bxl-twitter.svg', 'bxl-vimeo.svg', 'bxl-visa.svg',
+              'bxl-vk.svg', 'bxl-vuejs.svg', 'bxl-whatsapp.svg', 'bxl-wikipedia.svg',
+              'bxl-windows.svg', 'bxl-wordpress.svg', 'bxl-yahoo.svg', 'bxl-yelp.svg',
+              'bxl-youtube.svg', 'bxl-zoom.svg'
+            ],
+            'harsh2277/Box-Icon/svg/regular': boxIconNames('bx'),
+            'harsh2277/Box-Icon/svg/solid': boxIconNames('bxs'),
+            // Vuesax Icons - all paths
+            'harsh2277/Vuesax-Icon/twotone': vuesaxIconNames(),
+            'harsh2277/Vuesax-Icon/outline': vuesaxIconNames(),
+            'harsh2277/Vuesax-Icon/linear': vuesaxIconNames(),
+            'harsh2277/Vuesax-Icon/bulk': vuesaxIconNames(),
+            'harsh2277/Vuesax-Icon/broken': vuesaxIconNames(),
+            'harsh2277/Vuesax-Icon/bold': vuesaxIconNames()
+          };
+          
+          const key = `${owner}/${repo}/${path}`;
+          console.log('Looking for key:', key);
+          console.log('Available keys:', Object.keys(knownLists));
+          
+          const result = knownLists[key] || [];
+          console.log('Found icons:', result.length);
+          
+          return result;
+        }
+        
+        function generateBoxIconNames(prefix) {
+          // Common icon names for Box Icons
+          const names = [
+            'home', 'user', 'search', 'heart', 'star', 'menu', 'settings', 'bell',
+            'mail', 'phone', 'calendar', 'camera', 'image', 'video', 'music', 'file',
+            'folder', 'download', 'upload', 'share', 'link', 'lock', 'unlock', 'key',
+            'edit', 'trash', 'save', 'copy', 'cut', 'paste', 'check', 'x', 'plus',
+            'minus', 'arrow-up', 'arrow-down', 'arrow-left', 'arrow-right', 'chevron-up',
+            'chevron-down', 'chevron-left', 'chevron-right', 'refresh', 'loader', 'cloud',
+            'sun', 'moon', 'time', 'map', 'location', 'navigation', 'compass', 'globe',
+            'wifi', 'bluetooth', 'battery', 'power', 'plug', 'usb', 'printer', 'monitor',
+            'laptop', 'mobile', 'tablet', 'watch', 'tv', 'speaker', 'headphone', 'microphone',
+            'volume', 'play', 'pause', 'stop', 'skip-next', 'skip-previous', 'fast-forward',
+            'rewind', 'shuffle', 'repeat', 'list', 'grid', 'filter', 'sort', 'zoom-in',
+            'zoom-out', 'fullscreen', 'minimize', 'maximize', 'info', 'help', 'question',
+            'warning', 'error', 'success', 'flag', 'bookmark', 'tag', 'pin', 'paperclip',
+            'message', 'chat', 'comment', 'notification', 'inbox', 'send', 'reply', 'forward',
+            'cart', 'shopping-bag', 'credit-card', 'wallet', 'dollar', 'euro', 'pound', 'yen',
+            'gift', 'award', 'trophy', 'medal', 'crown', 'shield', 'target', 'rocket',
+            'plane', 'car', 'bus', 'train', 'bike', 'walk', 'run', 'swim'
+          ];
+          return names.map(name => `${prefix}-${name}.svg`);
+        }
+        
+        function generateVuesaxIconNames() {
+          // Comprehensive list of Vuesax icon names
+          const names = [
+            '3d-cube-scan', '3d-rotate', '3d-square', '24-support', 'activity', 'add', 'add-circle',
+            'add-square', 'additem', 'airdrop', 'airplane', 'airplane-square', 'airpod', 'airpods',
+            'alarm', 'align-bottom', 'align-horizontally', 'align-left', 'align-right', 'align-vertically',
+            'aquarius', 'archive', 'archive-1', 'archive-add', 'archive-book', 'archive-minus',
+            'archive-slash', 'archive-tick', 'arrange-circle', 'arrange-circle-2', 'arrange-square',
+            'arrange-square-2', 'arrow', 'arrow-2', 'arrow-3', 'arrow-bottom', 'arrow-circle-down',
+            'arrow-circle-left', 'arrow-circle-right', 'arrow-circle-up', 'arrow-down', 'arrow-down-1',
+            'arrow-down-2', 'arrow-left', 'arrow-left-1', 'arrow-left-2', 'arrow-left-3', 'arrow-right',
+            'arrow-right-1', 'arrow-right-2', 'arrow-right-3', 'arrow-square', 'arrow-square-down',
+            'arrow-square-left', 'arrow-square-right', 'arrow-square-up', 'arrow-swap', 'arrow-swap-horizontal',
+            'arrow-up', 'arrow-up-1', 'arrow-up-2', 'arrow-up-3', 'attach-circle', 'attach-square',
+            'audio-square', 'autobrightness', 'award', 'back-square', 'backward', 'backward-5-seconds',
+            'backward-10-seconds', 'backward-15-seconds', 'backward-item', 'bag', 'bag-2', 'bag-cross',
+            'bag-cross-1', 'bag-happy', 'bag-tick', 'bag-tick-2', 'bag-timer', 'bank', 'barcode',
+            'battery-3full', 'battery-charging', 'battery-disable', 'battery-empty', 'battery-empty-1',
+            'battery-full', 'bezier', 'bill', 'bitcoin-card', 'bitcoin-convert', 'bitcoin-refresh',
+            'blend', 'blend-2', 'bluetooth', 'bluetooth-2', 'bluetooth-circle', 'bluetooth-rectangle',
+            'blur', 'book', 'book-1', 'book-saved', 'book-square', 'bookmark', 'bookmark-2', 'box',
+            'box-1', 'box-2', 'box-add', 'box-remove', 'box-search', 'box-tick', 'box-time', 'briefcase',
+            'brifecase-cross', 'brifecase-tick', 'brifecase-timer', 'broom', 'brush', 'brush-1',
+            'brush-2', 'brush-3', 'brush-4', 'bubble', 'bucket', 'bucket-circle', 'bucket-square',
+            'building', 'building-3', 'building-4', 'buildings', 'buildings-2', 'buliding', 'bus',
+            'buy-crypto', 'cake', 'calculator', 'calendar', 'calendar-1', 'calendar-2', 'calendar-add',
+            'calendar-circle', 'calendar-edit', 'calendar-remove', 'calendar-search', 'calendar-tick',
+            'call', 'call-add', 'call-calling', 'call-incoming', 'call-minus', 'call-outgoing',
+            'call-received', 'call-remove', 'call-slash', 'camera', 'camera-slash', 'candle',
+            'candle-2', 'car', 'card', 'card-add', 'card-coin', 'card-edit', 'card-pos', 'card-receive',
+            'card-remove', 'card-remove-1', 'card-send', 'card-slash', 'card-tick', 'card-tick-1',
+            'cardano', 'cards', 'category', 'category-2', 'cd', 'chart', 'chart-1', 'chart-2',
+            'chart-21', 'chart-3', 'chart-fail', 'chart-square', 'chart-success', 'check', 'chrome',
+            'clipboard', 'clipboard-close', 'clipboard-export', 'clipboard-import', 'clipboard-text',
+            'clipboard-tick', 'clock', 'clock-1', 'close-circle', 'close-square', 'cloud',
+            'cloud-add', 'cloud-change', 'cloud-connection', 'cloud-cross', 'cloud-drizzle',
+            'cloud-fog', 'cloud-lightning', 'cloud-minus', 'cloud-notif', 'cloud-plus', 'cloud-remove',
+            'cloud-snow', 'cloud-sunny', 'code', 'code-1', 'code-circle', 'coffee', 'coin',
+            'coin-1', 'colorfilter', 'colors-square', 'command', 'command-square', 'component',
+            'computing', 'convert', 'convert-3d-cube', 'convert-card', 'convertshape', 'convertshape-2',
+            'copy', 'copy-success', 'copyright', 'courthouse', 'cpu', 'cpu-charge', 'cpu-setting',
+            'creative-commons', 'crop', 'crown', 'crown-1', 'cup', 'danger', 'data', 'data-2',
+            'designtools', 'device-message', 'devices', 'diagram', 'diamonds', 'direct', 'direct-down',
+            'direct-inbox', 'direct-left', 'direct-normal', 'direct-notification', 'direct-right',
+            'direct-send', 'direct-up', 'directbox-default', 'directbox-notif', 'directbox-receive',
+            'directbox-send', 'discount-circle', 'discount-shape', 'discover', 'dislike', 'document',
+            'document-1', 'document-cloud', 'document-code', 'document-code-2', 'document-copy',
+            'document-download', 'document-favorite', 'document-filter', 'document-forward',
+            'document-like', 'document-normal', 'document-previous', 'document-sketch', 'document-text',
+            'document-text-1', 'document-upload', 'dollar-circle', 'dollar-square', 'driver',
+            'driver-2', 'driver-refresh', 'driving', 'drop', 'edit', 'edit-2', 'electricity',
+            'element-2', 'element-3', 'element-4', 'element-equal', 'element-plus', 'emoji-happy',
+            'emoji-normal', 'emoji-sad', 'empty-wallet', 'empty-wallet-add', 'empty-wallet-change',
+            'empty-wallet-remove', 'empty-wallet-tick', 'empty-wallet-time', 'eraser', 'eraser-1',
+            'export', 'export-1', 'export-2', 'export-3', 'external-drive', 'eye', 'eye-slash',
+            'fatrows', 'favorite-chart', 'filter', 'filter-add', 'filter-edit', 'filter-remove',
+            'filter-search', 'filter-square', 'filter-tick', 'finger-cricle', 'finger-scan',
+            'firstline', 'flag', 'flag-2', 'flash', 'flash-1', 'flash-circle', 'flash-circle-1',
+            'flash-slash', 'folder', 'folder-2', 'folder-add', 'folder-cloud', 'folder-connection',
+            'folder-cross', 'folder-favorite', 'folder-minus', 'folder-open', 'forbidden',
+            'forbidden-2', 'format-circle', 'format-square', 'forward', 'forward-5-seconds',
+            'forward-10-seconds', 'forward-15-seconds', 'forward-item', 'forward-square', 'frame',
+            'frame-1', 'frame-2', 'frame-3', 'frame-4', 'gallery', 'gallery-add', 'gallery-edit',
+            'gallery-export', 'gallery-favorite', 'gallery-import', 'gallery-remove', 'gallery-slash',
+            'gallery-tick', 'game', 'gameboy', 'gas-station', 'gemini', 'gemini-2', 'ghost',
+            'gift', 'glass', 'glass-1', 'global', 'global-edit', 'global-refresh', 'global-search',
+            'gps', 'gps-slash', 'grammerly', 'graph', 'grid-1', 'grid-2', 'grid-3', 'grid-4',
+            'grid-5', 'grid-6', 'grid-7', 'grid-8', 'grid-9', 'grid-edit', 'grid-eraser',
+            'grid-lock', 'happyemoji', 'hashtag', 'hashtag-1', 'hashtag-down', 'hashtag-up',
+            'headphone', 'headphones', 'health', 'heart', 'heart-add', 'heart-circle', 'heart-edit',
+            'heart-remove', 'heart-search', 'heart-slash', 'heart-tick', 'hierarchy', 'hierarchy-2',
+            'hierarchy-3', 'hierarchy-square', 'hierarchy-square-2', 'hierarchy-square-3', 'home',
+            'home-1', 'home-2', 'home-hashtag', 'home-trend-down', 'home-trend-up', 'home-wifi',
+            'hospital', 'house', 'house-2', 'icon', 'image', 'import', 'import-1', 'import-2',
+            'info-circle', 'information', 'instagram', 'judge', 'kanban', 'key', 'key-square',
+            'keyboard', 'keyboard-open', 'lamp', 'lamp-1', 'lamp-charge', 'lamp-on', 'lamp-slash',
+            'language-circle', 'language-square', 'layer', 'level', 'lifebuoy', 'like', 'like-1',
+            'like-dislike', 'like-shapes', 'like-tag', 'link', 'link-1', 'link-2', 'link-21',
+            'link-circle', 'link-square', 'location', 'location-add', 'location-cross',
+            'location-minus', 'location-slash', 'location-tick', 'lock', 'lock-1', 'lock-circle',
+            'lock-slash', 'login', 'login-1', 'logout', 'logout-1', 'lovely', 'magicpen', 'magic-star',
+            'main-component', 'man', 'map', 'map-1', 'mask', 'mask-1', 'mask-2', 'math', 'maximize',
+            'maximize-1', 'maximize-2', 'maximize-3', 'maximize-4', 'maximize-21', 'maximize-circle',
+            'medal', 'medal-star', 'menu', 'menu-board', 'message', 'message-2', 'message-add',
+            'message-add-1', 'message-circle', 'message-edit', 'message-favorite', 'message-minus',
+            'message-notif', 'message-programming', 'message-question', 'message-remove',
+            'message-search', 'message-square', 'message-text', 'message-text-1', 'message-tick',
+            'message-time', 'messages', 'messages-1', 'messages-2', 'messages-3', 'microphone',
+            'microphone-2', 'microphone-slash', 'microphone-slash-1', 'microscope', 'milk', 'mini-music-sqaure',
+            'minus', 'minus-cirlce', 'minus-square', 'mirror', 'mirroring-screen', 'mobile',
+            'mobile-programming', 'money', 'money-2', 'money-3', 'money-4', 'money-add', 'money-change',
+            'money-forbidden', 'money-recive', 'money-remove', 'money-send', 'money-tick', 'money-time',
+            'moneys', 'monitor', 'monitor-mobbile', 'monitor-recorder', 'moon', 'more', 'more-2',
+            'more-circle', 'more-square', 'mouse', 'mouse-1', 'mouse-circle', 'mouse-square',
+            'music', 'music-circle', 'music-dashboard', 'music-filter', 'music-library-2',
+            'music-play', 'music-playlist', 'music-square', 'music-square-add', 'music-square-remove',
+            'music-square-search', 'musicnote', 'next', 'note', 'note-1', 'note-2', 'note-21',
+            'note-add', 'note-favorite', 'note-remove', 'note-square', 'note-text', 'notification',
+            'notification-1', 'notification-bing', 'notification-circle', 'notification-favorite',
+            'notification-status', 'omega-circle', 'omega-square', 'paintbucket', 'paperclip',
+            'paperclip-2', 'password-check', 'path', 'path-2', 'path-square', 'pause', 'pause-circle',
+            'pen-add', 'pen-close', 'pen-remove', 'pen-tool', 'pen-tool-2', 'people', 'percentage-circle',
+            'percentage-square', 'personalcard', 'pet', 'pharagraphspacing', 'picture-frame',
+            'play', 'play-add', 'play-circle', 'play-cricle', 'play-remove', 'presention-chart',
+            'previous', 'printer', 'printer-slash', 'profile', 'profile-2user', 'profile-add',
+            'profile-circle', 'profile-delete', 'profile-remove', 'profile-tick', 'programming-arrow',
+            'programming-arrows', 'quote-down', 'quote-down-circle', 'quote-down-square', 'quote-up',
+            'quote-up-circle', 'quote-up-square', 'radar', 'radar-1', 'radar-2', 'radio', 'ram',
+            'ram-2', 'ranking', 'ranking-1', 'receipt', 'receipt-1', 'receipt-2', 'receipt-2-1',
+            'receipt-add', 'receipt-discount', 'receipt-disscount', 'receipt-edit', 'receipt-item',
+            'receipt-minus', 'receipt-search', 'receipt-square', 'receipt-text', 'receive-square',
+            'receive-square-2', 'received', 'record', 'record-circle', 'recovery-convert', 'redo',
+            'refresh', 'refresh-2', 'refresh-circle', 'refresh-left-square', 'refresh-right-square',
+            'refresh-square-2', 'repeat', 'repeat-circle', 'repeate-music', 'repeate-one', 'reserve',
+            'rotate-left', 'rotate-left-1', 'rotate-right', 'rotate-right-1', 'route-square',
+            'routing', 'routing-2', 'row-horizontal', 'row-vertical', 'ruler', 'ruler&pen', 'safe-home',
+            'sagittarius', 'save-2', 'save-add', 'save-minus', 'save-remove', 'scan', 'scan-barcode',
+            'scanner', 'scanning', 'scissor', 'scissor-1', 'screenmirroring', 'scroll', 'search-favorite',
+            'search-favorite-1', 'search-normal', 'search-normal-1', 'search-status', 'search-status-1',
+            'search-zoom-in', 'search-zoom-in-1', 'search-zoom-out', 'search-zoom-out-1', 'security',
+            'security-card', 'security-safe', 'security-time', 'security-user', 'send', 'send-1',
+            'send-2', 'send-sqaure-2', 'send-square', 'setting', 'setting-2', 'setting-3', 'setting-4',
+            'setting-5', 'settings', 'shapes', 'shapes-1', 'share', 'shield', 'shield-cross',
+            'shield-search', 'shield-security', 'shield-slash', 'shield-tick', 'ship', 'shop',
+            'shop-add', 'shop-remove', 'shopping-bag', 'shopping-cart', 'shuffle', 'sidebar-bottom',
+            'sidebar-left', 'sidebar-right', 'sidebar-top', 'signpost', 'simcard', 'simcard-1',
+            'simcard-2', 'size', 'slash', 'slider', 'slider-horizontal', 'slider-horizontal-1',
+            'slider-vertical', 'slider-vertical-1', 'smallcaps', 'smart-car', 'smart-home',
+            'smileys', 'sms', 'sms-edit', 'sms-notification', 'sms-search', 'sms-star', 'sms-tracking',
+            'sort', 'sound', 'speaker', 'speedometer', 'star', 'star-1', 'star-slash', 'status',
+            'status-up', 'sticker', 'stickynote', 'stop', 'stop-circle', 'story', 'strongbox',
+            'strongbox-2', 'subtitle', 'sun', 'sun-1', 'sun-fog', 'tag', 'tag-2', 'tag-cross',
+            'tag-right', 'tag-user', 'task', 'task-square', 'teacher', 'text', 'text-block',
+            'text-bold', 'text-italic', 'text-underline', 'textalign-center', 'textalign-justifycenter',
+            'textalign-justifyleft', 'textalign-justifyright', 'textalign-left', 'textalign-right',
+            'tick-circle', 'tick-square', 'ticket', 'ticket-2', 'ticket-discount', 'ticket-expired',
+            'ticket-star', 'timer', 'timer-1', 'timer-pause', 'timer-start', 'toggle-off',
+            'toggle-off-circle', 'toggle-on', 'toggle-on-circle', 'trade', 'transaction-minus',
+            'translate', 'trash', 'tree', 'trend-down', 'trend-up', 'triangle', 'truck', 'truck-fast',
+            'truck-remove', 'truck-tick', 'truck-time', 'trush-square', 'undo', 'unlimited',
+            'unlock', 'user', 'user-add', 'user-cirlce-add', 'user-edit', 'user-minus', 'user-octagon',
+            'user-remove', 'user-search', 'user-square', 'user-tag', 'user-tick', 'verify', 'video',
+            'video-add', 'video-circle', 'video-horizontal', 'video-octagon', 'video-play',
+            'video-remove', 'video-slash', 'video-square', 'video-tick', 'video-time', 'video-vertical',
+            'voice-cricle', 'voice-square', 'volume-cross', 'volume-high', 'volume-low',
+            'volume-low-1', 'volume-mute', 'volume-slash', 'volume-up', 'wallet', 'wallet-1',
+            'wallet-2', 'wallet-3', 'wallet-add', 'wallet-add-1', 'wallet-check', 'wallet-minus',
+            'wallet-money', 'wallet-remove', 'wallet-search', 'warning-2', 'watch', 'watch-status',
+            'weight', 'weight-1', 'wifi', 'wifi-square', 'wind', 'wind-2', 'woman', 'xd'
+          ];
+          return names.map(name => `${name}.svg`);
+        }
+
+        async function fetchAndRenderIcons() {
+          const container = document.getElementById('iconLibraryContent');
+          if (!container || !selectedLibrary || !selectedCategory) return;
+          
+          const library = ICON_LIBRARIES[selectedLibrary];
+          const category = library.categories[selectedCategory];
+          
+          container.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px;">
+              <div style="
+                width: 48px;
+                height: 48px;
+                border: 4px solid var(--border);
+                border-top-color: var(--primary);
+                border-radius: 50%;
+                margin: 0 auto 16px;
+                animation: spin 1s linear infinite;
+              "></div>
+              <p style="color: var(--text-secondary);">Loading icons...</p>
+            </div>
+          `;
+          
+          const iconList = await fetchIconList(category.baseUrl);
+          
+          if (iconList.length === 0) {
+            container.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <div class="empty-state-title">No icons found</div>
+                <div class="empty-state-description">
+                  Unable to load icons from this category
+                </div>
+                <button class="btn btn-secondary" onclick="renderCategorySelection()" style="margin-top: 20px;">
+                  Back to Categories
+                </button>
+              </div>
+            `;
+            return;
+          }
+          
+          renderIconGrid(iconList);
+        }
+
+        function renderIconGrid(iconList) {
+          const container = document.getElementById('iconLibraryContent');
+          const library = ICON_LIBRARIES[selectedLibrary];
+          const category = library.categories[selectedCategory];
+          
+          container.innerHTML = `
+            <div style="max-width: 1200px; margin: 0 auto;">
+              <div style="
+                position: sticky;
+                top: 0;
+                background: var(--bg-app);
+                padding: 16px 0;
+                margin-bottom: 24px;
+                border-bottom: 1px solid var(--border);
+                z-index: 10;
+              ">
+                <button class="btn btn-secondary btn-sm" onclick="renderCategorySelection()" style="margin-bottom: 12px;">
+                  ← Back to Categories
+                </button>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 4px; color: var(--text-primary);">
+                      ${library.name} / ${category.name}
+                    </h2>
+                    <p style="color: var(--text-secondary); font-size: 13px;">
+                      ${iconList.length} icons available
+                    </p>
+                  </div>
+                  <button class="btn btn-primary" onclick="generateAllIcons()">
+                    Generate All Icons
+                  </button>
+                </div>
+              </div>
+              
+              <div id="iconGrid" style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                gap: 12px;
+              ">
+                ${iconList.map(iconName => `
+                  <div class="icon-item" onclick="insertSingleIcon('${iconName}')" style="
+                    background: var(--bg-card);
+                    border: 1px solid var(--border);
+                    border-radius: var(--radius-md);
+                    padding: 16px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 8px;
+                  ">
+                    <div class="icon-preview" data-icon="${iconName}" style="
+                      width: 24px;
+                      height: 24px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    ">
+                      <div style="
+                        width: 20px;
+                        height: 20px;
+                        background: var(--border);
+                        border-radius: 4px;
+                      "></div>
+                    </div>
+                    <span style="
+                      font-size: 10px;
+                      color: var(--text-tertiary);
+                      text-align: center;
+                      word-break: break-word;
+                      line-height: 1.2;
+                    ">${iconName.replace('.svg', '')}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+          
+          const style = document.createElement('style');
+          style.textContent = `
+            .icon-item:hover {
+              border-color: var(--primary) !important;
+              transform: translateY(-2px);
+              box-shadow: var(--shadow-md);
+            }
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+          `;
+          document.head.appendChild(style);
+          
+          loadIconPreviews(iconList.slice(0, 50));
+        }
+
+        async function loadIconPreviews(iconList) {
+          const library = ICON_LIBRARIES[selectedLibrary];
+          const category = library.categories[selectedCategory];
+          
+          for (const iconName of iconList) {
+            const preview = document.querySelector(`.icon-preview[data-icon="${iconName}"]`);
+            if (!preview) continue;
+            
+            try {
+              const url = `${category.baseUrl}/${iconName}`;
+              const response = await fetch(url);
+              if (response.ok) {
+                const svgText = await response.text();
+                preview.innerHTML = svgText;
+                
+                const svg = preview.querySelector('svg');
+                if (svg) {
+                  svg.style.width = '24px';
+                  svg.style.height = '24px';
+                  svg.style.color = 'var(--text-primary)';
+                }
+              }
+            } catch (error) {
+              console.error(`Error loading preview for ${iconName}:`, error);
+            }
+          }
+        }
+
+        function insertSingleIcon(iconName) {
+          if (!selectedLibrary || !selectedCategory) return;
+          
+          parent.postMessage({
+            pluginMessage: {
+              type: 'insert-single-icon',
+              libraryId: selectedLibrary,
+              categoryId: selectedCategory,
+              iconName: iconName
+            }
+          }, '*');
+        }
+
+        function generateAllIcons() {
+          if (!selectedLibrary || !selectedCategory) return;
+          
+          const library = ICON_LIBRARIES[selectedLibrary];
+          const category = library.categories[selectedCategory];
+          
+          const iconElements = document.querySelectorAll('.icon-preview');
+          const iconList = Array.from(iconElements).map(el => el.dataset.icon);
+          
+          if (iconList.length === 0) {
+            alert('No icons to generate');
+            return;
+          }
+          
+          if (!confirm(`Generate ${iconList.length} icons from ${library.name} / ${category.name}?`)) {
+            return;
+          }
+          
+          parent.postMessage({
+            pluginMessage: {
+              type: 'generate-icon-library',
+              libraryId: selectedLibrary,
+              categoryId: selectedCategory,
+              iconList: iconList
+            }
+          }, '*');
+        }
+
+        async function generateIconsFromSelection() {
+          if (!selectedLibrary) return;
+          
+          const library = ICON_LIBRARIES[selectedLibrary];
+          const generateBtn = document.getElementById('generateAllBtn');
+          const originalText = generateBtn.innerHTML;
+          
+          generateBtn.disabled = true;
+          generateBtn.innerHTML = '⏳ Fetching icons...';
+          
+          console.log('=== GENERATE ICONS STARTED ===');
+          console.log('Selected library:', selectedLibrary);
+          console.log('Selected category:', selectedCategory);
+          
+          try {
+            if (selectedCategory) {
+              // Generate single category
+              const category = library.categories[selectedCategory];
+              console.log('Fetching icons for category:', selectedCategory);
+              console.log('Base URL:', category.baseUrl);
+              
+              const iconList = await fetchIconList(category.baseUrl);
+              console.log('Icon list received:', iconList.length, 'icons');
+              console.log('First 10 icons:', iconList.slice(0, 10));
+              
+              if (iconList.length === 0) {
+                console.error('NO ICONS FOUND!');
+                alert('No icons found in this category. Check browser console (F12) for details.');
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalText;
+                return;
+              }
+              
+              console.log('Showing confirmation dialog...');
+              if (!confirm(`Generate ${iconList.length} icons from ${library.name} / ${category.name}?`)) {
+                console.log('User cancelled');
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalText;
+                return;
+              }
+              
+              console.log('User confirmed, sending message to plugin...');
+              generateBtn.innerHTML = '🚀 Generating...';
+              
+              const message = {
+                pluginMessage: {
+                  type: 'generate-icon-library',
+                  libraryId: selectedLibrary,
+                  categoryId: selectedCategory,
+                  iconList: iconList
+                }
+              };
+              console.log('Sending message:', message);
+              parent.postMessage(message, '*');
+              console.log('Message sent!');
+              
+            } else {
+              // Generate all categories
+              console.log('Generating all categories...');
+              const allCategories = [];
+              for (const [categoryId, category] of Object.entries(library.categories)) {
+                console.log('Fetching icons for category:', categoryId);
+                const iconList = await fetchIconList(category.baseUrl);
+                console.log(`${categoryId}: ${iconList.length} icons`);
+                
+                if (iconList.length > 0) {
+                  allCategories.push({
+                    categoryId,
+                    categoryName: category.name,
+                    iconList
+                  });
+                }
+              }
+              
+              console.log('Total categories with icons:', allCategories.length);
+              
+              if (allCategories.length === 0) {
+                console.error('NO CATEGORIES WITH ICONS FOUND!');
+                alert('No icons found in this library. Check browser console (F12) for details.');
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalText;
+                return;
+              }
+              
+              const totalIcons = allCategories.reduce((sum, cat) => sum + cat.iconList.length, 0);
+              console.log('Total icons:', totalIcons);
+              
+              if (!confirm(`Generate ${totalIcons} icons from ${allCategories.length} categories?\n\nThis will create:\n${allCategories.map(c => `• ${c.categoryName}: ${c.iconList.length} icons`).join('\n')}`)) {
+                console.log('User cancelled');
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalText;
+                return;
+              }
+              
+              console.log('User confirmed, sending message to plugin...');
+              generateBtn.innerHTML = '🚀 Generating...';
+              
+              const message = {
+                pluginMessage: {
+                  type: 'generate-all-library-icons',
+                  libraryId: selectedLibrary,
+                  categories: allCategories
+                }
+              };
+              console.log('Sending message:', message);
+              parent.postMessage(message, '*');
+              console.log('Message sent!');
+            }
+            
+          } catch (error) {
+            console.error('ERROR in generateIconsFromSelection:', error);
+            alert('Error fetching icons: ' + error.message + '\nCheck browser console (F12) for details.');
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = originalText;
+          }
+        }
+
+        async function generateAllIconsFromLibrary() {
+          if (!selectedLibrary) return;
+          
+          const library = ICON_LIBRARIES[selectedLibrary];
+          const generateBtn = document.getElementById('generateAllBtn');
+          const originalText = generateBtn.innerHTML;
+          
+          // Disable button and show loading
+          generateBtn.disabled = true;
+          generateBtn.innerHTML = '⏳ Fetching icons...';
+          
+          try {
+            // Fetch icon lists for all categories
+            const allCategories = [];
+            for (const [categoryId, category] of Object.entries(library.categories)) {
+              const iconList = await fetchIconList(category.baseUrl);
+              if (iconList.length > 0) {
+                allCategories.push({
+                  categoryId,
+                  categoryName: category.name,
+                  iconList
+                });
+              }
+            }
+            
+            if (allCategories.length === 0) {
+              alert('No icons found in this library');
+              generateBtn.disabled = false;
+              generateBtn.innerHTML = originalText;
+              return;
+            }
+            
+            const totalIcons = allCategories.reduce((sum, cat) => sum + cat.iconList.length, 0);
+            
+            if (!confirm(`Generate ${totalIcons} icons from ${allCategories.length} categories?\n\nThis will create:\n${allCategories.map(c => `• ${c.categoryName}: ${c.iconList.length} icons`).join('\n')}`)) {
+              generateBtn.disabled = false;
+              generateBtn.innerHTML = originalText;
+              return;
+            }
+            
+            generateBtn.innerHTML = '🚀 Generating...';
+            
+            // Send to plugin
+            parent.postMessage({
+              pluginMessage: {
+                type: 'generate-all-library-icons',
+                libraryId: selectedLibrary,
+                categories: allCategories
+              }
+            }, '*');
+            
+          } catch (error) {
+            console.error('Error generating icons:', error);
+            alert('Error fetching icons. Please try again.');
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = originalText;
+          }
+        }
+
+        window.initIconLibrary = initIconLibrary;
+        window.onLibraryChange = onLibraryChange;
+        window.onCategoryChange = onCategoryChange;
+        window.generateIconsFromSelection = generateIconsFromSelection;
+        window.generateAllIconsFromLibrary = generateAllIconsFromLibrary;
+        window.selectLibrary = selectLibrary;
+        window.selectCategory = selectCategory;
+        window.renderCategorySelection = renderCategorySelection;
+        window.insertSingleIcon = insertSingleIcon;
+        window.generateAllIcons = generateAllIcons;
+        
+        // Listen for messages from plugin to re-enable button
+        window.addEventListener('message', (event) => {
+          const msg = event.data.pluginMessage;
+          if (!msg) return;
+          
+          console.log('Received message from plugin:', msg);
+          
+          if (msg.type === 'generation-complete') {
+            const generateBtn = document.getElementById('generateAllBtn');
+            if (generateBtn) {
+              generateBtn.disabled = false;
+              generateBtn.innerHTML = '📦 Generate Icons';
+            }
+          }
+        });
     </script>
 </body>
 

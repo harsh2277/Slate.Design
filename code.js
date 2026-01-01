@@ -2907,4 +2907,489 @@ figma.ui.onmessage = async (msg) => {
             }
         })();
     }
+
+    // Icon Library handlers
+    if (msg.type === 'generate-icon-library') {
+        (async () => {
+            try {
+                console.log('Received generate-icon-library message:', msg);
+                console.log('Icon list length:', msg.iconList.length);
+                const result = await generateIconLibrary(msg.libraryId, msg.categoryId, msg.iconList);
+                figma.notify(`✅ Created ${result.successCount} icons! Failed: ${result.failCount}`);
+                figma.ui.postMessage({ type: 'generation-complete' });
+            } catch (error) {
+                console.error('Icon library error:', error);
+                figma.notify(`❌ Error: ${error.message}`);
+                figma.ui.postMessage({ type: 'generation-complete' });
+            }
+        })();
+    }
+
+    if (msg.type === 'generate-all-library-icons') {
+        (async () => {
+            try {
+                console.log('Received generate-all-library-icons message:', msg);
+                console.log('Categories:', msg.categories.length);
+                figma.notify('🚀 Starting to generate all icons...');
+                const result = await generateAllLibraryIcons(msg.libraryId, msg.categories);
+                figma.notify(`✅ Created ${result.totalSuccess} icons in ${result.categoriesCreated} categories! Failed: ${result.totalFailed}`);
+                figma.ui.postMessage({ type: 'generation-complete' });
+            } catch (error) {
+                console.error('Generate all icons error:', error);
+                figma.notify(`❌ Error: ${error.message}`);
+                figma.ui.postMessage({ type: 'generation-complete' });
+            }
+        })();
+    }
+
+    if (msg.type === 'insert-single-icon') {
+        (async () => {
+            try {
+                const iconList = [msg.iconName];
+                const result = await generateIconLibrary(msg.libraryId, msg.categoryId, iconList);
+                if (result.successCount > 0) {
+                    figma.notify(`✅ Icon inserted!`);
+                } else {
+                    figma.notify(`❌ Failed to insert icon`);
+                }
+            } catch (error) {
+                figma.notify(`❌ Error: ${error.message}`);
+                console.error('Insert icon error:', error);
+            }
+        })();
+    }
 };
+
+// Icon Library Functions
+async function fetchSVG(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.status}`);
+        }
+        return await response.text();
+    } catch (error) {
+        console.error(`Error fetching SVG from ${url}:`, error);
+        return null;
+    }
+}
+
+function cleanSVG(svgText) {
+    let cleaned = svgText.replace(/\s*width="[^"]*"/gi, '');
+    cleaned = cleaned.replace(/\s*height="[^"]*"/gi, '');
+    return cleaned;
+}
+
+function createIconComponent(svgText, iconName, size = 24) {
+    const cleaned = cleanSVG(svgText);
+    const svgNode = figma.createNodeFromSvg(cleaned);
+    
+    const component = figma.createComponent();
+    component.name = iconName;
+    component.resize(size, size);
+    component.fills = [];
+    
+    const scaleX = size / svgNode.width;
+    const scaleY = size / svgNode.height;
+    const scale = Math.min(scaleX, scaleY);
+    svgNode.resize(svgNode.width * scale, svgNode.height * scale);
+    
+    svgNode.x = (size - svgNode.width) / 2;
+    svgNode.y = (size - svgNode.height) / 2;
+    
+    if (svgNode.type === 'FRAME' || svgNode.type === 'GROUP') {
+        const children = [...svgNode.children];
+        children.forEach(child => {
+            child.x += svgNode.x;
+            child.y += svgNode.y;
+            component.appendChild(child);
+        });
+        svgNode.remove();
+    } else {
+        component.appendChild(svgNode);
+    }
+    
+    return component;
+}
+
+function getOrCreateIconLibraryPage() {
+    let page = figma.root.children.find(p => p.name === 'Icon Library');
+    if (!page) {
+        page = figma.createPage();
+        page.name = 'Icon Library';
+    }
+    return page;
+}
+
+function createCategoryFrame(categoryName, x = 0, y = 0) {
+    const frame = figma.createFrame();
+    frame.name = categoryName;
+    frame.x = x;
+    frame.y = y;
+    frame.fills = [];
+    
+    frame.layoutMode = 'HORIZONTAL';
+    frame.primaryAxisSizingMode = 'AUTO';
+    frame.counterAxisSizingMode = 'AUTO';
+    frame.primaryAxisAlignItems = 'MIN';
+    frame.counterAxisAlignItems = 'MIN';
+    frame.itemSpacing = 16;
+    frame.paddingLeft = 16;
+    frame.paddingRight = 16;
+    frame.paddingTop = 16;
+    frame.paddingBottom = 16;
+    frame.layoutWrap = 'WRAP';
+    
+    return frame;
+}
+
+async function generateIconLibrary(libraryId, categoryId, iconList) {
+    const ICON_LIBRARIES = {
+        'box-icons': {
+            name: 'Box Icons',
+            categories: {
+                'logos': {
+                    name: 'Logos',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/logos'
+                },
+                'regular': {
+                    name: 'Regular',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/regular'
+                },
+                'solid': {
+                    name: 'Solid',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/solid'
+                }
+            }
+        },
+        'vuesax-icons': {
+            name: 'Vuesax Icons',
+            categories: {
+                'twotone': {
+                    name: 'Twotone',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/twotone'
+                },
+                'outline': {
+                    name: 'Outline',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/outline'
+                },
+                'linear': {
+                    name: 'Linear',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/linear'
+                },
+                'bulk': {
+                    name: 'Bulk',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bulk'
+                },
+                'broken': {
+                    name: 'Broken',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/broken'
+                },
+                'bold': {
+                    name: 'Bold',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bold'
+                }
+            }
+        }
+    };
+
+    const page = getOrCreateIconLibraryPage();
+    const originalPage = figma.currentPage;
+    await figma.setCurrentPageAsync(page);
+    
+    try {
+        const library = ICON_LIBRARIES[libraryId];
+        if (!library) {
+            throw new Error(`Library ${libraryId} not found`);
+        }
+        
+        const category = library.categories[categoryId];
+        if (!category) {
+            throw new Error(`Category ${categoryId} not found`);
+        }
+        
+        const categoryFrame = createCategoryFrame(
+            `${library.name} / ${category.name}`,
+            0,
+            0
+        );
+        page.appendChild(categoryFrame);
+        
+        const components = [];
+        let successCount = 0;
+        let failCount = 0;
+        
+        const BATCH_SIZE = 20; // Fetch 20 icons at a time
+        
+        // Process icons in batches for better performance
+        for (let i = 0; i < iconList.length; i += BATCH_SIZE) {
+            const batch = iconList.slice(i, i + BATCH_SIZE);
+            
+            // Fetch SVGs in parallel
+            const svgPromises = batch.map(iconName => {
+                const url = `${category.baseUrl}/${iconName}`;
+                return fetchSVG(url).then(svgText => ({ iconName, svgText }));
+            });
+            
+            const results = await Promise.all(svgPromises);
+            
+            // Create components from fetched SVGs
+            for (const { iconName, svgText } of results) {
+                if (svgText) {
+                    try {
+                        const component = createIconComponent(svgText, iconName.replace('.svg', ''), 24);
+                        categoryFrame.appendChild(component);
+                        components.push(component);
+                        successCount++;
+                    } catch (error) {
+                        console.error(`Error creating component for ${iconName}:`, error);
+                        failCount++;
+                    }
+                } else {
+                    failCount++;
+                }
+            }
+            
+            // Update progress
+            const progress = Math.min(i + BATCH_SIZE, iconList.length);
+            figma.notify(`📦 Creating icons... (${progress}/${iconList.length})`);
+        }
+        
+        if (components.length > 1) {
+            figma.notify(`🔧 Combining ${components.length} icons into Component Set...`);
+            const componentSet = figma.combineAsVariants(components, page);
+            componentSet.name = `${library.name} / ${category.name}`;
+            
+            // Set up grid layout with 20 icons per row
+            componentSet.layoutMode = 'HORIZONTAL';
+            componentSet.primaryAxisSizingMode = 'AUTO';
+            componentSet.counterAxisSizingMode = 'AUTO';
+            componentSet.primaryAxisAlignItems = 'MIN';
+            componentSet.counterAxisAlignItems = 'MIN';
+            componentSet.itemSpacing = 16;
+            componentSet.counterAxisSpacing = 16;
+            componentSet.paddingLeft = 16;
+            componentSet.paddingRight = 16;
+            componentSet.paddingTop = 16;
+            componentSet.paddingBottom = 16;
+            componentSet.layoutWrap = 'WRAP';
+            
+            // Calculate max width for 20 icons per row
+            // Icon size (24) + spacing (16) = 40px per icon
+            // 20 icons = 20 * 40 - 16 (last spacing) + 32 (padding) = 816px
+            const iconWidth = 24;
+            const spacing = 16;
+            const iconsPerRow = 20;
+            const padding = 32; // left + right
+            const maxWidth = (iconWidth + spacing) * iconsPerRow - spacing + padding;
+            componentSet.resize(maxWidth, componentSet.height);
+            
+            componentSet.fills = [];
+            categoryFrame.remove();
+            figma.viewport.scrollAndZoomIntoView([componentSet]);
+        } else if (components.length === 1) {
+            figma.viewport.scrollAndZoomIntoView([components[0]]);
+        }
+        
+        await figma.setCurrentPageAsync(originalPage);
+        
+        return {
+            success: true,
+            successCount,
+            failCount,
+            total: iconList.length
+        };
+        
+    } catch (error) {
+        await figma.setCurrentPageAsync(originalPage);
+        throw error;
+    }
+}
+
+async function generateAllLibraryIcons(libraryId, categories) {
+    const ICON_LIBRARIES = {
+        'box-icons': {
+            name: 'Box Icons',
+            categories: {
+                'logos': {
+                    name: 'Logos',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/logos'
+                },
+                'regular': {
+                    name: 'Regular',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/regular'
+                },
+                'solid': {
+                    name: 'Solid',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/solid'
+                }
+            }
+        },
+        'vuesax-icons': {
+            name: 'Vuesax Icons',
+            categories: {
+                'twotone': {
+                    name: 'Twotone',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/twotone'
+                },
+                'outline': {
+                    name: 'Outline',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/outline'
+                },
+                'linear': {
+                    name: 'Linear',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/linear'
+                },
+                'bulk': {
+                    name: 'Bulk',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bulk'
+                },
+                'broken': {
+                    name: 'Broken',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/broken'
+                },
+                'bold': {
+                    name: 'Bold',
+                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bold'
+                }
+            }
+        }
+    };
+
+    const page = getOrCreateIconLibraryPage();
+    const originalPage = figma.currentPage;
+    await figma.setCurrentPageAsync(page);
+    
+    try {
+        const library = ICON_LIBRARIES[libraryId];
+        if (!library) {
+            throw new Error(`Library ${libraryId} not found`);
+        }
+        
+        let totalSuccess = 0;
+        let totalFailed = 0;
+        let categoriesCreated = 0;
+        const allComponentSets = [];
+        let yOffset = 0;
+        
+        const BATCH_SIZE = 20; // Fetch 20 icons at a time
+        
+        for (const categoryData of categories) {
+            const { categoryId, categoryName, iconList } = categoryData;
+            const category = library.categories[categoryId];
+            
+            if (!category) continue;
+            
+            figma.notify(`📦 Creating ${categoryName}... (0/${iconList.length})`);
+            
+            const categoryFrame = createCategoryFrame(
+                `${library.name} / ${categoryName}`,
+                0,
+                yOffset
+            );
+            page.appendChild(categoryFrame);
+            
+            const components = [];
+            let successCount = 0;
+            let failCount = 0;
+            
+            // Process icons in batches for better performance
+            for (let i = 0; i < iconList.length; i += BATCH_SIZE) {
+                const batch = iconList.slice(i, i + BATCH_SIZE);
+                
+                // Fetch SVGs in parallel
+                const svgPromises = batch.map(iconName => {
+                    const url = `${category.baseUrl}/${iconName}`;
+                    return fetchSVG(url).then(svgText => ({ iconName, svgText }));
+                });
+                
+                const results = await Promise.all(svgPromises);
+                
+                // Create components from fetched SVGs
+                for (const { iconName, svgText } of results) {
+                    if (svgText) {
+                        try {
+                            const component = createIconComponent(svgText, iconName.replace('.svg', ''), 24);
+                            categoryFrame.appendChild(component);
+                            components.push(component);
+                            successCount++;
+                        } catch (error) {
+                            console.error(`Error creating component for ${iconName}:`, error);
+                            failCount++;
+                        }
+                    } else {
+                        failCount++;
+                    }
+                }
+                
+                // Update progress
+                const progress = Math.min(i + BATCH_SIZE, iconList.length);
+                figma.notify(`📦 Creating ${categoryName}... (${progress}/${iconList.length})`);
+            }
+            
+            // Create component set
+            if (components.length > 1) {
+                figma.notify(`🔧 Combining ${components.length} icons into Component Set...`);
+                const componentSet = figma.combineAsVariants(components, page);
+                componentSet.name = `${library.name} / ${categoryName}`;
+                
+                // Set up grid layout with 20 icons per row
+                componentSet.layoutMode = 'HORIZONTAL';
+                componentSet.primaryAxisSizingMode = 'AUTO';
+                componentSet.counterAxisSizingMode = 'AUTO';
+                componentSet.primaryAxisAlignItems = 'MIN';
+                componentSet.counterAxisAlignItems = 'MIN';
+                componentSet.itemSpacing = 16;
+                componentSet.counterAxisSpacing = 16;
+                componentSet.paddingLeft = 16;
+                componentSet.paddingRight = 16;
+                componentSet.paddingTop = 16;
+                componentSet.paddingBottom = 16;
+                componentSet.layoutWrap = 'WRAP';
+                
+                // Calculate max width for 20 icons per row
+                const iconWidth = 24;
+                const spacing = 16;
+                const iconsPerRow = 20;
+                const padding = 32;
+                const maxWidth = (iconWidth + spacing) * iconsPerRow - spacing + padding;
+                componentSet.resize(maxWidth, componentSet.height);
+                
+                componentSet.fills = [];
+                componentSet.y = yOffset;
+                allComponentSets.push(componentSet);
+                categoryFrame.remove();
+                yOffset += componentSet.height + 100;
+            } else if (components.length === 1) {
+                components[0].y = yOffset;
+                allComponentSets.push(components[0]);
+                categoryFrame.remove();
+                yOffset += components[0].height + 100;
+            }
+            
+            totalSuccess += successCount;
+            totalFailed += failCount;
+            categoriesCreated++;
+            
+            figma.notify(`✅ ${categoryName} complete! (${successCount} icons)`);
+        }
+        
+        if (allComponentSets.length > 0) {
+            figma.viewport.scrollAndZoomIntoView(allComponentSets);
+        }
+        
+        await figma.setCurrentPageAsync(originalPage);
+        
+        return {
+            success: true,
+            totalSuccess,
+            totalFailed,
+            categoriesCreated
+        };
+        
+    } catch (error) {
+        await figma.setCurrentPageAsync(originalPage);
+        throw error;
+    }
+}
+

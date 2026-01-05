@@ -81,6 +81,18 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Smooth theme transition for all elements */
+        *,
+        *::before,
+        *::after {
+            transition: background-color 0.3s ease, 
+                        color 0.3s ease,
+                        border-color 0.3s ease,
+                        fill 0.3s ease,
+                        stroke 0.3s ease;
         }
 
         /* Welcome Screen Styles - Simple Minimal Design */
@@ -1358,148 +1370,80 @@
                     <!-- Components Tab -->
                     <div class="tab-content" id="components">
                         <div style="max-width: 1200px; width: 100%;">
+                            
                             <!-- Button Component -->
                             <div class="card">
                                 <div class="card-header" onclick="toggleCard(this)">
                                     <div class="card-title">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <rect x="3" y="8" width="18" height="8" rx="2" />
                                         </svg>
                                         Button Component
                                     </div>
-                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
+                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polyline points="6 9 12 15 18 9"></polyline>
                                     </svg>
                                 </div>
                                 <div class="card-body">
-                                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">
-                                        Create a button component set with states (Default, Hover, Click, Disabled) and
-                                        icon options.
-                                    </p>
-
-                                    <!-- Button Text -->
-                                    <div style="margin-bottom: 16px;">
-                                        <label
-                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Button
-                                            Text</label>
-                                        <input type="text" id="buttonText" value="Button"
-                                            placeholder="Enter button text"
-                                            style="width: 100%; padding: 10px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; transition: border-color 0.2s;"
-                                            onfocus="this.style.borderColor='var(--primary)'"
-                                            onblur="this.style.borderColor='var(--border)'">
-                                    </div>
-
-                                    <!-- Colors Grid -->
-                                    <div
-                                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                                        <!-- Background Color -->
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                        <!-- Left Column - Settings -->
                                         <div>
-                                            <label
-                                                style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Background
-                                                Color</label>
-                                            <div style="display: flex; align-items: stretch; gap: 8px; height: 44px;">
-                                                <input type="color" id="buttonBgColor" value="#0066FF"
-                                                    onchange="document.getElementById('buttonBgColorHex').value = this.value.toUpperCase()"
-                                                    style="width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; padding: 2px;">
-                                                <input type="text" id="buttonBgColorHex" value="#0066FF" maxlength="7"
-                                                    oninput="if(/^#[0-9A-F]{6}$/i.test(this.value)) document.getElementById('buttonBgColor').value = this.value"
-                                                    style="flex: 1; padding: 0 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: 'Monaco', monospace; text-transform: uppercase; font-weight: 500;">
+                                            <div style="margin-bottom: 16px;">
+                                                <label style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Button Text</label>
+                                                <input type="text" id="buttonText" value="Button" placeholder="Enter button text"
+                                                    oninput="updateButtonPreview()"
+                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px;">
                                             </div>
-                                        </div>
 
-                                        <!-- Text Color -->
-                                        <div>
-                                            <label
-                                                style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Text
-                                                Color</label>
-                                            <div style="display: flex; align-items: stretch; gap: 8px; height: 44px;">
-                                                <input type="color" id="buttonTextColor" value="#ffffff"
-                                                    onchange="document.getElementById('buttonTextColorHex').value = this.value.toUpperCase()"
-                                                    style="width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; padding: 2px;">
-                                                <input type="text" id="buttonTextColorHex" value="#FFFFFF" maxlength="7"
-                                                    oninput="if(/^#[0-9A-F]{6}$/i.test(this.value)) document.getElementById('buttonTextColor').value = this.value"
-                                                    style="flex: 1; padding: 0 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: 'Monaco', monospace; text-transform: uppercase; font-weight: 500;">
+                                            <div style="margin-bottom: 16px;">
+                                                <label style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Background Color</label>
+                                                <div style="display: flex; gap: 8px;">
+                                                    <input type="color" id="buttonBgColor" value="#0066FF" 
+                                                        oninput="updateButtonPreview(); document.getElementById('buttonBgColorHex').value = this.value.toUpperCase()"
+                                                        style="width: 40px; height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
+                                                    <input type="text" id="buttonBgColorHex" value="#0066FF" maxlength="7"
+                                                        oninput="if(/^#[0-9A-F]{6}$/i.test(this.value)) { document.getElementById('buttonBgColor').value = this.value; updateButtonPreview(); }"
+                                                        style="flex: 1; padding: 0 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; font-family: monospace; text-transform: uppercase;">
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
 
-                                    <!-- Border Radius -->
-                                    <div style="margin-bottom: 20px;">
-                                        <label
-                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-                                            <span>Border Radius</span>
-                                            <span id="radiusValue"
-                                                style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">8px</span>
-                                        </label>
-                                        <input type="range" id="buttonRadius" value="8" min="0" max="50" step="1"
-                                            oninput="document.getElementById('radiusValue').textContent = this.value + 'px'; updateRangeSlider(this)"
-                                            style="width: 100%; height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--primary) 0%, var(--primary) 16%, var(--border) 16%, var(--border) 100%); outline: none; -webkit-appearance: none; appearance: none; cursor: pointer;">
-                                    </div>
+                                            <div style="margin-bottom: 16px;">
+                                                <label style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Text Color</label>
+                                                <div style="display: flex; gap: 8px;">
+                                                    <input type="color" id="buttonTextColor" value="#ffffff"
+                                                        oninput="updateButtonPreview(); document.getElementById('buttonTextColorHex').value = this.value.toUpperCase()"
+                                                        style="width: 40px; height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
+                                                    <input type="text" id="buttonTextColorHex" value="#FFFFFF" maxlength="7"
+                                                        oninput="if(/^#[0-9A-F]{6}$/i.test(this.value)) { document.getElementById('buttonTextColor').value = this.value; updateButtonPreview(); }"
+                                                        style="flex: 1; padding: 0 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; font-family: monospace; text-transform: uppercase;">
+                                                </div>
+                                            </div>
 
-                                    <!-- Icon Options -->
-                                    <div
-                                        style="background: var(--bg-secondary); padding: 14px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-light);">
-                                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round"
-                                                style="color: var(--primary);">
-                                                <circle cx="12" cy="12" r="10" />
-                                                <path d="M12 16v-4" />
-                                                <path d="M12 8h.01" />
-                                            </svg>
-                                            <span
-                                                style="font-size: 11px; font-weight: 600; color: var(--text-primary);">Icon
-                                                Options</span>
-                                        </div>
-                                        <p
-                                            style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.5;">
-                                            Boolean properties for left and right icons will be added. Toggle them in
-                                            Figma's properties panel.
-                                        </p>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                                            <div
-                                                style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; gap: 6px;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                    style="color: var(--success);">
-                                                    <polyline points="20 6 9 17 4 12" />
+                                            <div style="margin-bottom: 20px;">
+                                                <label style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: flex; justify-content: space-between;">
+                                                    <span>Border Radius</span>
+                                                    <span id="radiusValue" style="font-size: 11px; color: var(--text-secondary);">8px</span>
+                                                </label>
+                                                <input type="range" id="buttonRadius" value="8" min="0" max="50" step="1"
+                                                    oninput="document.getElementById('radiusValue').textContent = this.value + 'px'; updateButtonPreview(); updateRangeSlider(this)"
+                                                    style="width: 100%;">
+                                            </div>
+
+                                            <button class="btn btn-primary" onclick="createButtonComponent()" style="width: 100%;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
                                                 </svg>
-                                                <span
-                                                    style="font-size: 11px; font-weight: 500; color: var(--text-primary);">Left
-                                                    Icon</span>
-                                            </div>
-                                            <div
-                                                style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; gap: 6px;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                    style="color: var(--success);">
-                                                    <polyline points="20 6 9 17 4 12" />
-                                                </svg>
-                                                <span
-                                                    style="font-size: 11px; font-weight: 500; color: var(--text-primary);">Right
-                                                    Icon</span>
-                                            </div>
+                                                Create Button Component
+                                            </button>
+                                        </div>
+
+                                        <!-- Right Column - Live Preview -->
+                                        <div style="background: var(--bg-hover); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 32px; display: flex; align-items: center; justify-content: center; min-height: 280px;">
+                                            <button id="buttonPreview" style="padding: 12px 24px; font-size: 14px; font-weight: 500; border: none; cursor: default; transition: all 0.2s ease;">
+                                                Button
+                                            </button>
                                         </div>
                                     </div>
-
-                                    <!-- Create Button -->
-                                    <button class="btn btn-primary" onclick="createButtonComponent()"
-                                        style="width: 100%; padding: 12px; font-size: 13px; font-weight: 600;">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
-                                            <path
-                                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                                        </svg>
-                                        Create Button Component Set
-                                    </button>
                                 </div>
                             </div>
 
@@ -1507,170 +1451,78 @@
                             <div class="card">
                                 <div class="card-header" onclick="toggleCard(this)">
                                     <div class="card-title">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <rect x="2" y="6" width="20" height="12" rx="2" />
                                             <path d="M6 10h.01" />
                                         </svg>
                                         Input Component
                                     </div>
-                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
+                                    <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polyline points="6 9 12 15 18 9"></polyline>
                                     </svg>
                                 </div>
                                 <div class="card-body">
-                                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">
-                                        Create an input component set with 3 types (Text, Textarea, OTP) and 5 states
-                                        (Default, Click, Error, Success, Disabled). Text/Textarea are 324px wide with
-                                        left-aligned text. Click state uses Primary Color. OTP has a 6-Digit boolean
-                                        property. Includes label and icon options.
-                                    </p>
-
-                                    <!-- Input Placeholder -->
-                                    <div style="margin-bottom: 16px;">
-                                        <label
-                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Placeholder
-                                            Text</label>
-                                        <input type="text" id="inputPlaceholder" value="Enter text..."
-                                            placeholder="Enter placeholder text"
-                                            style="width: 100%; padding: 10px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; transition: border-color 0.2s;"
-                                            onfocus="this.style.borderColor='var(--primary)'"
-                                            onblur="this.style.borderColor='var(--border)'">
-                                    </div>
-
-                                    <!-- Colors Grid -->
-                                    <div
-                                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                                        <!-- Border Color -->
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                        <!-- Left Column - Settings -->
                                         <div>
-                                            <label
-                                                style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Border
-                                                Color</label>
-                                            <div style="display: flex; align-items: stretch; gap: 8px; height: 44px;">
-                                                <input type="color" id="inputBorderColor" value="#d1d5db"
-                                                    onchange="document.getElementById('inputBorderColorHex').value = this.value.toUpperCase()"
-                                                    style="width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; padding: 2px;">
-                                                <input type="text" id="inputBorderColorHex" value="#D1D5DB"
-                                                    maxlength="7"
-                                                    oninput="if(/^#[0-9A-F]{6}$/i.test(this.value)) document.getElementById('inputBorderColor').value = this.value"
-                                                    style="flex: 1; padding: 0 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: 'Monaco', monospace; text-transform: uppercase; font-weight: 500;">
+                                            <div style="margin-bottom: 16px;">
+                                                <label style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Placeholder Text</label>
+                                                <input type="text" id="inputPlaceholder" value="Enter text..." placeholder="Enter placeholder"
+                                                    oninput="updateInputPreview()"
+                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px;">
                                             </div>
-                                        </div>
 
-                                        <!-- Text Color -->
-                                        <div>
-                                            <label
-                                                style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Text
-                                                Color</label>
-                                            <div style="display: flex; align-items: stretch; gap: 8px; height: 44px;">
-                                                <input type="color" id="inputTextColor" value="#1a1a1a"
-                                                    onchange="document.getElementById('inputTextColorHex').value = this.value.toUpperCase()"
-                                                    style="width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; padding: 2px;">
-                                                <input type="text" id="inputTextColorHex" value="#1A1A1A" maxlength="7"
-                                                    oninput="if(/^#[0-9A-F]{6}$/i.test(this.value)) document.getElementById('inputTextColor').value = this.value"
-                                                    style="flex: 1; padding: 0 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: 'Monaco', monospace; text-transform: uppercase; font-weight: 500;">
+                                            <div style="margin-bottom: 16px;">
+                                                <label style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Border Color</label>
+                                                <div style="display: flex; gap: 8px;">
+                                                    <input type="color" id="inputBorderColor" value="#d1d5db"
+                                                        oninput="updateInputPreview(); document.getElementById('inputBorderColorHex').value = this.value.toUpperCase()"
+                                                        style="width: 40px; height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
+                                                    <input type="text" id="inputBorderColorHex" value="#D1D5DB" maxlength="7"
+                                                        oninput="if(/^#[0-9A-F]{6}$/i.test(this.value)) { document.getElementById('inputBorderColor').value = this.value; updateInputPreview(); }"
+                                                        style="flex: 1; padding: 0 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; font-family: monospace; text-transform: uppercase;">
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
 
-                                    <!-- Primary Color Info -->
-                                    <div
-                                        style="background: var(--primary-light); padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--primary); border-left-width: 3px;">
-                                        <p style="font-size: 11px; color: var(--text-primary); line-height: 1.5;">
-                                            <strong>💡 Tip:</strong> The Click state automatically uses the Primary
-                                            Color from the Foundations tab.
-                                        </p>
-                                    </div>
+                                            <div style="margin-bottom: 16px;">
+                                                <label style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Text Color</label>
+                                                <div style="display: flex; gap: 8px;">
+                                                    <input type="color" id="inputTextColor" value="#1a1a1a"
+                                                        oninput="updateInputPreview(); document.getElementById('inputTextColorHex').value = this.value.toUpperCase()"
+                                                        style="width: 40px; height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
+                                                    <input type="text" id="inputTextColorHex" value="#1A1A1A" maxlength="7"
+                                                        oninput="if(/^#[0-9A-F]{6}$/i.test(this.value)) { document.getElementById('inputTextColor').value = this.value; updateInputPreview(); }"
+                                                        style="flex: 1; padding: 0 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; font-family: monospace; text-transform: uppercase;">
+                                                </div>
+                                            </div>
 
-                                    <!-- Border Radius -->
-                                    <div style="margin-bottom: 20px;">
-                                        <label
-                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-                                            <span>Border Radius</span>
-                                            <span id="inputRadiusValue"
-                                                style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">6px</span>
-                                        </label>
-                                        <input type="range" id="inputRadius" value="6" min="0" max="50" step="1"
-                                            oninput="document.getElementById('inputRadiusValue').textContent = this.value + 'px'; updateRangeSlider(this)"
-                                            style="width: 100%; height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--primary) 0%, var(--primary) 12%, var(--border) 12%, var(--border) 100%); outline: none; -webkit-appearance: none; appearance: none; cursor: pointer;">
-                                    </div>
+                                            <div style="margin-bottom: 20px;">
+                                                <label style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: flex; justify-content: space-between;">
+                                                    <span>Border Radius</span>
+                                                    <span id="inputRadiusValue" style="font-size: 11px; color: var(--text-secondary);">6px</span>
+                                                </label>
+                                                <input type="range" id="inputRadius" value="6" min="0" max="50" step="1"
+                                                    oninput="document.getElementById('inputRadiusValue').textContent = this.value + 'px'; updateInputPreview(); updateRangeSlider(this)"
+                                                    style="width: 100%;">
+                                            </div>
 
-                                    <!-- Icon Options -->
-                                    <div
-                                        style="background: var(--bg-secondary); padding: 14px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-light);">
-                                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round"
-                                                style="color: var(--primary);">
-                                                <circle cx="12" cy="12" r="10" />
-                                                <path d="M12 16v-4" />
-                                                <path d="M12 8h.01" />
-                                            </svg>
-                                            <span
-                                                style="font-size: 11px; font-weight: 600; color: var(--text-primary);">Component
-                                                Features</span>
-                                        </div>
-                                        <p
-                                            style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.5;">
-                                            Boolean properties for label and icons will be added. Toggle them in Figma's
-                                            properties panel.
-                                        </p>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                                            <div
-                                                style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; gap: 6px;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                    style="color: var(--success);">
-                                                    <polyline points="20 6 9 17 4 12" />
+                                            <button class="btn btn-primary" onclick="createInputComponent()" style="width: 100%;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
                                                 </svg>
-                                                <span
-                                                    style="font-size: 11px; font-weight: 500; color: var(--text-primary);">Label</span>
-                                            </div>
-                                            <div
-                                                style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; gap: 6px;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                    style="color: var(--success);">
-                                                    <polyline points="20 6 9 17 4 12" />
-                                                </svg>
-                                                <span
-                                                    style="font-size: 11px; font-weight: 500; color: var(--text-primary);">Left
-                                                    Icon</span>
-                                            </div>
-                                            <div
-                                                style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; gap: 6px;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                    style="color: var(--success);">
-                                                    <polyline points="20 6 9 17 4 12" />
-                                                </svg>
-                                                <span
-                                                    style="font-size: 11px; font-weight: 500; color: var(--text-primary);">Right
-                                                    Icon</span>
-                                            </div>
+                                                Create Input Component
+                                            </button>
+                                        </div>
+
+                                        <!-- Right Column - Live Preview -->
+                                        <div style="background: var(--bg-hover); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 32px; display: flex; align-items: center; justify-content: center; min-height: 280px;">
+                                            <input id="inputPreview" type="text" placeholder="Enter text..." readonly
+                                                style="width: 100%; max-width: 320px; padding: 12px 16px; font-size: 14px; background: white; cursor: default; transition: all 0.2s ease;">
                                         </div>
                                     </div>
-
-                                    <!-- Create Input -->
-                                    <button class="btn btn-primary" onclick="createInputComponent()"
-                                        style="width: 100%; padding: 12px; font-size: 13px; font-weight: 600;">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
-                                            <path
-                                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                                        </svg>
-                                        Create Input Component Set
-                                    </button>
                                 </div>
                             </div>
+
                         </div>
                     </div>
 
@@ -1704,6 +1556,7 @@
             const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
+            // Change theme immediately - CSS transitions will handle the smooth animation
             html.setAttribute('data-theme', newTheme);
             
             // Toggle icon visibility
@@ -2440,6 +2293,59 @@
             slider.style.background = `linear-gradient(to right, var(--primary) 0%, var(--primary) ${percentage}%, var(--border) ${percentage}%, var(--border) 100%)`;
         }
 
+        // Update Button Preview in Real-time
+        function updateButtonPreview() {
+            const preview = document.getElementById('buttonPreview');
+            if (!preview) return;
+            
+            const text = document.getElementById('buttonText').value || 'Button';
+            const bgColor = document.getElementById('buttonBgColor').value;
+            const textColor = document.getElementById('buttonTextColor').value;
+            const radius = document.getElementById('buttonRadius').value;
+            
+            preview.textContent = text;
+            preview.style.backgroundColor = bgColor;
+            preview.style.color = textColor;
+            preview.style.borderRadius = radius + 'px';
+        }
+
+        // Update Input Preview in Real-time
+        function updateInputPreview() {
+            const preview = document.getElementById('inputPreview');
+            if (!preview) return;
+            
+            const placeholder = document.getElementById('inputPlaceholder').value || 'Enter text...';
+            const borderColor = document.getElementById('inputBorderColor').value;
+            const textColor = document.getElementById('inputTextColor').value;
+            const radius = document.getElementById('inputRadius').value;
+            
+            preview.placeholder = placeholder;
+            preview.style.borderColor = borderColor;
+            preview.style.color = textColor;
+            preview.style.borderRadius = radius + 'px';
+            preview.style.border = `1px solid ${borderColor}`;
+        }
+
+        // Initialize previews on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            // Wait a bit for elements to be ready
+            setTimeout(function() {
+                updateButtonPreview();
+                updateInputPreview();
+                
+                // Initialize range sliders
+                const buttonRadiusSlider = document.getElementById('buttonRadius');
+                const inputRadiusSlider = document.getElementById('inputRadius');
+                
+                if (buttonRadiusSlider) {
+                    updateRangeSlider(buttonRadiusSlider);
+                }
+                if (inputRadiusSlider) {
+                    updateRangeSlider(inputRadiusSlider);
+                }
+            }, 100);
+        });
+
         // Create Button Component
         function createButtonComponent() {
             const buttonText = document.getElementById('buttonText').value || 'Button';
@@ -2563,78 +2469,128 @@
 
             let html = '<div style="max-width: 1200px; width: 100%;">';
 
-            // Font Family Selection Card
-            html += '<div class="card" style="margin-bottom: 20px; overflow: visible;">';
+            // Font Families Card
+            html += '<div class="card">';
             html += '<div class="card-header" onclick="toggleCard(this)">';
-            html += '<div class="card-title" style="display: flex; align-items: center; gap: 8px;">';
-            html += '<span style="font-size: 16px;">🔤</span>';
-            html += '<span style="font-size: 13px; font-weight: 600;">Font Families</span>';
+            html += '<div class="card-title">';
+            html += '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>';
+            html += 'Font Families';
             html += '</div>';
-            html += '<svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+            html += '<svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
             html += '</div>';
-            html += '<div class="card-body" style="padding: 20px; overflow: visible;">';
+            html += '<div class="card-body">';
 
-            // Primary Font - Input Field
-            html += '<div style="margin-bottom: 20px;">';
-            html += '<label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Primary Font</label>';
-            html += '<input type="text" id="primaryFontInput" value="' + state.typography.primaryFont + '" placeholder="Enter font name (e.g., Inter, Roboto)" onchange="updatePrimaryFont(this.value)" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-weight: 500; background: var(--bg-card); color: var(--text-primary); transition: all 0.2s;" onfocus="this.style.borderColor=\'var(--primary)\'" onblur="this.style.borderColor=\'var(--border)\'">';
+            // Two column layout for fonts
+            html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">';
+            
+            // Primary Font
+            html += '<div>';
+            html += '<label style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Primary Font</label>';
+            html += '<input type="text" id="primaryFontInput" value="' + state.typography.primaryFont + '" placeholder="e.g., Inter" onchange="updatePrimaryFont(this.value)" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; background: var(--bg-card); color: var(--text-primary);">';
             html += '</div>';
 
-            // Secondary Font (Optional)
-            html += '<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">';
+            // Secondary Font with toggle
+            html += '<div>';
+            html += '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">';
+            html += '<label style="font-size: 11px; font-weight: 600; color: var(--text-primary);">Secondary Font</label>';
             html += '<label class="toggle-switch"><input type="checkbox" id="secondaryToggle" ' + (state.typography.secondaryEnabled ? 'checked' : '') + ' onchange="toggleSecondaryFont(this.checked)"><span class="toggle-slider"></span></label>';
-            html += '<label style="font-size: 12px; font-weight: 500; color: var(--text-primary); cursor: pointer;" onclick="document.getElementById(\'secondaryToggle\').click()">Secondary Font (Optional)</label>';
+            html += '</div>';
+            html += '<input type="text" id="secondaryFontInput" value="' + (state.typography.secondaryFont || '') + '" placeholder="e.g., Poppins" onchange="updateSecondaryFont(this.value)" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; background: var(--bg-card); color: var(--text-primary); opacity: ' + (state.typography.secondaryEnabled ? '1' : '0.4') + '; pointer-events: ' + (state.typography.secondaryEnabled ? 'auto' : 'none') + ';">';
             html += '</div>';
 
-            // Secondary Font - Input Field
-            html += '<div style="margin-bottom: 20px; opacity: ' + (state.typography.secondaryEnabled ? '1' : '0.4') + '; pointer-events: ' + (state.typography.secondaryEnabled ? 'auto' : 'none') + ';">';
-            html += '<input type="text" id="secondaryFontInput" value="' + (state.typography.secondaryFont || '') + '" placeholder="Enter font name (e.g., Poppins, Montserrat)" onchange="updateSecondaryFont(this.value)" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-weight: 500; background: var(--bg-card); color: var(--text-primary); transition: all 0.2s;" onfocus="this.style.borderColor=\'var(--primary)\'" onblur="this.style.borderColor=\'var(--border)\'">';
             html += '</div>';
-
             html += '</div></div>';
 
             // Typography Styles Card
             html += '<div class="card">';
             html += '<div class="card-header" onclick="toggleCard(this)">';
-            html += '<div class="card-title" style="display: flex; align-items: center; gap: 8px;">';
-            html += '<span style="font-size: 16px;">📝</span>';
-            html += '<span style="font-size: 13px; font-weight: 600;">Typography Styles</span>';
+            html += '<div class="card-title">';
+            html += '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+            html += 'Text Styles';
             html += '</div>';
-            html += '<svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+            html += '<svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
             html += '</div>';
-            html += '<div class="card-body" style="padding: 16px; display: flex; flex-direction: column; gap: 16px;">';
+            html += '<div class="card-body">';
 
-            Object.entries(state.typography.styles).forEach(([key, style]) => {
+            // Typography styles with expandable details
+            html += '<div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">';
+            
+            Object.entries(state.typography.styles).forEach(([key, style], index) => {
                 const fontFamily = state.typography.primaryFont;
-                html += '<div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; transition: all 0.2s;" onmouseover="this.style.borderColor=\'var(--primary)\'; this.style.boxShadow=\'0 4px 12px rgba(200, 255, 0, 0.1)\'" onmouseout="this.style.borderColor=\'var(--border)\'; this.style.boxShadow=\'none\'">';
-
-                // Preview text
-                html += '<div style="font-family: ' + fontFamily + '; font-size: ' + style.size + 'px; font-weight: 400; line-height: ' + style.lineHeight + '; letter-spacing: ' + style.letterSpacing + 'px; color: var(--text-primary); margin-bottom: 16px;">The quick brown fox jumps over the lazy dog</div>';
-
-                // Style info and size control
-                html += '<div style="display: flex; align-items: center; justify-content: space-between;">';
-                html += '<div style="display: flex; flex-direction: column; gap: 4px;">';
-                html += '<div style="font-size: 11px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.5px;">' + key.toUpperCase() + '</div>';
-                html += '<div style="font-size: 11px; color: var(--text-secondary); font-family: monospace;">' + fontFamily + ' • ' + style.size + 'px • undefined</div>';
+                const displayName = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+                
+                html += '<div style="background: var(--bg-hover); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden;">';
+                
+                // Main row - clickable to expand
+                html += '<div onclick="toggleTypographyDetails(\'' + key + '\')" style="padding: 14px 16px; display: grid; grid-template-columns: 140px 1fr 70px 24px; gap: 12px; align-items: center; cursor: pointer;">';
+                
+                // Style name
+                html += '<div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">' + displayName + '</div>';
+                
+                // Preview text with actual font
+                html += '<div style="font-family: ' + fontFamily + ', sans-serif; font-size: ' + style.size + 'px; line-height: ' + style.lineHeight + '; letter-spacing: ' + style.letterSpacing + 'px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">The quick brown fox</div>';
+                
+                // Size display
+                html += '<div style="font-size: 11px; color: var(--text-secondary); font-family: monospace; text-align: right;">' + style.size + 'px</div>';
+                
+                // Expand arrow
+                html += '<svg id="arrow-' + key + '" style="width: 16px; height: 16px; color: var(--text-tertiary); transition: transform 0.2s;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                
                 html += '</div>';
-
-                // Size input only
-                html += '<input type="number" value="' + style.size + '" onchange="updateTypographySize(\'' + key + '\', this.value)" style="width: 80px; padding: 10px 14px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 500; text-align: center; transition: all 0.2s;" placeholder="Size" onfocus="this.style.borderColor=\'var(--primary)\'; this.style.boxShadow=\'0 0 0 3px rgba(200, 255, 0, 0.1)\'" onblur="this.style.borderColor=\'var(--border)\'; this.style.boxShadow=\'none\'">';
+                
+                // Expandable details section
+                html += '<div id="details-' + key + '" style="display: none; padding: 0 16px 16px 16px; border-top: 1px solid var(--border);">';
+                html += '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px;">';
+                
+                // Size input
+                html += '<div>';
+                html += '<label style="font-size: 10px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Size</label>';
+                html += '<input type="number" value="' + style.size + '" onchange="updateTypographyProperty(\'' + key + '\', \'size\', this.value)" style="width: 100%; padding: 6px 10px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; text-align: center; font-weight: 500;">';
                 html += '</div>';
-
+                
+                // Line height input
+                html += '<div>';
+                html += '<label style="font-size: 10px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Line Height</label>';
+                html += '<input type="number" step="0.1" value="' + style.lineHeight + '" onchange="updateTypographyProperty(\'' + key + '\', \'lineHeight\', this.value)" style="width: 100%; padding: 6px 10px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; text-align: center; font-weight: 500;">';
+                html += '</div>';
+                
+                // Letter spacing input
+                html += '<div>';
+                html += '<label style="font-size: 10px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Letter Spacing</label>';
+                html += '<input type="number" step="0.1" value="' + style.letterSpacing + '" onchange="updateTypographyProperty(\'' + key + '\', \'letterSpacing\', this.value)" style="width: 100%; padding: 6px 10px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; text-align: center; font-weight: 500;">';
+                html += '</div>';
+                
+                html += '</div>';
+                html += '</div>';
+                
                 html += '</div>';
             });
 
+            html += '</div>';
+            
             html += '</div></div>';
 
-            // Create Styles Button
-            html += '<button class="btn btn-primary" onclick="createTextStyles()" style="width: 100%; padding: 14px; font-size: 14px; font-weight: 600; margin-top: 20px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">';
-            html += '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>';
-            html += '<span>Create Text Styles in Figma</span>';
+            // Create Button
+            html += '<button class="btn btn-primary" onclick="createTextStyles()" style="width: 100%; margin-top: 12px;">';
+            html += '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>';
+            html += 'Create Text Styles in Figma';
             html += '</button>';
 
             html += '</div>';
             container.innerHTML = html;
+        }
+
+        function toggleTypographyDetails(key) {
+            const details = document.getElementById('details-' + key);
+            const arrow = document.getElementById('arrow-' + key);
+            
+            if (details.style.display === 'none') {
+                details.style.display = 'block';
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                details.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            }
         }
 
         function updatePrimaryFont(value) {
@@ -2649,6 +2605,17 @@
 
         function toggleSecondaryFont(enabled) {
             state.typography.secondaryEnabled = enabled;
+            renderTypography();
+        }
+
+        function updateTypographyProperty(key, property, value) {
+            if (property === 'size') {
+                state.typography.styles[key].size = parseInt(value);
+            } else if (property === 'lineHeight') {
+                state.typography.styles[key].lineHeight = parseFloat(value);
+            } else if (property === 'letterSpacing') {
+                state.typography.styles[key].letterSpacing = parseFloat(value);
+            }
             renderTypography();
         }
 
@@ -2796,102 +2763,111 @@
             if (!container) return;
 
             container.innerHTML = `
-            <div style="max-width: 900px; margin: 0 auto;">
-              <div style="margin-bottom: 32px;">
-                <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+            <div style="max-width: 680px; margin: 0 auto; padding: 48px 0;">
+              
+              <!-- Header -->
+              <div style="margin-bottom: 48px;">
+                <h2 style="font-size: 32px; font-weight: 600; margin: 0 0 12px 0; color: var(--text-primary); letter-spacing: -0.5px;">
                   Icon Library
                 </h2>
-                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 24px;">
-                  Select an icon library and optionally choose specific categories
+                <p style="color: var(--text-secondary); font-size: 15px; margin: 0; line-height: 1.5;">
+                  Select an icon library and generate icons for your design
                 </p>
+              </div>
+
+              <!-- Form Section -->
+              <div style="margin-bottom: 32px;">
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                  <div>
-                    <label style="display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px;">
-                      Select Icon Library
-                    </label>
-                    <select id="iconLibrarySelect" style="
-                      width: 100%;
-                      padding: 12px 16px;
-                      font-size: 14px;
-                      border: 2px solid var(--border);
-                      border-radius: var(--radius-md);
-                      background: var(--bg-card);
-                      color: var(--text-primary);
-                      cursor: pointer;
-                      transition: all 0.2s ease;
-                      font-weight: 500;
-                    " onchange="onLibraryChange(this.value)">
-                      <option value="">Choose a library...</option>
-                      ${Object.entries(ICON_LIBRARIES).map(([id, library]) => `
-                        <option value="${id}">${library.name}</option>
-                      `).join('')}
-                    </select>
-                  </div>
-                  
-                  <div id="categoryDropdownContainer" style="display: none;">
-                    <label style="display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px;">
-                      Select Category (Optional)
-                    </label>
-                    <select id="iconCategorySelect" style="
-                      width: 100%;
-                      padding: 12px 16px;
-                      font-size: 14px;
-                      border: 2px solid var(--border);
-                      border-radius: var(--radius-md);
-                      background: var(--bg-card);
-                      color: var(--text-primary);
-                      cursor: pointer;
-                      transition: all 0.2s ease;
-                      font-weight: 500;
-                    " onchange="onCategoryChange(this.value)">
-                      <option value="all">All Categories</option>
-                    </select>
-                  </div>
+                <!-- Library Select -->
+                <div style="margin-bottom: 24px;">
+                  <label style="
+                    display: block;
+                    font-size: 14px;
+                    font-weight: 500;
+                    color: var(--text-primary);
+                    margin-bottom: 8px;
+                  ">
+                    Library
+                  </label>
+                  <select id="iconLibrarySelect" style="
+                    width: 100%;
+                    padding: 12px 40px 12px 14px;
+                    font-size: 15px;
+                    border: 1px solid var(--border);
+                    border-radius: 6px;
+                    background: var(--bg-card);
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    transition: border-color 0.2s ease;
+                    font-family: inherit;
+                    appearance: none;
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    background-image: url(&quot;data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6L8 10L12 6' stroke='%23737373' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E&quot;);
+                    background-repeat: no-repeat;
+                    background-position: right 14px center;
+                  " onchange="onLibraryChange(this.value)">
+                    <option value="">Select a library</option>
+                    ${Object.entries(ICON_LIBRARIES).map(([id, library]) => `
+                      <option value="${id}">${library.name}</option>
+                    `).join('')}
+                  </select>
                 </div>
                 
+                <!-- Category Select -->
+                <div id="categoryDropdownContainer" style="display: none; margin-bottom: 24px;">
+                  <label style="
+                    display: block;
+                    font-size: 14px;
+                    font-weight: 500;
+                    color: var(--text-primary);
+                    margin-bottom: 8px;
+                  ">
+                    Category
+                  </label>
+                  <select id="iconCategorySelect" style="
+                    width: 100%;
+                    padding: 12px 40px 12px 14px;
+                    font-size: 15px;
+                    border: 1px solid var(--border);
+                    border-radius: 6px;
+                    background: var(--bg-card);
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    transition: border-color 0.2s ease;
+                    font-family: inherit;
+                    appearance: none;
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    background-image: url(&quot;data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6L8 10L12 6' stroke='%23737373' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E&quot;);
+                    background-repeat: no-repeat;
+                    background-position: right 14px center;
+                  " onchange="onCategoryChange(this.value)">
+                    <option value="all">All Categories</option>
+                  </select>
+                </div>
+                
+                <!-- Generate Button -->
                 <button 
                   id="generateAllBtn" 
                   class="btn btn-primary" 
                   onclick="generateIconsFromSelection()"
                   disabled
-                  style="padding: 12px 24px; width: 100%;">
-                  📦 Generate Icons
+                  style="
+                    padding: 12px 24px;
+                    width: 100%;
+                    font-size: 15px;
+                    font-weight: 500;
+                    border-radius: 6px;
+                    transition: opacity 0.2s ease;
+                  ">
+                  Generate Icons
                 </button>
               </div>
-              
-              <div id="libraryInfo" style="display: none;">
-                <div style="
-                  background: var(--bg-card);
-                  border: 2px solid var(--border);
-                  border-radius: var(--radius-lg);
-                  padding: 24px;
-                  margin-bottom: 24px;
-                ">
-                  <h3 id="libraryName" style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);"></h3>
-                  <div id="categoryList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;"></div>
-                  <p id="libraryDescription" style="color: var(--text-secondary); font-size: 13px; line-height: 1.6;"></p>
-                </div>
-                
-                <div style="
-                  background: linear-gradient(135deg, var(--primary-light), var(--bg-accent));
-                  border: 1px solid var(--primary);
-                  border-radius: var(--radius-md);
-                  padding: 16px 20px;
-                  display: flex;
-                  align-items: center;
-                  gap: 12px;
-                ">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary); flex-shrink: 0;">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 16v-4"/>
-                    <path d="M12 8h.01"/>
-                  </svg>
-                  <p id="infoMessage" style="color: var(--text-primary); font-size: 13px; line-height: 1.5; margin: 0;">
-                    Select "All Categories" to generate all icons, or choose a specific category to generate only those icons.
-                  </p>
+            
                 </div>
               </div>
+              
             </div>
           `;
         }

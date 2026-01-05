@@ -3,6 +3,16 @@
 // Note: In Figma plugins, we need to pass icon data through the UI
 figma.showUI(__html__, { width: 424, height: 700, themeColors: true });
 
+// Helper function to safely set text characters
+function safeSetCharacters(textNode, value) {
+    const stringValue = String(value || '');
+    if (stringValue.trim() === '') {
+        textNode.characters = ' '; // Set to space if empty
+    } else {
+        textNode.characters = stringValue;
+    }
+}
+
 // Function to create button component set
 async function createButtonComponentSet(buttonText, bgColor, textColor, radius) {
     // Load fonts
@@ -1648,7 +1658,7 @@ figma.ui.onmessage = async (msg) => {
                     // Fallback
                 }
                 valueText.fontSize = 24;
-                valueText.characters = `${stat.value}`;
+                safeSetCharacters(valueText, `${stat.value}`);
                 valueText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
                 statItem.appendChild(valueText);
 
@@ -1872,8 +1882,20 @@ figma.ui.onmessage = async (msg) => {
                 spacingSection.layoutWrap = 'WRAP';
 
                 Object.entries(msg.spacing).forEach(([name, valueData]) => {
+                    // Skip if name is empty or invalid
+                    if (!name || name.trim() === '') {
+                        console.warn('Skipping spacing token with empty name');
+                        return;
+                    }
+                    
                     // Handle both old format (number) and new format (object with desktop/tablet/mobile)
                     const displayValue = typeof valueData === 'object' ? valueData.desktop : valueData;
+                    
+                    // Skip if displayValue is invalid
+                    if (displayValue === undefined || displayValue === null) {
+                        console.warn(`Skipping spacing token ${name} with invalid value`);
+                        return;
+                    }
                     
                     const tokenCard = figma.createFrame();
                     tokenCard.name = name;
@@ -1899,7 +1921,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     nameText.fontSize = 10;
-                    nameText.characters = name.toUpperCase();
+                    safeSetCharacters(nameText, name.toUpperCase());
                     nameText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
                     nameText.letterSpacing = { value: 0.4, unit: "PIXELS" };
                     tokenCard.appendChild(nameText);
@@ -1911,7 +1933,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     valueText.fontSize = 28;
-                    valueText.characters = `${displayValue}`;
+                    safeSetCharacters(valueText, `${displayValue}`);
                     valueText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
                     valueText.letterSpacing = { value: -0.5, unit: "PIXELS" };
                     tokenCard.appendChild(valueText);
@@ -1923,7 +1945,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     unitText.fontSize = 10;
-                    unitText.characters = "px";
+                    safeSetCharacters(unitText, "px");
                     unitText.fills = [{ type: 'SOLID', color: { r: 0.63, g: 0.63, b: 0.63 } }];
                     tokenCard.appendChild(unitText);
 
@@ -1954,8 +1976,20 @@ figma.ui.onmessage = async (msg) => {
                 paddingSection.layoutWrap = 'WRAP';
 
                 Object.entries(msg.padding).forEach(([name, valueData]) => {
+                    // Skip if name is empty or invalid
+                    if (!name || name.trim() === '') {
+                        console.warn('Skipping padding token with empty name');
+                        return;
+                    }
+                    
                     // Handle both old format (number) and new format (object with desktop/tablet/mobile)
                     const displayValue = typeof valueData === 'object' ? valueData.desktop : valueData;
+                    
+                    // Skip if displayValue is invalid
+                    if (displayValue === undefined || displayValue === null) {
+                        console.warn(`Skipping padding token ${name} with invalid value`);
+                        return;
+                    }
                     
                     const tokenCard = figma.createFrame();
                     tokenCard.name = name;
@@ -1981,7 +2015,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     nameText.fontSize = 10;
-                    nameText.characters = name.toUpperCase();
+                    safeSetCharacters(nameText, name.toUpperCase());
                     nameText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
                     nameText.letterSpacing = { value: 0.4, unit: "PIXELS" };
                     tokenCard.appendChild(nameText);
@@ -1993,7 +2027,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     valueText.fontSize = 28;
-                    valueText.characters = `${displayValue}`;
+                    safeSetCharacters(valueText, `${displayValue}`);
                     valueText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
                     valueText.letterSpacing = { value: -0.5, unit: "PIXELS" };
                     tokenCard.appendChild(valueText);
@@ -2005,7 +2039,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     unitText.fontSize = 11;
-                    unitText.characters = "pixels";
+                    safeSetCharacters(unitText, "pixels");
                     unitText.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.45, b: 0.47 } }];
                     tokenCard.appendChild(unitText);
 
@@ -2036,8 +2070,20 @@ figma.ui.onmessage = async (msg) => {
                 radiusSection.layoutWrap = 'WRAP';
 
                 Object.entries(msg.radius).forEach(([name, valueData]) => {
+                    // Skip if name is empty or invalid
+                    if (!name || name.trim() === '') {
+                        console.warn('Skipping radius token with empty name');
+                        return;
+                    }
+                    
                     // Handle both old format (number) and new format (object with desktop/tablet/mobile)
                     const displayValue = typeof valueData === 'object' ? valueData.desktop : valueData;
+                    
+                    // Skip if displayValue is invalid
+                    if (displayValue === undefined || displayValue === null) {
+                        console.warn(`Skipping radius token ${name} with invalid value`);
+                        return;
+                    }
                     
                     const tokenCard = figma.createFrame();
                     tokenCard.name = name;
@@ -2063,7 +2109,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     nameText.fontSize = 10;
-                    nameText.characters = name.toUpperCase();
+                    safeSetCharacters(nameText, name.toUpperCase());
                     nameText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
                     nameText.letterSpacing = { value: 0.4, unit: "PIXELS" };
                     tokenCard.appendChild(nameText);
@@ -2075,7 +2121,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     valueText.fontSize = 28;
-                    valueText.characters = displayValue === 9999 ? '∞' : `${displayValue}`;
+                    safeSetCharacters(valueText, displayValue === 9999 ? '∞' : `${displayValue}`);
                     valueText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
                     valueText.letterSpacing = { value: -0.5, unit: "PIXELS" };
                     tokenCard.appendChild(valueText);
@@ -2088,7 +2134,7 @@ figma.ui.onmessage = async (msg) => {
                             // Fallback
                         }
                         unitText.fontSize = 11;
-                        unitText.characters = "pixels";
+                        safeSetCharacters(unitText, "pixels");
                         unitText.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.45, b: 0.47 } }];
                         tokenCard.appendChild(unitText);
                     }
@@ -2120,8 +2166,20 @@ figma.ui.onmessage = async (msg) => {
                 strokeSection.layoutWrap = 'WRAP';
 
                 Object.entries(msg.strokes).forEach(([name, valueData]) => {
+                    // Skip if name is empty or invalid
+                    if (!name || name.trim() === '') {
+                        console.warn('Skipping stroke token with empty name');
+                        return;
+                    }
+                    
                     // Handle both old format (number) and new format (object with desktop/tablet/mobile)
                     const displayValue = typeof valueData === 'object' ? valueData.desktop : valueData;
+                    
+                    // Skip if displayValue is invalid
+                    if (displayValue === undefined || displayValue === null) {
+                        console.warn(`Skipping stroke token ${name} with invalid value`);
+                        return;
+                    }
                     
                     const tokenCard = figma.createFrame();
                     tokenCard.name = name;
@@ -2147,7 +2205,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     nameText.fontSize = 10;
-                    nameText.characters = name.toUpperCase();
+                    safeSetCharacters(nameText, name.toUpperCase());
                     nameText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
                     nameText.letterSpacing = { value: 0.4, unit: "PIXELS" };
                     tokenCard.appendChild(nameText);
@@ -2159,7 +2217,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     valueText.fontSize = 28;
-                    valueText.characters = `${displayValue}`;
+                    safeSetCharacters(valueText, `${displayValue}`);
                     valueText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
                     valueText.letterSpacing = { value: -0.5, unit: "PIXELS" };
                     tokenCard.appendChild(valueText);
@@ -2171,7 +2229,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     unitText.fontSize = 10;
-                    unitText.characters = "px";
+                    safeSetCharacters(unitText, "px");
                     unitText.fills = [{ type: 'SOLID', color: { r: 0.63, g: 0.63, b: 0.63 } }];
                     tokenCard.appendChild(unitText);
 
@@ -2202,6 +2260,12 @@ figma.ui.onmessage = async (msg) => {
                 shadowSection.layoutWrap = 'WRAP';
 
                 Object.entries(msg.shadows).forEach(([name, value]) => {
+                    // Skip if name is empty or invalid
+                    if (!name || name.trim() === '') {
+                        console.warn('Skipping shadow token with empty name');
+                        return;
+                    }
+                    
                     const tokenCard = figma.createFrame();
                     tokenCard.name = name;
                     tokenCard.resize(100, 110);
@@ -2248,7 +2312,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     nameText.fontSize = 10;
-                    nameText.characters = name.replace('shadow-', '').toUpperCase();
+                    safeSetCharacters(nameText, name.replace('shadow-', '').toUpperCase());
                     nameText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
                     nameText.letterSpacing = { value: 0.4, unit: "PIXELS" };
                     tokenCard.appendChild(nameText);
@@ -2260,7 +2324,7 @@ figma.ui.onmessage = async (msg) => {
                         // Fallback
                     }
                     valueText.fontSize = 18;
-                    valueText.characters = name.replace('shadow-', '').charAt(0).toUpperCase() + name.replace('shadow-', '').slice(1);
+                    safeSetCharacters(valueText, name.replace('shadow-', '').charAt(0).toUpperCase() + name.replace('shadow-', '').slice(1));
                     valueText.fills = [{ type: 'SOLID', color: { r: 0.15, g: 0.15, b: 0.15 } }];
                     tokenCard.appendChild(valueText);
 
@@ -2374,8 +2438,8 @@ figma.ui.onmessage = async (msg) => {
             // Title
             const title = figma.createText();
             title.fontName = { family: "Inter", style: "SemiBold" };
-            title.fontSize = 24;
             title.characters = "Icon Library";
+            title.fontSize = 24;
             title.fills = [{ type: 'SOLID', color: { r: 0.15, g: 0.15, b: 0.15 } }];
             title.letterSpacing = { value: -0.3, unit: "PIXELS" };
             mainFrame.appendChild(title);
@@ -2383,8 +2447,8 @@ figma.ui.onmessage = async (msg) => {
             // Metadata
             const metadata = figma.createText();
             metadata.fontName = { family: "Inter", style: "Regular" };
-            metadata.fontSize = 13;
             metadata.characters = `${icons.length} icons • ${Object.keys(iconsByStyle).length} styles • 24×24px`;
+            metadata.fontSize = 13;
             metadata.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.55 } }];
             mainFrame.appendChild(metadata);
 
@@ -2406,8 +2470,8 @@ figma.ui.onmessage = async (msg) => {
                 // Section title
                 const sectionTitle = figma.createText();
                 sectionTitle.fontName = { family: "Inter", style: "Medium" };
-                sectionTitle.fontSize = 15;
                 sectionTitle.characters = `${style.charAt(0).toUpperCase() + style.slice(1)} (${styleIcons.length})`;
+                sectionTitle.fontSize = 15;
                 sectionTitle.fills = [{ type: 'SOLID', color: { r: 0.25, g: 0.25, b: 0.25 } }];
                 styleSection.appendChild(sectionTitle);
 
@@ -2801,149 +2865,279 @@ figma.ui.onmessage = async (msg) => {
                 }
             }
 
-            // STEP 4: CREATE TYPOGRAPHY TABLES WITH AUTO LAYOUT
-            // Helper function to create a typography table
-            function createTypographyTable(title, fontFamily, styles, yPosition) {
-                const cellWidth = 150;
-                const cellHeight = 60;
-                const padding = 16;
-
+            // STEP 4: CREATE TYPOGRAPHY SYSTEM WITH MINIMAL CARD LAYOUT
+            // Helper function to create a modern typography system
+            async function createTypographyTable(title, fontFamily, styles, yPosition) {
+                // Load Inter font for UI elements first
+                await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+                await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
+                await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+                await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+                
                 const categories = Object.keys(styles);
-                const rowLabels = ['Category', 'Font Size (Desktop)', 'Font Size (Mobile)', 'Line Height', 'Letter Spacing'];
 
-                // Create main container frame with auto layout
+                // Create main container with modern styling
                 const container = figma.createFrame();
                 container.name = title;
-                container.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                container.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
                 container.layoutMode = 'VERTICAL';
                 container.primaryAxisSizingMode = 'AUTO';
                 container.counterAxisSizingMode = 'AUTO';
-                container.paddingLeft = padding;
-                container.paddingRight = padding;
-                container.paddingTop = padding;
-                container.paddingBottom = padding;
-                container.itemSpacing = 16;
+                container.paddingLeft = 48;
+                container.paddingRight = 48;
+                container.paddingTop = 40;
+                container.paddingBottom = 40;
+                container.itemSpacing = 32;
+                container.cornerRadius = 16;
                 container.y = yPosition;
 
-                // Add title
+                // Header section
+                const header = figma.createFrame();
+                header.name = "Header";
+                header.fills = [];
+                header.layoutMode = 'VERTICAL';
+                header.primaryAxisSizingMode = 'AUTO';
+                header.counterAxisSizingMode = 'AUTO';
+                header.itemSpacing = 8;
+
+                // Title text
                 const titleText = figma.createText();
+                await figma.loadFontAsync({ family: "Inter", style: "Bold" });
                 titleText.fontName = { family: "Inter", style: "Bold" };
-                titleText.fontSize = 20;
-                titleText.characters = title;
-                titleText.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
-                container.appendChild(titleText);
+                safeSetCharacters(titleText, title);
+                titleText.fontSize = 32;
+                titleText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
+                header.appendChild(titleText);
 
-                // Add font family subtitle
+                // Subtitle text
                 const subtitleText = figma.createText();
+                await figma.loadFontAsync({ family: "Inter", style: "Regular" });
                 subtitleText.fontName = { family: "Inter", style: "Regular" };
-                subtitleText.fontSize = 13;
-                subtitleText.characters = `Font: ${fontFamily} • Responsive: Desktop & Mobile`;
-                subtitleText.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
-                container.appendChild(subtitleText);
+                safeSetCharacters(subtitleText, `${fontFamily} • ${categories.length} Styles • Responsive Design`);
+                subtitleText.fontSize = 15;
+                subtitleText.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.45, b: 0.45 } }];
+                header.appendChild(subtitleText);
 
-                // Create table with auto layout
-                const table = figma.createFrame();
-                table.name = "Table";
-                table.fills = [];
-                table.layoutMode = 'VERTICAL';
-                table.primaryAxisSizingMode = 'AUTO';
-                table.counterAxisSizingMode = 'AUTO';
-                table.itemSpacing = 0;
+                container.appendChild(header);
 
-                // Create rows (now 5 rows instead of 4)
-                for (let row = 0; row < 5; row++) {
-                    // Create row frame with auto layout
-                    const rowFrame = figma.createFrame();
-                    rowFrame.name = `Row ${row}`;
-                    rowFrame.fills = [];
-                    rowFrame.layoutMode = 'HORIZONTAL';
-                    rowFrame.primaryAxisSizingMode = 'AUTO';
-                    rowFrame.counterAxisSizingMode = 'AUTO';
-                    rowFrame.itemSpacing = 0;
+                // Create grid of style cards
+                const grid = figma.createFrame();
+                grid.name = "Typography Grid";
+                grid.fills = [];
+                grid.layoutMode = 'VERTICAL';
+                grid.primaryAxisSizingMode = 'AUTO';
+                grid.counterAxisSizingMode = 'AUTO';
+                grid.itemSpacing = 16;
 
-                    // Create cells in row
-                    for (let col = 0; col < categories.length + 1; col++) {
-                        // Create cell frame
-                        const cell = figma.createFrame();
-                        cell.name = `Cell ${row}-${col}`;
-                        cell.resize(cellWidth, cellHeight);
-                        cell.layoutMode = 'HORIZONTAL';
-                        cell.primaryAxisAlignItems = 'CENTER';
-                        cell.counterAxisAlignItems = 'CENTER';
-                        cell.primaryAxisSizingMode = 'FIXED';
-                        cell.counterAxisSizingMode = 'FIXED';
+                // Create a card for each typography style
+                for (const category of categories) {
+                    const styleData = styles[category];
+                    const mobileSize = Math.round(styleData.size * 0.85);
+                    const lineHeightPercent = Math.round(styleData.lineHeight * 100);
 
-                        // Style cells
-                        if (row === 0) {
-                            cell.fills = [{ type: 'SOLID', color: { r: 0.95, g: 0.95, b: 0.97 } }];
-                        } else if (col === 0) {
-                            cell.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-                        } else {
-                            cell.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-                        }
+                    // Determine weight value
+                    let previewWeightValue = 400;
+                    if (styleData.weight === 'Bold') previewWeightValue = 700;
+                    else if (styleData.weight === 'Semibold') previewWeightValue = 600;
+                    else if (styleData.weight === 'Medium') previewWeightValue = 500;
 
-                        cell.strokes = [{ type: 'SOLID', color: { r: 0.9, g: 0.9, b: 0.92 } }];
-                        cell.strokeWeight = 1;
+                    // Load the font for preview text
+                    const previewFontName = findBestFont(fontFamily, previewWeightValue);
+                    await figma.loadFontAsync(previewFontName);
 
-                        // Create cell text
-                        const text = figma.createText();
-                        text.layoutGrow = 1;
-                        text.textAlignHorizontal = 'CENTER';
-                        text.textAlignVertical = 'CENTER';
+                    // Card container
+                    const card = figma.createFrame();
+                    card.name = `${category} Card`;
+                    card.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                    card.layoutMode = 'VERTICAL';
+                    card.primaryAxisSizingMode = 'AUTO'; // Hug height
+                    card.counterAxisSizingMode = 'AUTO'; // Hug width
+                    card.paddingLeft = 32;
+                    card.paddingRight = 32;
+                    card.paddingTop = 28;
+                    card.paddingBottom = 28;
+                    card.itemSpacing = 20;
+                    card.cornerRadius = 12;
+                    card.effects = [{
+                        type: 'DROP_SHADOW',
+                        color: { r: 0, g: 0, b: 0, a: 0.04 },
+                        offset: { x: 0, y: 2 },
+                        radius: 8,
+                        visible: true,
+                        blendMode: 'NORMAL'
+                    }];
 
-                        if (col === 0) {
-                            // Row label
-                            text.fontName = { family: "Inter", style: "Semi Bold" };
-                            text.fontSize = 13;
-                            text.characters = rowLabels[row];
-                            text.fills = [{ type: 'SOLID', color: { r: 0.2, g: 0.2, b: 0.2 } }];
-                        } else {
-                            const category = categories[col - 1];
-                            const styleData = styles[category];
+                    // Top section: Category name and preview
+                    const topSection = figma.createFrame();
+                    topSection.name = "Top Section";
+                    topSection.fills = [];
+                    topSection.layoutMode = 'VERTICAL';
+                    topSection.primaryAxisSizingMode = 'AUTO';
+                    topSection.counterAxisSizingMode = 'AUTO';
+                    topSection.itemSpacing = 16;
 
-                            if (row === 0) {
-                                // Category name
-                                text.fontName = { family: "Inter", style: "Bold" };
-                                text.fontSize = 14;
-                                text.characters = category.toUpperCase();
-                                text.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
-                            } else if (row === 1) {
-                                // Font Size (Desktop)
-                                text.fontName = { family: "Inter", style: "Medium" };
-                                text.fontSize = 12;
-                                text.characters = `${styleData.size}px`;
-                                text.fills = [{ type: 'SOLID', color: { r: 0.3, g: 0.3, b: 0.3 } }];
-                            } else if (row === 2) {
-                                // Font Size (Mobile)
-                                text.fontName = { family: "Inter", style: "Medium" };
-                                text.fontSize = 12;
-                                const mobileSize = Math.round(styleData.size * 0.85);
-                                text.characters = `${mobileSize}px`;
-                                text.fills = [{ type: 'SOLID', color: { r: 0.4, g: 0.4, b: 0.4 } }];
-                            } else if (row === 3) {
-                                // Line Height
-                                text.fontName = { family: "Inter", style: "Medium" };
-                                text.fontSize = 12;
-                                const lineHeightPercent = Math.round(styleData.lineHeight * 100);
-                                text.characters = `${lineHeightPercent}%`;
-                                text.fills = [{ type: 'SOLID', color: { r: 0.3, g: 0.3, b: 0.3 } }];
-                            } else if (row === 4) {
-                                // Letter Spacing
-                                text.fontName = { family: "Inter", style: "Medium" };
-                                text.fontSize = 12;
-                                text.characters = `${styleData.letterSpacing}px`;
-                                text.fills = [{ type: 'SOLID', color: { r: 0.3, g: 0.3, b: 0.3 } }];
-                            }
-                        }
+                    // Category label
+                    const categoryLabel = figma.createText();
+                    await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
+                    categoryLabel.fontName = { family: "Inter", style: "Semi Bold" };
+                    safeSetCharacters(categoryLabel, category.toUpperCase());
+                    categoryLabel.fontSize = 13;
+                    categoryLabel.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
+                    categoryLabel.letterSpacing = { value: 1, unit: 'PIXELS' };
+                    topSection.appendChild(categoryLabel);
 
-                        cell.appendChild(text);
-                        rowFrame.appendChild(cell);
-                    }
+                    // Preview text with actual style
+                    const previewText = figma.createText();
+                    previewText.fontName = previewFontName;
+                    safeSetCharacters(previewText, "The quick brown fox jumps over the lazy dog");
+                    previewText.fontSize = styleData.size;
+                    previewText.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
+                    previewText.lineHeight = { value: styleData.lineHeight * 100, unit: 'PERCENT' };
+                    previewText.letterSpacing = { value: styleData.letterSpacing, unit: 'PIXELS' };
+                    topSection.appendChild(previewText);
 
-                    table.appendChild(rowFrame);
+                    card.appendChild(topSection);
+
+                    // Divider
+                    const divider = figma.createFrame();
+                    divider.name = "Divider";
+                    divider.resize(736, 1);
+                    divider.fills = [{ type: 'SOLID', color: { r: 0.93, g: 0.93, b: 0.94 } }];
+                    card.appendChild(divider);
+
+                    // Specs section
+                    const specsSection = figma.createFrame();
+                    specsSection.name = "Specs";
+                    specsSection.fills = [];
+                    specsSection.layoutMode = 'HORIZONTAL';
+                    specsSection.primaryAxisSizingMode = 'AUTO';
+                    specsSection.counterAxisSizingMode = 'AUTO';
+                    specsSection.itemSpacing = 40;
+
+                    // Create spec items inline to avoid scope issues
+                    // Desktop spec
+                    const desktopItem = figma.createFrame();
+                    desktopItem.name = "Desktop";
+                    desktopItem.fills = [];
+                    desktopItem.layoutMode = 'VERTICAL';
+                    desktopItem.primaryAxisSizingMode = 'AUTO';
+                    desktopItem.counterAxisSizingMode = 'AUTO';
+                    desktopItem.itemSpacing = 6;
+
+                    const desktopLabel = figma.createText();
+                    await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+                    desktopLabel.fontName = { family: "Inter", style: "Medium" };
+                    safeSetCharacters(desktopLabel, "Desktop");
+                    desktopLabel.fontSize = 11;
+                    desktopLabel.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.55 } }];
+                    desktopItem.appendChild(desktopLabel);
+
+                    const desktopValue = figma.createText();
+                    await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
+                    desktopValue.fontName = { family: "Inter", style: "Semi Bold" };
+                    safeSetCharacters(desktopValue, `${styleData.size}px`);
+                    desktopValue.fontSize = 16;
+                    desktopValue.fills = [{ type: 'SOLID', color: { r: 0.15, g: 0.15, b: 0.15 } }];
+                    desktopItem.appendChild(desktopValue);
+
+                    const desktopSublabel = figma.createText();
+                    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+                    desktopSublabel.fontName = { family: "Inter", style: "Regular" };
+                    safeSetCharacters(desktopSublabel, "Font Size");
+                    desktopSublabel.fontSize = 10;
+                    desktopSublabel.fills = [{ type: 'SOLID', color: { r: 0.6, g: 0.6, b: 0.6 } }];
+                    desktopItem.appendChild(desktopSublabel);
+
+                    specsSection.appendChild(desktopItem);
+
+                    // Mobile spec
+                    const mobileItem = figma.createFrame();
+                    mobileItem.name = "Mobile";
+                    mobileItem.fills = [];
+                    mobileItem.layoutMode = 'VERTICAL';
+                    mobileItem.primaryAxisSizingMode = 'AUTO';
+                    mobileItem.counterAxisSizingMode = 'AUTO';
+                    mobileItem.itemSpacing = 6;
+
+                    const mobileLabel = figma.createText();
+                    mobileLabel.fontName = { family: "Inter", style: "Medium" };
+                    safeSetCharacters(mobileLabel, "Mobile");
+                    mobileLabel.fontSize = 11;
+                    mobileLabel.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.55 } }];
+                    mobileItem.appendChild(mobileLabel);
+
+                    const mobileValue = figma.createText();
+                    mobileValue.fontName = { family: "Inter", style: "Semi Bold" };
+                    safeSetCharacters(mobileValue, `${mobileSize}px`);
+                    mobileValue.fontSize = 16;
+                    mobileValue.fills = [{ type: 'SOLID', color: { r: 0.15, g: 0.15, b: 0.15 } }];
+                    mobileItem.appendChild(mobileValue);
+
+                    const mobileSublabel = figma.createText();
+                    mobileSublabel.fontName = { family: "Inter", style: "Regular" };
+                    safeSetCharacters(mobileSublabel, "Font Size");
+                    mobileSublabel.fontSize = 10;
+                    mobileSublabel.fills = [{ type: 'SOLID', color: { r: 0.6, g: 0.6, b: 0.6 } }];
+                    mobileItem.appendChild(mobileSublabel);
+
+                    specsSection.appendChild(mobileItem);
+
+                    // Line Height spec
+                    const lineHeightItem = figma.createFrame();
+                    lineHeightItem.name = "Line Height";
+                    lineHeightItem.fills = [];
+                    lineHeightItem.layoutMode = 'VERTICAL';
+                    lineHeightItem.primaryAxisSizingMode = 'AUTO';
+                    lineHeightItem.counterAxisSizingMode = 'AUTO';
+                    lineHeightItem.itemSpacing = 6;
+
+                    const lineHeightLabel = figma.createText();
+                    lineHeightLabel.fontName = { family: "Inter", style: "Medium" };
+                    safeSetCharacters(lineHeightLabel, "Line Height");
+                    lineHeightLabel.fontSize = 11;
+                    lineHeightLabel.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.55 } }];
+                    lineHeightItem.appendChild(lineHeightLabel);
+
+                    const lineHeightValue = figma.createText();
+                    lineHeightValue.fontName = { family: "Inter", style: "Semi Bold" };
+                    safeSetCharacters(lineHeightValue, `${lineHeightPercent}%`);
+                    lineHeightValue.fontSize = 16;
+                    lineHeightValue.fills = [{ type: 'SOLID', color: { r: 0.15, g: 0.15, b: 0.15 } }];
+                    lineHeightItem.appendChild(lineHeightValue);
+
+                    specsSection.appendChild(lineHeightItem);
+
+                    // Letter Spacing spec
+                    const letterSpacingItem = figma.createFrame();
+                    letterSpacingItem.name = "Letter Spacing";
+                    letterSpacingItem.fills = [];
+                    letterSpacingItem.layoutMode = 'VERTICAL';
+                    letterSpacingItem.primaryAxisSizingMode = 'AUTO';
+                    letterSpacingItem.counterAxisSizingMode = 'AUTO';
+                    letterSpacingItem.itemSpacing = 6;
+
+                    const letterSpacingLabel = figma.createText();
+                    letterSpacingLabel.fontName = { family: "Inter", style: "Medium" };
+                    safeSetCharacters(letterSpacingLabel, "Letter Spacing");
+                    letterSpacingLabel.fontSize = 11;
+                    letterSpacingLabel.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.55 } }];
+                    letterSpacingItem.appendChild(letterSpacingLabel);
+
+                    const letterSpacingValue = figma.createText();
+                    letterSpacingValue.fontName = { family: "Inter", style: "Semi Bold" };
+                    safeSetCharacters(letterSpacingValue, `${styleData.letterSpacing}px`);
+                    letterSpacingValue.fontSize = 16;
+                    letterSpacingValue.fills = [{ type: 'SOLID', color: { r: 0.15, g: 0.15, b: 0.15 } }];
+                    letterSpacingItem.appendChild(letterSpacingValue);
+
+                    specsSection.appendChild(letterSpacingItem);
+
+
+                    card.appendChild(specsSection);
+                    grid.appendChild(card);
                 }
 
-                container.appendChild(table);
+                container.appendChild(grid);
                 return container;
             }
 
@@ -2951,7 +3145,7 @@ figma.ui.onmessage = async (msg) => {
             let currentY = 0;
 
             // Create PRIMARY font table
-            const primaryFrame = createTypographyTable(
+            const primaryFrame = await createTypographyTable(
                 "Primary Typography",
                 typography.primaryFont,
                 typography.styles,
@@ -2963,7 +3157,7 @@ figma.ui.onmessage = async (msg) => {
 
             // Create SECONDARY font table (if enabled)
             if (typography.secondaryEnabled && typography.secondaryFont) {
-                const secondaryFrame = createTypographyTable(
+                const secondaryFrame = await createTypographyTable(
                     "Secondary Typography",
                     typography.secondaryFont,
                     typography.styles,
@@ -2981,8 +3175,8 @@ figma.ui.onmessage = async (msg) => {
             // Center all frames in viewport
             figma.viewport.scrollAndZoomIntoView(frames);
 
-            const tableCount = frames.length;
-            figma.notify(`✅ Created ${variableCount} typography variables (Desktop + Mobile), ${createdStylesCount} text styles, and ${tableCount} table(s)!`);
+            const systemCount = frames.length;
+            figma.notify(`✅ Created ${variableCount} typography variables (Desktop + Mobile), ${createdStylesCount} text styles, and ${systemCount} typography system(s)!`);
         } catch (error) {
             figma.notify(`❌ Error creating text styles: ${error.message}`);
             console.error('Text styles error:', error);

@@ -399,7 +399,7 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
 }
 
 // Function to create input component set
-async function createInputComponentSet(placeholder, borderColor, primaryColor, textColor, radius, docType = 'web') {
+async function createInputComponentSet(placeholder, borderColor, primaryColor, textColor, radius) {
     // Load fonts
     await figma.loadFontAsync({ family: "Inter", style: "Regular" });
     await figma.loadFontAsync({ family: "Inter", style: "Medium" });
@@ -799,17 +799,100 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
 
     // Combine all components into a component set
     const componentSet = figma.combineAsVariants(components, figma.currentPage);
-    
-    // Format document type for display
-    const docTypeFormatted = docType.charAt(0).toUpperCase() + docType.slice(1);
-    componentSet.name = `Input - ${docTypeFormatted}`;
-    componentSet.description = `Input component set for ${docTypeFormatted} application`;
+    componentSet.name = "Input";
 
     // Remove auto-layout and set manual positioning
     componentSet.layoutMode = 'NONE';
 
     // Remove background color
     componentSet.fills = [];
+
+    // Create a containing frame for the entire input system
+    const containerFrame = figma.createFrame();
+    containerFrame.name = "🎨 Input Component System";
+    
+    // Calculate container size based on component set
+    const containerWidth = componentSet.width + 128;
+    const containerHeight = componentSet.height + 200;
+    containerFrame.resize(containerWidth, containerHeight);
+    
+    // Set container styling
+    containerFrame.fills = [{ 
+        type: 'SOLID', 
+        color: { r: 0.97, g: 0.97, b: 0.98 }
+    }];
+    containerFrame.cornerRadius = 12;
+    
+    // Apply auto-layout to container
+    containerFrame.layoutMode = 'VERTICAL';
+    containerFrame.primaryAxisSizingMode = 'AUTO';
+    containerFrame.counterAxisSizingMode = 'AUTO';
+    containerFrame.primaryAxisAlignItems = 'MIN';
+    containerFrame.counterAxisAlignItems = 'MIN';
+    containerFrame.itemSpacing = 34;
+    containerFrame.paddingLeft = 48;
+    containerFrame.paddingRight = 48;
+    containerFrame.paddingTop = 40;
+    containerFrame.paddingBottom = 40;
+
+    // Add title section
+    const titleFrame = figma.createFrame();
+    titleFrame.name = "Title";
+    titleFrame.layoutMode = 'VERTICAL';
+    titleFrame.primaryAxisSizingMode = 'AUTO';
+    titleFrame.counterAxisSizingMode = 'AUTO';
+    titleFrame.primaryAxisAlignItems = 'MIN';
+    titleFrame.counterAxisAlignItems = 'MIN';
+    titleFrame.itemSpacing = 8;
+    titleFrame.fills = [];
+
+    const titleText = figma.createText();
+    await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+    titleText.fontName = { family: "Inter", style: "Bold" };
+    titleText.fontSize = 28;
+    titleText.characters = "Input Component";
+    titleText.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
+    titleText.textAlignHorizontal = 'LEFT';
+    titleFrame.appendChild(titleText);
+
+    const subtitleText = figma.createText();
+    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+    subtitleText.fontName = { family: "Inter", style: "Regular" };
+    subtitleText.fontSize = 14;
+    subtitleText.characters = "3 Types • 5 States • Label & Icons • OTP Support";
+    subtitleText.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
+    subtitleText.textAlignHorizontal = 'LEFT';
+    titleFrame.appendChild(subtitleText);
+
+    // Add to page
+    figma.currentPage.appendChild(containerFrame);
+    containerFrame.appendChild(titleFrame);
+    containerFrame.appendChild(componentSet);
+
+    // Position icon components in a separate organized frame
+    const iconsFrame = figma.createFrame();
+    iconsFrame.name = "🎯 Icons";
+    iconsFrame.layoutMode = 'HORIZONTAL';
+    iconsFrame.primaryAxisSizingMode = 'AUTO';
+    iconsFrame.counterAxisSizingMode = 'AUTO';
+    iconsFrame.itemSpacing = 16;
+    iconsFrame.paddingLeft = 24;
+    iconsFrame.paddingRight = 24;
+    iconsFrame.paddingTop = 24;
+    iconsFrame.paddingBottom = 24;
+    iconsFrame.fills = [{ 
+        type: 'SOLID', 
+        color: { r: 0.95, g: 0.95, b: 0.96 }
+    }];
+    iconsFrame.cornerRadius = 12;
+
+    figma.currentPage.appendChild(iconsFrame);
+    iconsFrame.appendChild(searchIconComponent);
+    iconsFrame.appendChild(closeIconComponent);
+
+    // Position icons frame next to container
+    iconsFrame.x = containerFrame.x + containerFrame.width + 40;
+    iconsFrame.y = containerFrame.y;
 
     // Add boolean properties for Label, LeftIcon, RightIcon, and 6-Digit mode
     const labelPropKey = componentSet.addComponentProperty("Label", "BOOLEAN", false);
@@ -847,17 +930,11 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
         }
     });
 
-    // Position icon components near the input component set
-    searchIconComponent.x = componentSet.x + componentSet.width + 100;
-    searchIconComponent.y = componentSet.y;
-    closeIconComponent.x = searchIconComponent.x + searchIconComponent.width + 20;
-    closeIconComponent.y = componentSet.y;
-
     // Center in viewport
-    figma.viewport.scrollAndZoomIntoView([componentSet, searchIconComponent, closeIconComponent]);
+    figma.viewport.scrollAndZoomIntoView([containerFrame, iconsFrame]);
 
     const totalVariants = types.length * states.length;
-    figma.notify(`✅ Input component set created with ${types.length} types (Text, Textarea, OTP) × ${states.length} states = ${totalVariants} variants! OTP supports 4 or 6 digits via boolean property.`);
+    figma.notify(`✅ Input Component System created! ${totalVariants} variants with clean, organized layout`);
 }
 
 // Handle messages from the UI
@@ -895,7 +972,7 @@ figma.ui.onmessage = async (msg) => {
 
     if (msg.type === 'create-input-component') {
         try {
-            await createInputComponentSet(msg.placeholder, msg.borderColor, msg.primaryColor, msg.textColor, msg.radius, msg.docType);
+            await createInputComponentSet(msg.placeholder, msg.borderColor, msg.primaryColor, msg.textColor, msg.radius);
         } catch (error) {
             figma.notify(`❌ Error creating input component: ${error.message}`);
             console.error('Input component error:', error);

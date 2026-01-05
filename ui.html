@@ -2603,7 +2603,6 @@
             const textColor = document.getElementById('buttonTextColor').value;
             const radiusValue = document.getElementById('buttonRadius').value;
             const radius = radiusValue !== '' ? parseInt(radiusValue) : 8;
-            const docType = document.getElementById('buttonDocType').value || 'web';
 
             // Send message to Figma plugin
             parent.postMessage({
@@ -2612,8 +2611,7 @@
                     buttonText: buttonText,
                     bgColor: bgColor,
                     textColor: textColor,
-                    radius: radius,
-                    docType: docType
+                    radius: radius
                 }
             }, '*');
         }

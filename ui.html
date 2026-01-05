@@ -61,15 +61,17 @@
             font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
         }
 
-        /* Welcome Screen Styles - Minimal & Clean */
+        /* Welcome Screen Styles - PencilColor Design */
         .welcome-screen {
             display: flex;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            padding: 20px;
-            background: var(--bg-app);
+            width: 100vw;
+            padding: 0;
+            background: #1A1A1A;
             overflow: hidden;
+            position: relative;
         }
 
         .welcome-screen.hidden {
@@ -77,26 +79,44 @@
         }
 
         .welcome-card {
-            width: 800px;
-            height: 500px;
+            width: 100%;
+            height: 100vh;
             text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 40px 60px;
+            padding: 60px 40px 40px;
+            background: #2A2A2A;
+            position: relative;
         }
 
         .welcome-header {
             flex-shrink: 0;
+            margin-top: 0;
+            padding-top: 136px;
+        }
+
+        .welcome-version-badge {
+            display: block;
+            background: transparent;
+            color: #FFFFFF;
+            padding: 0;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 60px;
+            border: none;
+            letter-spacing: 0.5px;
         }
 
         .welcome-logo-container {
-            margin-bottom: 16px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: center;
         }
 
         .welcome-logo-container svg {
-            width: 40px;
-            height: 40px;
+            width: 64px;
+            height: 64px;
         }
 
         .welcome-logo-container svg path {
@@ -104,112 +124,104 @@
         }
 
         .welcome-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-            letter-spacing: -0.3px;
+            font-size: 36px;
+            font-weight: 400;
+            margin-bottom: 0;
+            color: #FFFFFF;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+
+        .welcome-title-brand {
+            font-size: 36px;
+            font-weight: 400;
+            font-style: italic;
+            color: #FFFFFF;
+            letter-spacing: -0.5px;
+            display: block;
+            margin-top: 4px;
         }
 
         .welcome-subtitle {
             font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin: 0;
+            color: #999999;
+            line-height: 1.6;
+            margin: 24px auto 0;
+            max-width: 360px;
         }
 
         .welcome-features-grid {
-            display: flex;
-            gap: 0;
-            justify-content: center;
-            align-items: stretch;
-            flex-shrink: 0;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .welcome-feature-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px 16px;
-            gap: 10px;
-            border-right: 1px solid var(--border);
-            transition: background 0.2s ease;
-        }
-
-        .welcome-feature-item:last-child {
-            border-right: none;
-        }
-
-        .welcome-feature-item:hover {
-            background: var(--bg-card);
-        }
-
-        .welcome-feature-icon {
-            width: 40px;
-            height: 40px;
-            background: transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0;
-        }
-
-        .welcome-feature-icon svg {
-            width: 24px;
-            height: 24px;
-            color: var(--primary);
-        }
-
-        .welcome-feature-title {
-            font-size: 13px;
-            font-weight: 600;
-            margin: 0;
-            color: var(--text-primary);
-        }
-
-        .welcome-feature-description {
-            font-size: 11px;
-            color: var(--text-secondary);
-            line-height: 1.3;
-            margin: 0;
+            display: none;
         }
 
         .welcome-cta-buttons {
             display: flex;
-            gap: 12px;
+            gap: 0;
             justify-content: center;
             flex-shrink: 0;
+            margin-bottom: 24px;
+            width: 100%;
         }
 
         .welcome-cta-buttons .btn {
-            padding: 10px 24px;
-            font-size: 13px;
-            font-weight: 500;
+            width: 100%;
+            max-width: 480px;
+            padding: 16px 32px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 100px;
+            background: #FFFFFF;
+            color: #2A2A2A;
+            border: none;
         }
 
         .welcome-cta-buttons .btn-primary:hover {
-            background: var(--primary-hover);
+            background: #F0F0F0;
         }
 
-        .welcome-cta-buttons .btn-secondary:hover {
-            background: var(--bg-hover);
-            border-color: var(--text-tertiary);
-        }
-
-        .welcome-version-badge {
-            display: inline-block;
-            background: transparent;
-            color: var(--text-tertiary);
+        .welcome-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
             padding: 0;
-            font-size: 11px;
-            font-weight: 400;
-            margin-bottom: 12px;
-            border: none;
+            margin-top: auto;
+        }
+
+        .welcome-footer-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .welcome-footer-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .welcome-footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #FFFFFF;
+        }
+
+        .welcome-footer-logo svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .welcome-footer-email {
+            font-size: 12px;
+            color: #999999;
+            text-decoration: none;
+        }
+
+        .welcome-footer-right {
+            font-size: 12px;
+            color: #999999;
         }
 
         .app-container {
@@ -224,29 +236,29 @@
 
         /* Left Sidebar Navigation - Floating Modern Design */
         .sidebar {
-            width: 80px;
+            width: 64px;
             background: #1E1E1E;
             border: 2px solid #2A2A2A;
-            border-radius: 16px;
+            border-radius: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px 0;
+            padding: 16px 0;
             flex-shrink: 0;
-            margin: 16px;
-            height: calc(100vh - 32px);
+            margin: 12px;
+            height: calc(100vh - 24px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
         .sidebar-logo {
-            width: 36px;
-            height: 36px;
-            margin-bottom: 32px;
+            width: 32px;
+            height: 32px;
+            margin-bottom: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: transparent;
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 0;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -257,8 +269,8 @@
         }
 
         .sidebar-logo svg {
-            width: 48px;
-            height: 48px;
+            width: 40px;
+            height: 40px;
         }
 
         .sidebar-logo svg path {
@@ -268,18 +280,18 @@
         .sidebar-nav {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             width: 100%;
-            padding: 0 16px;
+            padding: 0 12px;
         }
 
         .sidebar-item {
-            width: 48px;
-            height: 48px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 14px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
             color: #6B7280;
@@ -298,24 +310,24 @@
         }
 
         .sidebar-item svg {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
         }
 
         .sidebar-divider {
-            width: 48px;
+            width: 40px;
             background: #2A2A2A;
-            margin: 12px 0;
+            margin: 10px 0;
         }
 
         .sidebar-actions {
             margin-top: auto;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             width: 100%;
-            padding: 0 16px;
-            padding-top: 16px;
+            padding: 0 12px;
+            padding-top: 12px;
         }
 
         /* Main Content Area */
@@ -324,25 +336,25 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            padding: 16px 16px 16px 0;
+            padding: 12px 12px 12px 0;
         }
 
         /* Top Header - Floating Design */
         .top-header {
-            height: 64px;
+            height: 56px;
             background: #1E1E1E;
             border: 2px solid #2A2A2A;
-            border-radius: 16px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
-            padding: 0 24px 0 24px;
+            padding: 0 20px;
             flex-shrink: 0;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
         .header-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 500;
             color: var(--text-primary);
         }
@@ -367,12 +379,11 @@
 
         .content {
             width: 100%;
-            max-width: 1200px;
             overflow-y: auto;
-            padding: 12px;
+            padding: 10px;
             background: #1E1E1E;
             border: 2px solid #2A2A2A;
-            border-radius: 16px;
+            border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
@@ -968,7 +979,7 @@
 <body>
     <!-- Welcome Screen -->
     <div class="welcome-screen" id="welcomeScreen">
-        <div class="welcome-card">
+        <div class="welcome-card">            
             <div class="welcome-header">
                 <div class="welcome-logo-container">
                     <svg viewBox="0 0 92 92" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -977,58 +988,27 @@
                     </svg>
                 </div>
 
-                <div class="welcome-version-badge">Version 1.0</div>
-
-                <h1 class="welcome-title">Design System Maker</h1>
-                <p class="welcome-subtitle">Create and manage design tokens for Figma</p>
+                <h1 class="welcome-title">Welcome to</h1>
+                <span class="welcome-title-brand">Design System Maker</span>
+                
+                <p class="welcome-subtitle">Your new home for beautiful, accessible design systems.</p>
             </div>
 
-            <div class="welcome-features-grid">
-                <div class="welcome-feature-item">
-                    <div class="welcome-feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                        </svg>
-                    </div>
-                    <div class="welcome-feature-title">Colors</div>
-                    <div class="welcome-feature-description">Palettes & shades</div>
+            <div class="welcome-footer">
+                <div class="welcome-cta-buttons">
+                    <button class="btn btn-primary" onclick="startApp()">
+                        Continue
+                    </button>
                 </div>
-
-                <div class="welcome-feature-item">
-                    <div class="welcome-feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                        </svg>
+                
+                <div class="welcome-footer-bottom">
+                    <div class="welcome-footer-left">
+                        <a href="mailto:help@designsystem.com" class="welcome-footer-email">help@designsystem.com</a>
                     </div>
-                    <div class="welcome-feature-title">Typography</div>
-                    <div class="welcome-feature-description">Fonts & scales</div>
-                </div>
-
-                <div class="welcome-feature-item">
-                    <div class="welcome-feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                        </svg>
+                    <div class="welcome-footer-right">
+                        Developed by @Harsh Vaghela
                     </div>
-                    <div class="welcome-feature-title">Spacing</div>
-                    <div class="welcome-feature-description">Consistent sizing</div>
                 </div>
-
-                <div class="welcome-feature-item">
-                    <div class="welcome-feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                        </svg>
-                    </div>
-                    <div class="welcome-feature-title">Export</div>
-                    <div class="welcome-feature-description">JSON tokens</div>
-                </div>
-            </div>
-
-            <div class="welcome-cta-buttons">
-                <button class="btn btn-primary" onclick="startApp()">
-                    Get Started
-                </button>
             </div>
         </div>
     </div>

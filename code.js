@@ -1,7 +1,7 @@
 // Figma plugin backend code
 // Import icon data
 // Note: In Figma plugins, we need to pass icon data through the UI
-figma.showUI(__html__, { width: 900, height: 600, themeColors: true });
+figma.showUI(__html__, { width: 524, height: 800, themeColors: true });
 
 // Function to create button component set
 async function createButtonComponentSet(buttonText, bgColor, textColor, radius) {

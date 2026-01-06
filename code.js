@@ -3714,25 +3714,13 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
         'vuesax-icons': {
             name: 'Vuesax Icons',
             categories: {
-                'twotone': {
-                    name: 'Twotone',
-                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/twotone'
-                },
                 'outline': {
                     name: 'Outline',
                     baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/outline'
                 },
-                'linear': {
-                    name: 'Linear',
-                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/linear'
-                },
                 'bulk': {
                     name: 'Bulk',
                     baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bulk'
-                },
-                'broken': {
-                    name: 'Broken',
-                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/broken'
                 },
                 'bold': {
                     name: 'Bold',
@@ -3808,7 +3796,8 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
                 if (svgText) {
                     try {
                         const component = createIconComponent(svgText, iconName.replace('.svg', ''), 24);
-                        categoryFrame.appendChild(component);
+                        // Add to page directly, not to categoryFrame
+                        page.appendChild(component);
                         components.push(component);
                         successCount++;
                     } catch (error) {
@@ -3825,40 +3814,82 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
             figma.notify(`📦 Creating icons... (${progress}/${iconList.length})`);
         }
 
-        if (components.length > 1) {
-            figma.notify(`🔧 Combining ${components.length} icons into Component Set...`);
-            const componentSet = figma.combineAsVariants(components, page);
-            componentSet.name = `${library.name} / ${category.name}`;
+        // Remove the temporary category frame (no longer needed)
+        categoryFrame.remove();
 
-            // Set up grid layout with 20 icons per row
-            componentSet.layoutMode = 'HORIZONTAL';
-            componentSet.primaryAxisSizingMode = 'AUTO';
-            componentSet.counterAxisSizingMode = 'AUTO';
-            componentSet.primaryAxisAlignItems = 'MIN';
-            componentSet.counterAxisAlignItems = 'MIN';
-            componentSet.itemSpacing = 16;
-            componentSet.counterAxisSpacing = 16;
-            componentSet.paddingLeft = 16;
-            componentSet.paddingRight = 16;
-            componentSet.paddingTop = 16;
-            componentSet.paddingBottom = 16;
-            componentSet.layoutWrap = 'WRAP';
+        // Don't combine into component set - keep as individual components
+        if (components.length > 0) {
+            figma.notify(`✅ Created ${components.length} individual icon components`);
+
+            // Create container frame with heading and subheading
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+
+            const containerFrame = figma.createFrame();
+            containerFrame.name = `🎨 ${library.name} / ${category.name}`;
+            containerFrame.layoutMode = 'VERTICAL';
+            containerFrame.primaryAxisSizingMode = 'AUTO';
+            containerFrame.counterAxisSizingMode = 'AUTO';
+            containerFrame.primaryAxisAlignItems = 'MIN';
+            containerFrame.counterAxisAlignItems = 'MIN';
+            containerFrame.itemSpacing = 24;
+            containerFrame.paddingLeft = 40;
+            containerFrame.paddingRight = 40;
+            containerFrame.paddingTop = 40;
+            containerFrame.paddingBottom = 40;
+            containerFrame.fills = [{ type: 'SOLID', color: { r: 0.97, g: 0.97, b: 0.98 } }];
+            containerFrame.cornerRadius = 12;
+
+            // Create heading
+            const heading = figma.createText();
+            heading.fontName = { family: "Inter", style: "Bold" };
+            heading.fontSize = 24;
+            heading.characters = `${library.name} / ${category.name}`;
+            heading.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
+
+            // Create subheading
+            const subheading = figma.createText();
+            subheading.fontName = { family: "Inter", style: "Regular" };
+            subheading.fontSize = 14;
+            subheading.characters = `${successCount} icons • ${iconList.length} total`;
+            subheading.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
+
+            // Create icons container frame with grid layout
+            const iconsFrame = figma.createFrame();
+            iconsFrame.name = "Icons";
+            iconsFrame.layoutMode = 'HORIZONTAL';
+            iconsFrame.primaryAxisSizingMode = 'AUTO';
+            iconsFrame.counterAxisSizingMode = 'AUTO';
+            iconsFrame.primaryAxisAlignItems = 'MIN';
+            iconsFrame.counterAxisAlignItems = 'MIN';
+            iconsFrame.itemSpacing = 16;
+            iconsFrame.counterAxisSpacing = 16;
+            iconsFrame.paddingLeft = 16;
+            iconsFrame.paddingRight = 16;
+            iconsFrame.paddingTop = 16;
+            iconsFrame.paddingBottom = 16;
+            iconsFrame.layoutWrap = 'WRAP';
+            iconsFrame.fills = [];
 
             // Calculate max width for 20 icons per row
-            // Icon size (24) + spacing (16) = 40px per icon
-            // 20 icons = 20 * 40 - 16 (last spacing) + 32 (padding) = 816px
             const iconWidth = 24;
             const spacing = 16;
             const iconsPerRow = 20;
-            const padding = 32; // left + right
+            const padding = 32;
             const maxWidth = (iconWidth + spacing) * iconsPerRow - spacing + padding;
-            componentSet.resize(maxWidth, componentSet.height);
+            iconsFrame.resize(maxWidth, iconsFrame.height);
 
-            componentSet.fills = [];
-            categoryFrame.remove();
-            figma.viewport.scrollAndZoomIntoView([componentSet]);
-        } else if (components.length === 1) {
-            figma.viewport.scrollAndZoomIntoView([components[0]]);
+            // Add all components to the icons frame
+            components.forEach(component => {
+                iconsFrame.appendChild(component);
+            });
+
+            page.appendChild(containerFrame);
+            containerFrame.appendChild(heading);
+            containerFrame.appendChild(subheading);
+            containerFrame.appendChild(iconsFrame);
+
+            figma.viewport.scrollAndZoomIntoView([containerFrame]);
         }
 
         await figma.setCurrentPageAsync(originalPage);
@@ -3898,25 +3929,13 @@ async function generateAllLibraryIcons(libraryId, categories) {
         'vuesax-icons': {
             name: 'Vuesax Icons',
             categories: {
-                'twotone': {
-                    name: 'Twotone',
-                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/twotone'
-                },
                 'outline': {
                     name: 'Outline',
                     baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/outline'
                 },
-                'linear': {
-                    name: 'Linear',
-                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/linear'
-                },
                 'bulk': {
                     name: 'Bulk',
                     baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bulk'
-                },
-                'broken': {
-                    name: 'Broken',
-                    baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/broken'
                 },
                 'bold': {
                     name: 'Bold',
@@ -3960,10 +3979,14 @@ async function generateAllLibraryIcons(libraryId, categories) {
         let totalSuccess = 0;
         let totalFailed = 0;
         let categoriesCreated = 0;
-        const allComponentSets = [];
+        const allContainerFrames = [];
         let yOffset = 0;
 
         const BATCH_SIZE = 20; // Fetch 20 icons at a time
+
+        // Load fonts once at the beginning
+        await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+        await figma.loadFontAsync({ family: "Inter", style: "Regular" });
 
         for (const categoryData of categories) {
             const { categoryId, categoryName, iconList } = categoryData;
@@ -4001,7 +4024,8 @@ async function generateAllLibraryIcons(libraryId, categories) {
                     if (svgText) {
                         try {
                             const component = createIconComponent(svgText, iconName.replace('.svg', ''), 24);
-                            categoryFrame.appendChild(component);
+                            // Add to page directly, not to categoryFrame
+                            page.appendChild(component);
                             components.push(component);
                             successCount++;
                         } catch (error) {
@@ -4018,25 +4042,60 @@ async function generateAllLibraryIcons(libraryId, categories) {
                 figma.notify(`📦 Creating ${categoryName}... (${progress}/${iconList.length})`);
             }
 
-            // Create component set
-            if (components.length > 1) {
-                figma.notify(`🔧 Combining ${components.length} icons into Component Set...`);
-                const componentSet = figma.combineAsVariants(components, page);
-                componentSet.name = `${library.name} / ${categoryName}`;
+            // Remove the temporary category frame (no longer needed)
+            categoryFrame.remove();
 
-                // Set up grid layout with 20 icons per row
-                componentSet.layoutMode = 'HORIZONTAL';
-                componentSet.primaryAxisSizingMode = 'AUTO';
-                componentSet.counterAxisSizingMode = 'AUTO';
-                componentSet.primaryAxisAlignItems = 'MIN';
-                componentSet.counterAxisAlignItems = 'MIN';
-                componentSet.itemSpacing = 16;
-                componentSet.counterAxisSpacing = 16;
-                componentSet.paddingLeft = 16;
-                componentSet.paddingRight = 16;
-                componentSet.paddingTop = 16;
-                componentSet.paddingBottom = 16;
-                componentSet.layoutWrap = 'WRAP';
+            // Don't combine into component set - keep as individual components
+            if (components.length > 0) {
+                figma.notify(`✅ Created ${components.length} individual icon components`);
+
+                // Create container frame with heading and subheading
+                const containerFrame = figma.createFrame();
+                containerFrame.name = `🎨 ${library.name} / ${categoryName}`;
+                containerFrame.layoutMode = 'VERTICAL';
+                containerFrame.primaryAxisSizingMode = 'AUTO';
+                containerFrame.counterAxisSizingMode = 'AUTO';
+                containerFrame.primaryAxisAlignItems = 'MIN';
+                containerFrame.counterAxisAlignItems = 'MIN';
+                containerFrame.itemSpacing = 24;
+                containerFrame.paddingLeft = 40;
+                containerFrame.paddingRight = 40;
+                containerFrame.paddingTop = 40;
+                containerFrame.paddingBottom = 40;
+                containerFrame.fills = [{ type: 'SOLID', color: { r: 0.97, g: 0.97, b: 0.98 } }];
+                containerFrame.cornerRadius = 12;
+                containerFrame.y = yOffset;
+
+                // Create heading
+                const heading = figma.createText();
+                heading.fontName = { family: "Inter", style: "Bold" };
+                heading.fontSize = 24;
+                heading.characters = `${library.name} / ${categoryName}`;
+                heading.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
+
+                // Create subheading
+                const subheading = figma.createText();
+                subheading.fontName = { family: "Inter", style: "Regular" };
+                subheading.fontSize = 14;
+                subheading.characters = `${successCount} icons • ${iconList.length} total`;
+                subheading.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
+
+                // Create icons container frame with grid layout
+                const iconsFrame = figma.createFrame();
+                iconsFrame.name = "Icons";
+                iconsFrame.layoutMode = 'HORIZONTAL';
+                iconsFrame.primaryAxisSizingMode = 'AUTO';
+                iconsFrame.counterAxisSizingMode = 'AUTO';
+                iconsFrame.primaryAxisAlignItems = 'MIN';
+                iconsFrame.counterAxisAlignItems = 'MIN';
+                iconsFrame.itemSpacing = 16;
+                iconsFrame.counterAxisSpacing = 16;
+                iconsFrame.paddingLeft = 16;
+                iconsFrame.paddingRight = 16;
+                iconsFrame.paddingTop = 16;
+                iconsFrame.paddingBottom = 16;
+                iconsFrame.layoutWrap = 'WRAP';
+                iconsFrame.fills = [];
 
                 // Calculate max width for 20 icons per row
                 const iconWidth = 24;
@@ -4044,18 +4103,20 @@ async function generateAllLibraryIcons(libraryId, categories) {
                 const iconsPerRow = 20;
                 const padding = 32;
                 const maxWidth = (iconWidth + spacing) * iconsPerRow - spacing + padding;
-                componentSet.resize(maxWidth, componentSet.height);
+                iconsFrame.resize(maxWidth, iconsFrame.height);
 
-                componentSet.fills = [];
-                componentSet.y = yOffset;
-                allComponentSets.push(componentSet);
-                categoryFrame.remove();
-                yOffset += componentSet.height + 100;
-            } else if (components.length === 1) {
-                components[0].y = yOffset;
-                allComponentSets.push(components[0]);
-                categoryFrame.remove();
-                yOffset += components[0].height + 100;
+                // Add all components to the icons frame
+                components.forEach(component => {
+                    iconsFrame.appendChild(component);
+                });
+
+                page.appendChild(containerFrame);
+                containerFrame.appendChild(heading);
+                containerFrame.appendChild(subheading);
+                containerFrame.appendChild(iconsFrame);
+
+                allContainerFrames.push(containerFrame);
+                yOffset += containerFrame.height + 100;
             }
 
             totalSuccess += successCount;
@@ -4065,8 +4126,8 @@ async function generateAllLibraryIcons(libraryId, categories) {
             figma.notify(`✅ ${categoryName} complete! (${successCount} icons)`);
         }
 
-        if (allComponentSets.length > 0) {
-            figma.viewport.scrollAndZoomIntoView(allComponentSets);
+        if (allContainerFrames.length > 0) {
+            figma.viewport.scrollAndZoomIntoView(allContainerFrames);
         }
 
         await figma.setCurrentPageAsync(originalPage);

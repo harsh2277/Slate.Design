@@ -25,34 +25,14 @@ const ICON_LIBRARIES = {
   'vuesax-icons': {
     name: 'Vuesax Icons',
     categories: {
-      'twotone': {
-        name: 'Two-tone',
-        baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/twotone',
-        icons: [] // Will be populated dynamically
-      },
-      'line': {
-        name: 'Line',
-        baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/line',
-        icons: [] // Will be populated dynamically
-      },
       'outline': {
         name: 'Outline',
         baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/outline',
         icons: [] // Will be populated dynamically
       },
-      'linear': {
-        name: 'Linear',
-        baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/linear',
-        icons: [] // Will be populated dynamically
-      },
       'bulk': {
         name: 'Bulk',
         baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bulk',
-        icons: [] // Will be populated dynamically
-      },
-      'broken': {
-        name: 'Broken',
-        baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/broken',
         icons: [] // Will be populated dynamically
       },
       'bold': {

@@ -3523,25 +3523,13 @@
             'vuesax-icons': {
                 name: 'Vuesax Icons',
                 categories: {
-                    'twotone': {
-                        name: 'Twotone',
-                        baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/twotone'
-                    },
                     'outline': {
                         name: 'Outline',
                         baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/outline'
                     },
-                    'linear': {
-                        name: 'Linear',
-                        baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/linear'
-                    },
                     'bulk': {
                         name: 'Bulk',
                         baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bulk'
-                    },
-                    'broken': {
-                        name: 'Broken',
-                        baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/broken'
                     },
                     'bold': {
                         name: 'Bold',
@@ -4454,12 +4442,13 @@
                     const totalIcons = allCategories.reduce((sum, cat) => sum + cat.iconList.length, 0);
                     console.log('Total icons:', totalIcons);
 
-                    if (!confirm(`Generate ${totalIcons} icons from ${allCategories.length} categories?\n\nThis will create:\n${allCategories.map(c => `• ${c.categoryName}: ${c.iconList.length} icons`).join('\n')}`)) {
-                        console.log('User cancelled');
-                        generateBtn.disabled = false;
-                        generateBtn.innerHTML = originalText;
-                        return;
-                    }
+                    // Confirmation dialog removed - icons will generate immediately
+                    // if (!confirm(`Generate ${totalIcons} icons from ${allCategories.length} categories?\n\nThis will create:\n${allCategories.map(c => `• ${c.categoryName}: ${c.iconList.length} icons`).join('\n')}`)) {
+                    //     console.log('User cancelled');
+                    //     generateBtn.disabled = false;
+                    //     generateBtn.innerHTML = originalText;
+                    //     return;
+                    // }
 
                     console.log('User confirmed, sending message to plugin...');
                     generateBtn.innerHTML = '🚀 Generating...';
@@ -4518,11 +4507,12 @@
 
                 const totalIcons = allCategories.reduce((sum, cat) => sum + cat.iconList.length, 0);
 
-                if (!confirm(`Generate ${totalIcons} icons from ${allCategories.length} categories?\n\nThis will create:\n${allCategories.map(c => `• ${c.categoryName}: ${c.iconList.length} icons`).join('\n')}`)) {
-                    generateBtn.disabled = false;
-                    generateBtn.innerHTML = originalText;
-                    return;
-                }
+                // Confirmation dialog removed - icons will generate immediately
+                // if (!confirm(`Generate ${totalIcons} icons from ${allCategories.length} categories?\n\nThis will create:\n${allCategories.map(c => `• ${c.categoryName}: ${c.iconList.length} icons`).join('\n')}`)) {
+                //     generateBtn.disabled = false;
+                //     generateBtn.innerHTML = originalText;
+                //     return;
+                // }
 
                 generateBtn.innerHTML = '🚀 Generating...';
 

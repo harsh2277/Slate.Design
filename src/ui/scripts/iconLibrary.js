@@ -23,29 +23,13 @@ const ICON_LIBRARIES = {
   'vuesax-icons': {
     name: 'Vuesax Icons',
     categories: {
-      'twotone': {
-        name: 'Two-tone',
-        baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/twotone'
-      },
-      'line': {
-        name: 'Line',
-        baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/line'
-      },
       'outline': {
         name: 'Outline',
         baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/outline'
       },
-      'linear': {
-        name: 'Linear',
-        baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/linear'
-      },
       'bulk': {
         name: 'Bulk',
         baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bulk'
-      },
-      'broken': {
-        name: 'Broken',
-        baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/broken'
       },
       'bold': {
         name: 'Bold',

@@ -1648,326 +1648,343 @@
                                         <div id="strokePreview" class="spacing-list"></div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                                <!-- Layout Grid Styles Section Header -->
+                                <div style="margin: 48px 0 32px;">
+                                    <h2
+                                        style="font-size: 20px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; letter-spacing: -0.02em;">
+                                        Layout Grid Styles</h2>
+                                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                                        Configure
+                                        responsive layout grids for different device breakpoints.</p>
+                                </div>
 
-                        <!-- Layout Grid Styles Section Header -->
-                        <div style="margin: 48px 0 32px;">
-                            <h2
-                                style="font-size: 20px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; letter-spacing: -0.02em;">
-                                Layout Grid Styles</h2>
-                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">Configure
-                                responsive layout grids for different device breakpoints.</p>
-                        </div>
-
-                        <!-- Layout Grid Styles Card -->
-                        <div class="card collapsed">
-                            <div class="card-header" onclick="toggleCard(this)">
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2"
-                                        style="color: var(--primary);">
-                                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                                        <line x1="3" y1="9" x2="21" y2="9" />
-                                        <line x1="3" y1="15" x2="21" y2="15" />
-                                        <line x1="9" y1="3" x2="9" y2="21" />
-                                        <line x1="15" y1="3" x2="15" y2="21" />
-                                    </svg>
-                                    <div>
-                                        <div class="card-title" style="margin-bottom: 2px;">Responsive Grid System
+                                <!-- Layout Grid Styles Card -->
+                                <div class="card collapsed">
+                                    <div class="card-header" onclick="toggleCard(this)">
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                style="color: var(--primary);">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                <line x1="3" y1="9" x2="21" y2="9" />
+                                                <line x1="3" y1="15" x2="21" y2="15" />
+                                                <line x1="9" y1="3" x2="9" y2="21" />
+                                                <line x1="15" y1="3" x2="15" y2="21" />
+                                            </svg>
+                                            <div>
+                                                <div class="card-title" style="margin-bottom: 2px;">Responsive Grid
+                                                    System
+                                                </div>
+                                                <div style="font-size: 11px; color: var(--text-tertiary);">Desktop,
+                                                    Tablet,
+                                                    and Mobile layouts</div>
+                                            </div>
                                         </div>
-                                        <div style="font-size: 11px; color: var(--text-tertiary);">Desktop, Tablet,
-                                            and Mobile layouts</div>
+                                        <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="card-body">
+                                        <div style="display: grid; gap: 24px;">
+                                            <!-- Desktop Grid -->
+                                            <div
+                                                style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px;">
+                                                <div
+                                                    style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                                        <div
+                                                            style="width: 36px; height: 36px; background: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="18"
+                                                                height="18" viewBox="0 0 24 24" fill="none"
+                                                                stroke="white" stroke-width="2">
+                                                                <rect x="2" y="3" width="20" height="14" rx="2" />
+                                                                <line x1="8" y1="21" x2="16" y2="21" />
+                                                                <line x1="12" y1="17" x2="12" y2="21" />
+                                                            </svg>
+                                                        </div>
+                                                        <div>
+                                                            <h3
+                                                                style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">
+                                                                Desktop Grid</h3>
+                                                            <p style="font-size: 11px; color: var(--text-tertiary);">
+                                                                1440px+
+                                                                viewport</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Columns</label>
+                                                        <input type="number" id="desktopColumns" value="12" min="1"
+                                                            max="24"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Gutter
+                                                            (px)</label>
+                                                        <input type="number" id="desktopGutter" value="24" min="0"
+                                                            max="100"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Margin
+                                                            (px)</label>
+                                                        <input type="number" id="desktopMargin" value="80" min="0"
+                                                            max="200"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Max
+                                                            Width (px)</label>
+                                                        <input type="number" id="desktopMaxWidth" value="1440" min="0"
+                                                            max="3000"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                </div>
+                                                <!-- Visual Preview -->
+                                                <div
+                                                    style="margin-top: 16px; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);">
+                                                    <div
+                                                        style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px;">
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Tablet Grid -->
+                                            <div
+                                                style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px;">
+                                                <div
+                                                    style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                                        <div
+                                                            style="width: 36px; height: 36px; background: #8B5CF6; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="18"
+                                                                height="18" viewBox="0 0 24 24" fill="none"
+                                                                stroke="white" stroke-width="2">
+                                                                <rect x="5" y="2" width="14" height="20" rx="2" />
+                                                                <line x1="12" y1="18" x2="12.01" y2="18" />
+                                                            </svg>
+                                                        </div>
+                                                        <div>
+                                                            <h3
+                                                                style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">
+                                                                Tablet Grid</h3>
+                                                            <p style="font-size: 11px; color: var(--text-tertiary);">
+                                                                768px -
+                                                                1439px viewport</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Columns</label>
+                                                        <input type="number" id="tabletColumns" value="8" min="1"
+                                                            max="24"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Gutter
+                                                            (px)</label>
+                                                        <input type="number" id="tabletGutter" value="20" min="0"
+                                                            max="100"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Margin
+                                                            (px)</label>
+                                                        <input type="number" id="tabletMargin" value="40" min="0"
+                                                            max="200"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Max
+                                                            Width (px)</label>
+                                                        <input type="number" id="tabletMaxWidth" value="1024" min="0"
+                                                            max="3000"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                </div>
+                                                <!-- Visual Preview -->
+                                                <div
+                                                    style="margin-top: 16px; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);">
+                                                    <div
+                                                        style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px;">
+                                                        <div
+                                                            style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Mobile Grid -->
+                                            <div
+                                                style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px;">
+                                                <div
+                                                    style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                                        <div
+                                                            style="width: 36px; height: 36px; background: #10B981; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="18"
+                                                                height="18" viewBox="0 0 24 24" fill="none"
+                                                                stroke="white" stroke-width="2">
+                                                                <rect x="7" y="2" width="10" height="20" rx="2" />
+                                                                <line x1="12" y1="18" x2="12.01" y2="18" />
+                                                            </svg>
+                                                        </div>
+                                                        <div>
+                                                            <h3
+                                                                style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">
+                                                                Mobile Grid</h3>
+                                                            <p style="font-size: 11px; color: var(--text-tertiary);">0px
+                                                                -
+                                                                767px viewport</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Columns</label>
+                                                        <input type="number" id="mobileColumns" value="4" min="1"
+                                                            max="24"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Gutter
+                                                            (px)</label>
+                                                        <input type="number" id="mobileGutter" value="16" min="0"
+                                                            max="100"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Margin
+                                                            (px)</label>
+                                                        <input type="number" id="mobileMargin" value="16" min="0"
+                                                            max="200"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                    <div>
+                                                        <label
+                                                            style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Max
+                                                            Width (px)</label>
+                                                        <input type="number" id="mobileMaxWidth" value="375" min="0"
+                                                            max="3000"
+                                                            style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
+                                                    </div>
+                                                </div>
+                                                <!-- Visual Preview -->
+                                                <div
+                                                    style="margin-top: 16px; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);">
+                                                    <div
+                                                        style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
+                                                        <div
+                                                            style="height: 40px; background: #10B981; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: #10B981; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: #10B981; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                        <div
+                                                            style="height: 40px; background: #10B981; opacity: 0.2; border-radius: 2px;">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+
+                                        </div>
                                     </div>
                                 </div>
-                                <svg class="collapse-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg>
-                            </div>
-                            <div class="card-body">
-                                <div style="display: grid; gap: 24px;">
-                                    <!-- Desktop Grid -->
-                                    <div
-                                        style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px;">
-                                        <div
-                                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                                            <div style="display: flex; align-items: center; gap: 12px;">
-                                                <div
-                                                    style="width: 36px; height: 36px; background: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                                                        viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                        <rect x="2" y="3" width="20" height="14" rx="2" />
-                                                        <line x1="8" y1="21" x2="16" y2="21" />
-                                                        <line x1="12" y1="17" x2="12" y2="21" />
-                                                    </svg>
-                                                </div>
-                                                <div>
-                                                    <h3
-                                                        style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">
-                                                        Desktop Grid</h3>
-                                                    <p style="font-size: 11px; color: var(--text-tertiary);">1440px+
-                                                        viewport</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Columns</label>
-                                                <input type="number" id="desktopColumns" value="12" min="1" max="24"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Gutter
-                                                    (px)</label>
-                                                <input type="number" id="desktopGutter" value="24" min="0" max="100"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Margin
-                                                    (px)</label>
-                                                <input type="number" id="desktopMargin" value="80" min="0" max="200"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Max
-                                                    Width (px)</label>
-                                                <input type="number" id="desktopMaxWidth" value="1440" min="0"
-                                                    max="3000"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                        </div>
-                                        <!-- Visual Preview -->
-                                        <div
-                                            style="margin-top: 16px; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);">
-                                            <div
-                                                style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px;">
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: var(--primary); opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    <!-- Tablet Grid -->
-                                    <div
-                                        style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px;">
-                                        <div
-                                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                                            <div style="display: flex; align-items: center; gap: 12px;">
-                                                <div
-                                                    style="width: 36px; height: 36px; background: #8B5CF6; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                                                        viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                        <rect x="5" y="2" width="14" height="20" rx="2" />
-                                                        <line x1="12" y1="18" x2="12.01" y2="18" />
-                                                    </svg>
-                                                </div>
-                                                <div>
-                                                    <h3
-                                                        style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">
-                                                        Tablet Grid</h3>
-                                                    <p style="font-size: 11px; color: var(--text-tertiary);">768px -
-                                                        1439px viewport</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Columns</label>
-                                                <input type="number" id="tabletColumns" value="8" min="1" max="24"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Gutter
-                                                    (px)</label>
-                                                <input type="number" id="tabletGutter" value="20" min="0" max="100"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Margin
-                                                    (px)</label>
-                                                <input type="number" id="tabletMargin" value="40" min="0" max="200"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Max
-                                                    Width (px)</label>
-                                                <input type="number" id="tabletMaxWidth" value="1024" min="0" max="3000"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                        </div>
-                                        <!-- Visual Preview -->
-                                        <div
-                                            style="margin-top: 16px; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);">
-                                            <div
-                                                style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px;">
-                                                <div
-                                                    style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: #8B5CF6; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Mobile Grid -->
-                                    <div
-                                        style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px;">
-                                        <div
-                                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                                            <div style="display: flex; align-items: center; gap: 12px;">
-                                                <div
-                                                    style="width: 36px; height: 36px; background: #10B981; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                                                        viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                        <rect x="7" y="2" width="10" height="20" rx="2" />
-                                                        <line x1="12" y1="18" x2="12.01" y2="18" />
-                                                    </svg>
-                                                </div>
-                                                <div>
-                                                    <h3
-                                                        style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">
-                                                        Mobile Grid</h3>
-                                                    <p style="font-size: 11px; color: var(--text-tertiary);">0px -
-                                                        767px viewport</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Columns</label>
-                                                <input type="number" id="mobileColumns" value="4" min="1" max="24"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Gutter
-                                                    (px)</label>
-                                                <input type="number" id="mobileGutter" value="16" min="0" max="100"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Margin
-                                                    (px)</label>
-                                                <input type="number" id="mobileMargin" value="16" min="0" max="200"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    style="font-size: 11px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: block;">Max
-                                                    Width (px)</label>
-                                                <input type="number" id="mobileMaxWidth" value="375" min="0" max="3000"
-                                                    style="width: 100%; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px;">
-                                            </div>
-                                        </div>
-                                        <!-- Visual Preview -->
-                                        <div
-                                            style="margin-top: 16px; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);">
-                                            <div
-                                                style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
-                                                <div
-                                                    style="height: 40px; background: #10B981; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: #10B981; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: #10B981; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                                <div
-                                                    style="height: 40px; background: #10B981; opacity: 0.2; border-radius: 2px;">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-
+                                <div style="margin-top: 48px; padding: 32px 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                                    <button class="btn btn-primary" id="create-variable-btn"
+                                        style="padding: 14px 40px; font-size: 14px; font-weight: 500;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" style="width: 18px; height: 18px;">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <line x1="12" y1="8" x2="12" y2="16" />
+                                            <line x1="8" y1="12" x2="16" y2="12" />
+                                        </svg>
+                                        Create Design Variables
+                                    </button>
+                                    <p style="font-size: 12px; color: var(--text-tertiary); text-align: center;">
+                                        Generate
+                                        all tokens as Figma variables</p>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Create Variables Button -->
-                        <div
-                            style="margin-top: 48px; padding: 32px 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 12px;">
-                            <button class="btn btn-primary" id="create-variable-btn"
-                                style="padding: 14px 40px; font-size: 14px; font-weight: 500;">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" style="width: 18px; height: 18px;">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <line x1="12" y1="8" x2="12" y2="16" />
-                                    <line x1="8" y1="12" x2="16" y2="12" />
-                                </svg>
-                                Create Design Variables
-                            </button>
-                            <p style="font-size: 12px; color: var(--text-tertiary); text-align: center;">Generate
-                                all tokens as Figma variables</p>
-                        </div>
-                    </div>
                     <!-- Components Tab -->
                     <div class="tab-content" id="components">
                         <div style="max-width: 1200px; width: 100%;">

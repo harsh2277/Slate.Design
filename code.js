@@ -185,10 +185,10 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
     // For each size: create a grid with variants as rows and states as columns
     for (const size of sizes) {
         xOffset = 0; // Reset x for each size group
-        
+
         for (const variant of variants) {
             xOffset = 0; // Reset x for each variant row
-            
+
             for (const state of variant.states) {
                 for (const iconConfig of iconConfigs) {
                     // Create button component
@@ -277,11 +277,11 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
                     xOffset += buttonWidth + componentSpacing;
                 }
             }
-            
+
             // Move to next row (variant)
             yOffset += size.height + componentSpacing;
         }
-        
+
         // Add extra spacing between size groups
         yOffset += sizeGroupSpacing;
     }
@@ -299,19 +299,19 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
     // Create a containing frame for the entire button system
     const containerFrame = figma.createFrame();
     containerFrame.name = "🎨 Button Component System";
-    
+
     // Calculate container size based on component set
     const containerWidth = componentSet.width + 128;
     const containerHeight = componentSet.height + 200;
     containerFrame.resize(containerWidth, containerHeight);
-    
+
     // Set container styling
-    containerFrame.fills = [{ 
-        type: 'SOLID', 
+    containerFrame.fills = [{
+        type: 'SOLID',
         color: { r: 0.97, g: 0.97, b: 0.98 }
     }];
     containerFrame.cornerRadius = 12;
-    
+
     // Apply auto-layout to container
     containerFrame.layoutMode = 'VERTICAL';
     containerFrame.primaryAxisSizingMode = 'AUTO';
@@ -369,8 +369,8 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
     iconsFrame.paddingRight = 24;
     iconsFrame.paddingTop = 24;
     iconsFrame.paddingBottom = 24;
-    iconsFrame.fills = [{ 
-        type: 'SOLID', 
+    iconsFrame.fills = [{
+        type: 'SOLID',
         color: { r: 0.95, g: 0.95, b: 0.96 }
     }];
     iconsFrame.cornerRadius = 12;
@@ -820,19 +820,19 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
     // Create a containing frame for the entire input system
     const containerFrame = figma.createFrame();
     containerFrame.name = "🎨 Input Component System";
-    
+
     // Calculate container size based on component set
     const containerWidth = componentSet.width + 128;
     const containerHeight = componentSet.height + 200;
     containerFrame.resize(containerWidth, containerHeight);
-    
+
     // Set container styling
-    containerFrame.fills = [{ 
-        type: 'SOLID', 
+    containerFrame.fills = [{
+        type: 'SOLID',
         color: { r: 0.97, g: 0.97, b: 0.98 }
     }];
     containerFrame.cornerRadius = 12;
-    
+
     // Apply auto-layout to container
     containerFrame.layoutMode = 'VERTICAL';
     containerFrame.primaryAxisSizingMode = 'AUTO';
@@ -890,8 +890,8 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
     iconsFrame.paddingRight = 24;
     iconsFrame.paddingTop = 24;
     iconsFrame.paddingBottom = 24;
-    iconsFrame.fills = [{ 
-        type: 'SOLID', 
+    iconsFrame.fills = [{
+        type: 'SOLID',
         color: { r: 0.95, g: 0.95, b: 0.96 }
     }];
     iconsFrame.cornerRadius = 12;
@@ -1221,12 +1221,12 @@ figma.ui.onmessage = async (msg) => {
 
                 if (existingSpacingCollection) {
                     spacingCollection = existingSpacingCollection;
-                    
+
                     // Ensure all three modes exist
                     const hasDesktop = spacingCollection.modes.some(m => m.name === 'Desktop');
                     const hasTablet = spacingCollection.modes.some(m => m.name === 'Tablet');
                     const hasMobile = spacingCollection.modes.some(m => m.name === 'Mobile');
-                    
+
                     if (!hasDesktop) {
                         spacingCollection.renameMode(spacingCollection.modes[0].modeId, 'Desktop');
                     }
@@ -1281,12 +1281,12 @@ figma.ui.onmessage = async (msg) => {
 
                 if (existingPaddingCollection) {
                     paddingCollection = existingPaddingCollection;
-                    
+
                     // Ensure all three modes exist
                     const hasDesktop = paddingCollection.modes.some(m => m.name === 'Desktop');
                     const hasTablet = paddingCollection.modes.some(m => m.name === 'Tablet');
                     const hasMobile = paddingCollection.modes.some(m => m.name === 'Mobile');
-                    
+
                     if (!hasDesktop) {
                         paddingCollection.renameMode(paddingCollection.modes[0].modeId, 'Desktop');
                     }
@@ -1341,12 +1341,12 @@ figma.ui.onmessage = async (msg) => {
 
                 if (existingRadiusCollection) {
                     radiusCollection = existingRadiusCollection;
-                    
+
                     // Ensure all three modes exist
                     const hasDesktop = radiusCollection.modes.some(m => m.name === 'Desktop');
                     const hasTablet = radiusCollection.modes.some(m => m.name === 'Tablet');
                     const hasMobile = radiusCollection.modes.some(m => m.name === 'Mobile');
-                    
+
                     if (!hasDesktop) {
                         radiusCollection.renameMode(radiusCollection.modes[0].modeId, 'Desktop');
                     }
@@ -1401,12 +1401,12 @@ figma.ui.onmessage = async (msg) => {
 
                 if (existingStrokeCollection) {
                     strokeCollection = existingStrokeCollection;
-                    
+
                     // Ensure all three modes exist
                     const hasDesktop = strokeCollection.modes.some(m => m.name === 'Desktop');
                     const hasTablet = strokeCollection.modes.some(m => m.name === 'Tablet');
                     const hasMobile = strokeCollection.modes.some(m => m.name === 'Mobile');
-                    
+
                     if (!hasDesktop) {
                         strokeCollection.renameMode(strokeCollection.modes[0].modeId, 'Desktop');
                     }
@@ -1530,7 +1530,7 @@ figma.ui.onmessage = async (msg) => {
             const frame = figma.createFrame();
             frame.name = "Design System Tokens";
             frame.fills = [{ type: 'SOLID', color: { r: 0.96, g: 0.96, b: 0.97 } }]; // #F5F5F7 - Subtle gray background
-            
+
             // Enable auto-layout with hug contents for both width and height
             frame.layoutMode = 'VERTICAL';
             frame.primaryAxisSizingMode = 'AUTO'; // Hug height
@@ -1570,12 +1570,12 @@ figma.ui.onmessage = async (msg) => {
             const headerFrame = figma.createFrame();
             headerFrame.name = "Header";
             headerFrame.fills = [];
-            
+
             headerFrame.layoutMode = 'VERTICAL';
             headerFrame.primaryAxisSizingMode = 'AUTO';
             headerFrame.counterAxisSizingMode = 'AUTO'; // Hug width
             headerFrame.itemSpacing = 20;
-            
+
             frame.appendChild(headerFrame);
 
             // Add title with subtitle
@@ -1586,7 +1586,7 @@ figma.ui.onmessage = async (msg) => {
             titleContainer.primaryAxisSizingMode = 'AUTO';
             titleContainer.counterAxisSizingMode = 'AUTO';
             titleContainer.itemSpacing = 8;
-            
+
             const title = figma.createText();
             try {
                 title.fontName = { family: "Inter", style: "Bold" };
@@ -1598,7 +1598,7 @@ figma.ui.onmessage = async (msg) => {
             title.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
             title.letterSpacing = { value: -1.2, unit: "PIXELS" };
             titleContainer.appendChild(title);
-            
+
             // Add subtitle with timestamp
             const subtitle = figma.createText();
             try {
@@ -1611,7 +1611,7 @@ figma.ui.onmessage = async (msg) => {
             subtitle.characters = `Generated on ${date} • Complete token documentation`;
             subtitle.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.45, b: 0.47 } }];
             titleContainer.appendChild(subtitle);
-            
+
             headerFrame.appendChild(titleContainer);
 
             // Add stats row
@@ -1887,16 +1887,16 @@ figma.ui.onmessage = async (msg) => {
                         console.warn('Skipping spacing token with empty name');
                         return;
                     }
-                    
+
                     // Handle both old format (number) and new format (object with desktop/tablet/mobile)
                     const displayValue = typeof valueData === 'object' ? valueData.desktop : valueData;
-                    
+
                     // Skip if displayValue is invalid
                     if (displayValue === undefined || displayValue === null) {
                         console.warn(`Skipping spacing token ${name} with invalid value`);
                         return;
                     }
-                    
+
                     const tokenCard = figma.createFrame();
                     tokenCard.name = name;
                     tokenCard.resize(100, 110);
@@ -1981,16 +1981,16 @@ figma.ui.onmessage = async (msg) => {
                         console.warn('Skipping padding token with empty name');
                         return;
                     }
-                    
+
                     // Handle both old format (number) and new format (object with desktop/tablet/mobile)
                     const displayValue = typeof valueData === 'object' ? valueData.desktop : valueData;
-                    
+
                     // Skip if displayValue is invalid
                     if (displayValue === undefined || displayValue === null) {
                         console.warn(`Skipping padding token ${name} with invalid value`);
                         return;
                     }
-                    
+
                     const tokenCard = figma.createFrame();
                     tokenCard.name = name;
                     tokenCard.resize(100, 110);
@@ -2075,16 +2075,16 @@ figma.ui.onmessage = async (msg) => {
                         console.warn('Skipping radius token with empty name');
                         return;
                     }
-                    
+
                     // Handle both old format (number) and new format (object with desktop/tablet/mobile)
                     const displayValue = typeof valueData === 'object' ? valueData.desktop : valueData;
-                    
+
                     // Skip if displayValue is invalid
                     if (displayValue === undefined || displayValue === null) {
                         console.warn(`Skipping radius token ${name} with invalid value`);
                         return;
                     }
-                    
+
                     const tokenCard = figma.createFrame();
                     tokenCard.name = name;
                     tokenCard.resize(100, 110);
@@ -2171,16 +2171,16 @@ figma.ui.onmessage = async (msg) => {
                         console.warn('Skipping stroke token with empty name');
                         return;
                     }
-                    
+
                     // Handle both old format (number) and new format (object with desktop/tablet/mobile)
                     const displayValue = typeof valueData === 'object' ? valueData.desktop : valueData;
-                    
+
                     // Skip if displayValue is invalid
                     if (displayValue === undefined || displayValue === null) {
                         console.warn(`Skipping stroke token ${name} with invalid value`);
                         return;
                     }
-                    
+
                     const tokenCard = figma.createFrame();
                     tokenCard.name = name;
                     tokenCard.resize(100, 110);
@@ -2265,7 +2265,7 @@ figma.ui.onmessage = async (msg) => {
                         console.warn('Skipping shadow token with empty name');
                         return;
                     }
-                    
+
                     const tokenCard = figma.createFrame();
                     tokenCard.name = name;
                     tokenCard.resize(100, 110);
@@ -2337,9 +2337,64 @@ figma.ui.onmessage = async (msg) => {
             // Center the frame in viewport
             figma.viewport.scrollAndZoomIntoView([frame]);
 
+            // Create layout grid styles if grid data is provided
+            let gridCount = 0;
+            if (msg.grids) {
+                console.log('Creating layout grid styles:', msg.grids);
+
+                const grids = msg.grids;
+
+                // Helper function to create or update a grid style
+                async function createOrUpdateGridStyle(name, config) {
+                    const existingStyles = await figma.getLocalGridStylesAsync();
+                    let style = existingStyles.find(s => s.name === name);
+
+                    if (!style) {
+                        style = figma.createGridStyle();
+                        style.name = name;
+                        console.log('Created new grid style:', style.name);
+                    } else {
+                        console.log('Updating existing grid style:', style.name);
+                    }
+
+                    // Create column grid
+                    const columnGrid = {
+                        pattern: 'COLUMNS',
+                        sectionSize: config.maxWidth / config.columns,
+                        count: config.columns,
+                        gutterSize: config.gutter,
+                        alignment: 'CENTER',
+                        color: { r: 0.96, g: 0.27, b: 0.33, a: 0.1 },
+                        visible: true
+                    };
+
+                    style.layoutGrids = [columnGrid];
+                    return style;
+                }
+
+                // Create Desktop Grid Style
+                if (grids.desktop) {
+                    await createOrUpdateGridStyle('Layout Grid/Desktop', grids.desktop);
+                    gridCount++;
+                }
+
+                // Create Tablet Grid Style
+                if (grids.tablet) {
+                    await createOrUpdateGridStyle('Layout Grid/Tablet', grids.tablet);
+                    gridCount++;
+                }
+
+                // Create Mobile Grid Style
+                if (grids.mobile) {
+                    await createOrUpdateGridStyle('Layout Grid/Mobile', grids.mobile);
+                    gridCount++;
+                }
+            }
+
             const varMessage = `${createdCount} colors (Light + Dark modes), ${spacingCount} spacing, ${paddingCount} padding, ${radiusCount} radius, ${strokeCount} stroke`;
             const shadowMessage = shadowCount > 0 ? ` + ${shadowCount} shadow styles` : '';
-            figma.notify(`✅ Created ${createdCount + spacingCount + paddingCount + radiusCount + strokeCount} variables (${varMessage})${shadowMessage} with Desktop/Tablet/Mobile modes!`);
+            const gridMessage = gridCount > 0 ? ` + ${gridCount} layout grid styles` : '';
+            figma.notify(`✅ Created ${createdCount + spacingCount + paddingCount + radiusCount + strokeCount} variables (${varMessage})${shadowMessage}${gridMessage} with Desktop/Tablet/Mobile modes!`);
         } catch (error) {
             const errorMsg = (error && error.message) || (error && error.toString()) || 'Unknown error';
             figma.notify(`❌ Error creating variables: ${errorMsg}`);
@@ -2347,6 +2402,7 @@ figma.ui.onmessage = async (msg) => {
             console.error('Error stack:', error && error.stack);
         }
     }
+
 
     if (msg.type === 'get-available-fonts') {
         try {
@@ -2566,7 +2622,7 @@ figma.ui.onmessage = async (msg) => {
                         }
 
                         applyColorToNode(svgNode);
-                        
+
                         // Flatten SVG children into icon component
                         if (svgNode.type === 'FRAME' || svgNode.type === 'GROUP') {
                             const children = [...svgNode.children];
@@ -2579,7 +2635,7 @@ figma.ui.onmessage = async (msg) => {
                         } else {
                             iconComponent.appendChild(svgNode);
                         }
-                        
+
                         // Add icon directly to grid container - wrapping handles layout
                         gridContainer.appendChild(iconComponent);
 
@@ -2873,7 +2929,7 @@ figma.ui.onmessage = async (msg) => {
                 await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
                 await figma.loadFontAsync({ family: "Inter", style: "Medium" });
                 await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-                
+
                 const categories = Object.keys(styles);
 
                 // Create main container with modern styling
@@ -3404,7 +3460,7 @@ figma.ui.onmessage = async (msg) => {
                     gridContainer.name = "Grid";
                     gridContainer.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
                     gridContainer.cornerRadius = 6;
-                    
+
                     // Set up horizontal auto-layout with wrapping
                     gridContainer.layoutMode = 'HORIZONTAL';
                     gridContainer.primaryAxisSizingMode = 'FIXED'; // Fixed width
@@ -3576,20 +3632,20 @@ function cleanSVG(svgText) {
 function createIconComponent(svgText, iconName, size = 24) {
     const cleaned = cleanSVG(svgText);
     const svgNode = figma.createNodeFromSvg(cleaned);
-    
+
     const component = figma.createComponent();
     component.name = iconName;
     component.resize(size, size);
     component.fills = [];
-    
+
     const scaleX = size / svgNode.width;
     const scaleY = size / svgNode.height;
     const scale = Math.min(scaleX, scaleY);
     svgNode.resize(svgNode.width * scale, svgNode.height * scale);
-    
+
     svgNode.x = (size - svgNode.width) / 2;
     svgNode.y = (size - svgNode.height) / 2;
-    
+
     if (svgNode.type === 'FRAME' || svgNode.type === 'GROUP') {
         const children = [...svgNode.children];
         children.forEach(child => {
@@ -3601,7 +3657,7 @@ function createIconComponent(svgText, iconName, size = 24) {
     } else {
         component.appendChild(svgNode);
     }
-    
+
     return component;
 }
 
@@ -3620,7 +3676,7 @@ function createCategoryFrame(categoryName, x = 0, y = 0) {
     frame.x = x;
     frame.y = y;
     frame.fills = [];
-    
+
     frame.layoutMode = 'HORIZONTAL';
     frame.primaryAxisSizingMode = 'AUTO';
     frame.counterAxisSizingMode = 'AUTO';
@@ -3632,7 +3688,7 @@ function createCategoryFrame(categoryName, x = 0, y = 0) {
     frame.paddingTop = 16;
     frame.paddingBottom = 16;
     frame.layoutWrap = 'WRAP';
-    
+
     return frame;
 }
 
@@ -3710,43 +3766,43 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
     const page = getOrCreateIconLibraryPage();
     const originalPage = figma.currentPage;
     await figma.setCurrentPageAsync(page);
-    
+
     try {
         const library = ICON_LIBRARIES[libraryId];
         if (!library) {
             throw new Error(`Library ${libraryId} not found`);
         }
-        
+
         const category = library.categories[categoryId];
         if (!category) {
             throw new Error(`Category ${categoryId} not found`);
         }
-        
+
         const categoryFrame = createCategoryFrame(
             `${library.name} / ${category.name}`,
             0,
             0
         );
         page.appendChild(categoryFrame);
-        
+
         const components = [];
         let successCount = 0;
         let failCount = 0;
-        
+
         const BATCH_SIZE = 20; // Fetch 20 icons at a time
-        
+
         // Process icons in batches for better performance
         for (let i = 0; i < iconList.length; i += BATCH_SIZE) {
             const batch = iconList.slice(i, i + BATCH_SIZE);
-            
+
             // Fetch SVGs in parallel
             const svgPromises = batch.map(iconName => {
                 const url = `${category.baseUrl}/${iconName}`;
                 return fetchSVG(url).then(svgText => ({ iconName, svgText }));
             });
-            
+
             const results = await Promise.all(svgPromises);
-            
+
             // Create components from fetched SVGs
             for (const { iconName, svgText } of results) {
                 if (svgText) {
@@ -3763,17 +3819,17 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
                     failCount++;
                 }
             }
-            
+
             // Update progress
             const progress = Math.min(i + BATCH_SIZE, iconList.length);
             figma.notify(`📦 Creating icons... (${progress}/${iconList.length})`);
         }
-        
+
         if (components.length > 1) {
             figma.notify(`🔧 Combining ${components.length} icons into Component Set...`);
             const componentSet = figma.combineAsVariants(components, page);
             componentSet.name = `${library.name} / ${category.name}`;
-            
+
             // Set up grid layout with 20 icons per row
             componentSet.layoutMode = 'HORIZONTAL';
             componentSet.primaryAxisSizingMode = 'AUTO';
@@ -3787,7 +3843,7 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
             componentSet.paddingTop = 16;
             componentSet.paddingBottom = 16;
             componentSet.layoutWrap = 'WRAP';
-            
+
             // Calculate max width for 20 icons per row
             // Icon size (24) + spacing (16) = 40px per icon
             // 20 icons = 20 * 40 - 16 (last spacing) + 32 (padding) = 816px
@@ -3797,23 +3853,23 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
             const padding = 32; // left + right
             const maxWidth = (iconWidth + spacing) * iconsPerRow - spacing + padding;
             componentSet.resize(maxWidth, componentSet.height);
-            
+
             componentSet.fills = [];
             categoryFrame.remove();
             figma.viewport.scrollAndZoomIntoView([componentSet]);
         } else if (components.length === 1) {
             figma.viewport.scrollAndZoomIntoView([components[0]]);
         }
-        
+
         await figma.setCurrentPageAsync(originalPage);
-        
+
         return {
             success: true,
             successCount,
             failCount,
             total: iconList.length
         };
-        
+
     } catch (error) {
         await figma.setCurrentPageAsync(originalPage);
         throw error;
@@ -3894,52 +3950,52 @@ async function generateAllLibraryIcons(libraryId, categories) {
     const page = getOrCreateIconLibraryPage();
     const originalPage = figma.currentPage;
     await figma.setCurrentPageAsync(page);
-    
+
     try {
         const library = ICON_LIBRARIES[libraryId];
         if (!library) {
             throw new Error(`Library ${libraryId} not found`);
         }
-        
+
         let totalSuccess = 0;
         let totalFailed = 0;
         let categoriesCreated = 0;
         const allComponentSets = [];
         let yOffset = 0;
-        
+
         const BATCH_SIZE = 20; // Fetch 20 icons at a time
-        
+
         for (const categoryData of categories) {
             const { categoryId, categoryName, iconList } = categoryData;
             const category = library.categories[categoryId];
-            
+
             if (!category) continue;
-            
+
             figma.notify(`📦 Creating ${categoryName}... (0/${iconList.length})`);
-            
+
             const categoryFrame = createCategoryFrame(
                 `${library.name} / ${categoryName}`,
                 0,
                 yOffset
             );
             page.appendChild(categoryFrame);
-            
+
             const components = [];
             let successCount = 0;
             let failCount = 0;
-            
+
             // Process icons in batches for better performance
             for (let i = 0; i < iconList.length; i += BATCH_SIZE) {
                 const batch = iconList.slice(i, i + BATCH_SIZE);
-                
+
                 // Fetch SVGs in parallel
                 const svgPromises = batch.map(iconName => {
                     const url = `${category.baseUrl}/${iconName}`;
                     return fetchSVG(url).then(svgText => ({ iconName, svgText }));
                 });
-                
+
                 const results = await Promise.all(svgPromises);
-                
+
                 // Create components from fetched SVGs
                 for (const { iconName, svgText } of results) {
                     if (svgText) {
@@ -3956,18 +4012,18 @@ async function generateAllLibraryIcons(libraryId, categories) {
                         failCount++;
                     }
                 }
-                
+
                 // Update progress
                 const progress = Math.min(i + BATCH_SIZE, iconList.length);
                 figma.notify(`📦 Creating ${categoryName}... (${progress}/${iconList.length})`);
             }
-            
+
             // Create component set
             if (components.length > 1) {
                 figma.notify(`🔧 Combining ${components.length} icons into Component Set...`);
                 const componentSet = figma.combineAsVariants(components, page);
                 componentSet.name = `${library.name} / ${categoryName}`;
-                
+
                 // Set up grid layout with 20 icons per row
                 componentSet.layoutMode = 'HORIZONTAL';
                 componentSet.primaryAxisSizingMode = 'AUTO';
@@ -3981,7 +4037,7 @@ async function generateAllLibraryIcons(libraryId, categories) {
                 componentSet.paddingTop = 16;
                 componentSet.paddingBottom = 16;
                 componentSet.layoutWrap = 'WRAP';
-                
+
                 // Calculate max width for 20 icons per row
                 const iconWidth = 24;
                 const spacing = 16;
@@ -3989,7 +4045,7 @@ async function generateAllLibraryIcons(libraryId, categories) {
                 const padding = 32;
                 const maxWidth = (iconWidth + spacing) * iconsPerRow - spacing + padding;
                 componentSet.resize(maxWidth, componentSet.height);
-                
+
                 componentSet.fills = [];
                 componentSet.y = yOffset;
                 allComponentSets.push(componentSet);
@@ -4001,27 +4057,27 @@ async function generateAllLibraryIcons(libraryId, categories) {
                 categoryFrame.remove();
                 yOffset += components[0].height + 100;
             }
-            
+
             totalSuccess += successCount;
             totalFailed += failCount;
             categoriesCreated++;
-            
+
             figma.notify(`✅ ${categoryName} complete! (${successCount} icons)`);
         }
-        
+
         if (allComponentSets.length > 0) {
             figma.viewport.scrollAndZoomIntoView(allComponentSets);
         }
-        
+
         await figma.setCurrentPageAsync(originalPage);
-        
+
         return {
             success: true,
             totalSuccess,
             totalFailed,
             categoriesCreated
         };
-        
+
     } catch (error) {
         await figma.setCurrentPageAsync(originalPage);
         throw error;

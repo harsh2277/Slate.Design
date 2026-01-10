@@ -3,6 +3,11 @@
 // Note: In Figma plugins, we need to pass icon data through the UI
 figma.showUI(__html__, { width: 424, height: 700, themeColors: true });
 
+// Handle plugin close event - show bye bye message
+figma.on('close', () => {
+    figma.notify('👋 Bye Bye! Thanks for using Slate.Design', { timeout: 3000 });
+});
+
 // Helper function to safely set text characters
 function safeSetCharacters(textNode, value) {
     const stringValue = String(value || '');
@@ -964,7 +969,11 @@ figma.ui.onmessage = async (msg) => {
     }
 
     if (msg.type === 'close-plugin') {
-        figma.closePlugin();
+        // Show goodbye message and close after 5 seconds
+        figma.ui.postMessage({ type: 'show-goodbye' });
+        setTimeout(() => {
+            figma.closePlugin();
+        }, 5000);
     }
 
     if (msg.type === 'notify') {
@@ -974,8 +983,11 @@ figma.ui.onmessage = async (msg) => {
     if (msg.type === 'create-button-component') {
         try {
             await createButtonComponentSet(msg.buttonText, msg.bgColor, msg.textColor, msg.radius);
+            figma.ui.postMessage({ type: 'loading-complete' });
+            figma.ui.postMessage({ type: 'show-success', title: 'Button Created!', message: 'Your button component system has been created successfully.' });
         } catch (error) {
             figma.notify(`❌ Error creating button component: ${error.message}`);
+            figma.ui.postMessage({ type: 'loading-complete' });
             console.error('Button component error:', error);
         }
     }
@@ -983,8 +995,11 @@ figma.ui.onmessage = async (msg) => {
     if (msg.type === 'create-input-component') {
         try {
             await createInputComponentSet(msg.placeholder, msg.borderColor, msg.primaryColor, msg.textColor, msg.radius);
+            figma.ui.postMessage({ type: 'loading-complete' });
+            figma.ui.postMessage({ type: 'show-success', title: 'Input Created!', message: 'Your input component system has been created successfully.' });
         } catch (error) {
             figma.notify(`❌ Error creating input component: ${error.message}`);
+            figma.ui.postMessage({ type: 'loading-complete' });
             console.error('Input component error:', error);
         }
     }
@@ -2395,9 +2410,12 @@ figma.ui.onmessage = async (msg) => {
             const shadowMessage = shadowCount > 0 ? ` + ${shadowCount} shadow styles` : '';
             const gridMessage = gridCount > 0 ? ` + ${gridCount} layout grid styles` : '';
             figma.notify(`✅ Created ${createdCount + spacingCount + paddingCount + radiusCount + strokeCount} variables (${varMessage})${shadowMessage}${gridMessage}!`);
+            figma.ui.postMessage({ type: 'loading-complete' });
+            figma.ui.postMessage({ type: 'show-success', title: 'Variables Created!', message: `Created ${createdCount + spacingCount + paddingCount + radiusCount + strokeCount} design tokens successfully.` });
         } catch (error) {
             const errorMsg = (error && error.message) || (error && error.toString()) || 'Unknown error';
             figma.notify(`❌ Error creating variables: ${errorMsg}`);
+            figma.ui.postMessage({ type: 'loading-complete' });
             console.error('Full error details:', error);
             console.error('Error stack:', error && error.stack);
         }
@@ -2434,7 +2452,7 @@ figma.ui.onmessage = async (msg) => {
             const icons = msg.icons;
             const svgData = msg.svgData;
 
-            figma.notify(`🔄 Loading ${icons.length} icons...`);
+            // Progress notification removed - only show final result
 
             // Load fonts
             await figma.loadFontAsync({ family: "Inter", style: "Regular" });
@@ -2657,8 +2675,11 @@ figma.ui.onmessage = async (msg) => {
             figma.viewport.scrollAndZoomIntoView([mainFrame]);
 
             figma.notify(`✅ Created ${createdCount} icon components in ${Object.keys(iconsByStyle).length} sections`);
+            figma.ui.postMessage({ type: 'loading-complete' });
+            figma.ui.postMessage({ type: 'show-success', title: 'Icons Created!', message: `Created ${createdCount} icon components successfully.` });
         } catch (error) {
             figma.notify(`❌ Error adding icons: ${error.message}`);
+            figma.ui.postMessage({ type: 'loading-complete' });
             console.error('Add icons error:', error);
         }
     }
@@ -3233,8 +3254,11 @@ figma.ui.onmessage = async (msg) => {
 
             const systemCount = frames.length;
             figma.notify(`✅ Created ${variableCount} typography variables (Desktop + Mobile), ${createdStylesCount} text styles, and ${systemCount} typography system(s)!`);
+            figma.ui.postMessage({ type: 'loading-complete' });
+            figma.ui.postMessage({ type: 'show-success', title: 'Typography Created!', message: `Created ${createdStylesCount} text styles and ${variableCount} typography variables.` });
         } catch (error) {
             figma.notify(`❌ Error creating text styles: ${error.message}`);
+            figma.ui.postMessage({ type: 'loading-complete' });
             console.error('Text styles error:', error);
         }
     }
@@ -3243,7 +3267,7 @@ figma.ui.onmessage = async (msg) => {
         try {
             const { library, iconColor } = msg;
 
-            figma.notify(`🔄 Loading ${library} icons from GitHub...`);
+            // Progress notification removed - only show final result
 
             // Helper to convert hex to RGB
             function hexToRgb(hex) {
@@ -3539,8 +3563,7 @@ figma.ui.onmessage = async (msg) => {
                     styleSection.appendChild(gridContainer);
                     sectionsContainer.appendChild(styleSection);
 
-                    // Update progress
-                    figma.notify(`Creating ${styleNameCapitalized}... (${createdCount} / ${icons.length})`);
+                    // Progress notification removed - only show final result
                 }
 
                 // Center viewport
@@ -3548,10 +3571,13 @@ figma.ui.onmessage = async (msg) => {
 
                 // Show summary
                 figma.notify(`✅ Created ${createdCount} icons! Skipped: ${skippedCount}`);
+                figma.ui.postMessage({ type: 'loading-complete' });
+                figma.ui.postMessage({ type: 'show-success', title: 'Icons Created!', message: `Created ${createdCount} icons successfully.` });
 
             } catch (error) {
                 const errorMsg = error && error.message ? error.message : String(error);
                 figma.notify(`❌ Error creating icons: ${errorMsg}`);
+                figma.ui.postMessage({ type: 'loading-complete' });
                 console.error('Create icons error:', error);
             }
         })();
@@ -3566,10 +3592,13 @@ figma.ui.onmessage = async (msg) => {
                 const result = await generateIconLibrary(msg.libraryId, msg.categoryId, msg.iconList);
                 figma.notify(`✅ Created ${result.successCount} icons! Failed: ${result.failCount}`);
                 figma.ui.postMessage({ type: 'generation-complete' });
+                figma.ui.postMessage({ type: 'loading-complete' });
+                figma.ui.postMessage({ type: 'show-success', title: 'Icons Created!', message: `Created ${result.successCount} icons successfully.` });
             } catch (error) {
                 console.error('Icon library error:', error);
                 figma.notify(`❌ Error: ${error.message}`);
                 figma.ui.postMessage({ type: 'generation-complete' });
+                figma.ui.postMessage({ type: 'loading-complete' });
             }
         })();
     }
@@ -3579,14 +3608,17 @@ figma.ui.onmessage = async (msg) => {
             try {
                 console.log('Received generate-all-library-icons message:', msg);
                 console.log('Categories:', msg.categories.length);
-                figma.notify('🚀 Starting to generate all icons...');
+                // Progress notification removed - only show final result
                 const result = await generateAllLibraryIcons(msg.libraryId, msg.categories);
                 figma.notify(`✅ Created ${result.totalSuccess} icons in ${result.categoriesCreated} categories! Failed: ${result.totalFailed}`);
                 figma.ui.postMessage({ type: 'generation-complete' });
+                figma.ui.postMessage({ type: 'loading-complete' });
+                figma.ui.postMessage({ type: 'show-success', title: 'Icons Created!', message: `Created ${result.totalSuccess} icons in ${result.categoriesCreated} categories.` });
             } catch (error) {
                 console.error('Generate all icons error:', error);
                 figma.notify(`❌ Error: ${error.message}`);
                 figma.ui.postMessage({ type: 'generation-complete' });
+                figma.ui.postMessage({ type: 'loading-complete' });
             }
         })();
     }
@@ -3809,9 +3841,7 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
                 }
             }
 
-            // Update progress
-            const progress = Math.min(i + BATCH_SIZE, iconList.length);
-            figma.notify(`📦 Creating icons... (${progress}/${iconList.length})`);
+            // Progress notification removed - only show final result
         }
 
         // Remove the temporary category frame (no longer needed)
@@ -3994,7 +4024,7 @@ async function generateAllLibraryIcons(libraryId, categories) {
 
             if (!category) continue;
 
-            figma.notify(`📦 Creating ${categoryName}... (0/${iconList.length})`);
+            // Progress notification removed - only show final result
 
             const categoryFrame = createCategoryFrame(
                 `${library.name} / ${categoryName}`,
@@ -4037,9 +4067,7 @@ async function generateAllLibraryIcons(libraryId, categories) {
                     }
                 }
 
-                // Update progress
-                const progress = Math.min(i + BATCH_SIZE, iconList.length);
-                figma.notify(`📦 Creating ${categoryName}... (${progress}/${iconList.length})`);
+                // Progress notification removed - only show final result
             }
 
             // Remove the temporary category frame (no longer needed)
@@ -4123,7 +4151,7 @@ async function generateAllLibraryIcons(libraryId, categories) {
             totalFailed += failCount;
             categoriesCreated++;
 
-            figma.notify(`✅ ${categoryName} complete! (${successCount} icons)`);
+            // Progress notification removed - only show final result
         }
 
         if (allContainerFrames.length > 0) {

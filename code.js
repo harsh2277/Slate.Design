@@ -1036,7 +1036,7 @@ figma.ui.onmessage = async (msg) => {
                     collection.addMode('Dark');
                 }
             } else {
-                collection = figma.variables.createVariableCollection('Design System Tokens');
+                collection = figma.variables.createVariableCollection('Colors');
                 collection.renameMode(collection.modes[0].modeId, 'Light');
                 collection.addMode('Dark');
             }
@@ -1110,10 +1110,10 @@ figma.ui.onmessage = async (msg) => {
 
             // Create responsive variable collections (spacing, padding, radius, stroke)
             const responsiveCollections = [
-                { name: 'Design System Spacing', data: msg.spacing },
-                { name: 'Design System Padding', data: msg.padding },
-                { name: 'Design System Radius', data: msg.radius },
-                { name: 'Design System Stroke', data: msg.strokes }
+                { name: 'Spacing', data: msg.spacing },
+                { name: 'Padding', data: msg.padding },
+                { name: 'Radius', data: msg.radius },
+                { name: 'Stroke', data: msg.strokes }
             ];
 
             let spacingCount = 0, paddingCount = 0, radiusCount = 0, strokeCount = 0;

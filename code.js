@@ -20,7 +20,7 @@
 figma.showUI(__html__, { width: 424, height: 700, themeColors: true });
 
 figma.on('close', () => {
-    figma.notify('👋 Bye Bye! Thanks for using Slate.Design', { timeout: 3000 });
+    figma.notify('👋 Bye Bye Thanks for using Slate.Design', { timeout: 3000 });
 });
 
 // ============================================
@@ -77,9 +77,9 @@ function applyColorToNode(node, color) {
 // ============================================
 
 async function createButtonComponentSet(buttonText, bgColor, textColor, radius) {
-    await figma.loadFontAsync({ family: "Inter", style: "Medium" });
-    await figma.loadFontAsync({ family: "Inter", style: "Bold" });
-    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
 
     const baseRgb = hexToRgb(bgColor);
     const textRgb = hexToRgb(textColor);
@@ -216,7 +216,7 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
 
                 // Text
                 const text = figma.createText();
-                text.fontName = { family: "Inter", style: "Medium" };
+                text.fontName = { family: "Poppins", style: "Medium" };
                 text.fontSize = size.fontSize;
                 text.characters = buttonText;
                 text.fills = [{ type: 'SOLID', color: state.textColor }];
@@ -272,14 +272,14 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
     titleFrame.fills = [];
 
     const titleText = figma.createText();
-    titleText.fontName = { family: "Inter", style: "Bold" };
+    titleText.fontName = { family: "Poppins", style: "Bold" };
     titleText.fontSize = 28;
     titleText.characters = "Button Component";
     titleText.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
     titleFrame.appendChild(titleText);
 
     const subtitleText = figma.createText();
-    subtitleText.fontName = { family: "Inter", style: "Regular" };
+    subtitleText.fontName = { family: "Poppins", style: "Regular" };
     subtitleText.fontSize = 14;
     subtitleText.characters = "3 Variants • 3 Sizes • 4 States • Swappable Icons";
     subtitleText.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
@@ -334,9 +334,9 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
 // ============================================
 
 async function createInputComponentSet(placeholder, borderColor, primaryColor, textColor, radius) {
-    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-    await figma.loadFontAsync({ family: "Inter", style: "Medium" });
-    await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
 
     const borderRgb = hexToRgb(borderColor);
     const textRgb = hexToRgb(textColor);
@@ -423,7 +423,7 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
 
             // Label
             const label = figma.createText();
-            label.fontName = { family: "Inter", style: "Medium" };
+            label.fontName = { family: "Poppins", style: "Medium" };
             label.fontSize = 12;
             label.characters = "Label";
             label.fills = [{ type: 'SOLID', color: state.textColor }];
@@ -459,7 +459,7 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
                     digitBox.primaryAxisSizingMode = 'FIXED';
 
                     const digitText = figma.createText();
-                    digitText.fontName = { family: "Inter", style: "Medium" };
+                    digitText.fontName = { family: "Poppins", style: "Medium" };
                     digitText.fontSize = 20;
                     digitText.characters = type.placeholder;
                     digitText.fills = [{ type: 'SOLID', color: state.textColor, opacity: state.placeholderOpacity }];
@@ -499,7 +499,7 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
                 }
 
                 const text = figma.createText();
-                text.fontName = { family: "Inter", style: "Regular" };
+                text.fontName = { family: "Poppins", style: "Regular" };
                 text.fontSize = 14;
                 text.characters = type.placeholder;
                 text.textAlignHorizontal = 'LEFT';
@@ -521,7 +521,7 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
 
             if (state.hasErrorMsg) {
                 const errorMsg = figma.createText();
-                errorMsg.fontName = { family: "Inter", style: "Regular" };
+                errorMsg.fontName = { family: "Poppins", style: "Regular" };
                 errorMsg.fontSize = 11;
                 errorMsg.characters = "This field has an error";
                 errorMsg.fills = [{ type: 'SOLID', color: errorRgb }];
@@ -567,14 +567,14 @@ async function createInputComponentSet(placeholder, borderColor, primaryColor, t
     titleFrame.fills = [];
 
     const titleText = figma.createText();
-    titleText.fontName = { family: "Inter", style: "Bold" };
+    titleText.fontName = { family: "Poppins", style: "Bold" };
     titleText.fontSize = 28;
     titleText.characters = "Input Component";
     titleText.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
     titleFrame.appendChild(titleText);
 
     const subtitleText = figma.createText();
-    subtitleText.fontName = { family: "Inter", style: "Regular" };
+    subtitleText.fontName = { family: "Poppins", style: "Regular" };
     subtitleText.fontSize = 14;
     subtitleText.characters = "3 Types • 5 States • Label & Icons • OTP Support";
     subtitleText.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
@@ -776,8 +776,8 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
         }
 
         if (components.length > 0) {
-            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
-            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
+            await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
 
             const containerFrame = figma.createFrame();
             containerFrame.name = `🎨 ${library.name} / ${category.name}`;
@@ -793,13 +793,13 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
             containerFrame.cornerRadius = 12;
 
             const heading = figma.createText();
-            heading.fontName = { family: "Inter", style: "Bold" };
+            heading.fontName = { family: "Poppins", style: "Bold" };
             heading.fontSize = 24;
             heading.characters = `${library.name} / ${category.name}`;
             heading.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
 
             const subheading = figma.createText();
-            subheading.fontName = { family: "Inter", style: "Regular" };
+            subheading.fontName = { family: "Poppins", style: "Regular" };
             subheading.fontSize = 14;
             subheading.characters = `${successCount} icons • ${iconList.length} total`;
             subheading.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
@@ -853,8 +853,8 @@ async function generateAllLibraryIcons(libraryId, categories) {
         let yOffset = 0;
         const BATCH_SIZE = 20;
 
-        await figma.loadFontAsync({ family: "Inter", style: "Bold" });
-        await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+        await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
+        await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
 
         for (const categoryData of categories) {
             const { categoryId, categoryName, iconList } = categoryData;
@@ -903,13 +903,13 @@ async function generateAllLibraryIcons(libraryId, categories) {
                 containerFrame.y = yOffset;
 
                 const heading = figma.createText();
-                heading.fontName = { family: "Inter", style: "Bold" };
+                heading.fontName = { family: "Poppins", style: "Bold" };
                 heading.fontSize = 24;
                 heading.characters = `${library.name} / ${categoryName}`;
                 heading.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
 
                 const subheading = figma.createText();
-                subheading.fontName = { family: "Inter", style: "Regular" };
+                subheading.fontName = { family: "Poppins", style: "Regular" };
                 subheading.fontSize = 14;
                 subheading.characters = `${successCount} icons • ${iconList.length} total`;
                 subheading.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
@@ -1294,10 +1294,10 @@ figma.ui.onmessage = async (msg) => {
 // ============================================
 
 async function createTokenDocumentation(colors, msg, createdCount, spacingCount, paddingCount, radiusCount, strokeCount, shadowCount, gridCount = 0) {
-    await figma.loadFontAsync({ family: "Inter", style: "Bold" });
-    await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
-    await figma.loadFontAsync({ family: "Inter", style: "Medium" });
-    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Semi Bold" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
 
     const frame = figma.createFrame();
     frame.name = "Design System Tokens";
@@ -1329,7 +1329,7 @@ async function createTokenDocumentation(colors, msg, createdCount, spacingCount,
     titleContainer.itemSpacing = 8;
 
     const title = figma.createText();
-    title.fontName = { family: "Inter", style: "Bold" };
+    title.fontName = { family: "Poppins", style: "Bold" };
     title.fontSize = 40;
     title.characters = "Design System Tokens";
     title.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
@@ -1337,7 +1337,7 @@ async function createTokenDocumentation(colors, msg, createdCount, spacingCount,
     titleContainer.appendChild(title);
 
     const subtitle = figma.createText();
-    subtitle.fontName = { family: "Inter", style: "Regular" };
+    subtitle.fontName = { family: "Poppins", style: "Regular" };
     subtitle.fontSize = 14;
     const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     subtitle.characters = `Generated on ${date} • Complete token documentation`;
@@ -1385,14 +1385,14 @@ async function createTokenDocumentation(colors, msg, createdCount, spacingCount,
         statItem.primaryAxisAlignItems = 'CENTER';
 
         const valueText = figma.createText();
-        valueText.fontName = { family: "Inter", style: "Bold" };
+        valueText.fontName = { family: "Poppins", style: "Bold" };
         valueText.fontSize = 24;
         safeSetCharacters(valueText, `${stat.value}`);
         valueText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
         statItem.appendChild(valueText);
 
         const labelText = figma.createText();
-        labelText.fontName = { family: "Inter", style: "Medium" };
+        labelText.fontName = { family: "Poppins", style: "Medium" };
         labelText.fontSize = 11;
         labelText.characters = stat.label.toUpperCase();
         labelText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
@@ -1452,7 +1452,7 @@ function createColorSection(name, colorData, parent) {
     section.paddingBottom = 24;
 
     const sectionTitle = figma.createText();
-    sectionTitle.fontName = { family: "Inter", style: "Semi Bold" };
+    sectionTitle.fontName = { family: "Poppins", style: "Semi Bold" };
     sectionTitle.fontSize = 16;
     sectionTitle.characters = name;
     sectionTitle.fills = [{ type: 'SOLID', color: { r: 0.15, g: 0.15, b: 0.15 } }];
@@ -1496,14 +1496,14 @@ function createColorSection(name, colorData, parent) {
         infoContainer.resize(110, 40);
 
         const nameText = figma.createText();
-        nameText.fontName = { family: "Inter", style: "Semi Bold" };
+        nameText.fontName = { family: "Poppins", style: "Semi Bold" };
         nameText.fontSize = 12;
         nameText.characters = shadeName.split('-')[1] || shadeName;
         nameText.fills = [{ type: 'SOLID', color: { r: 0.15, g: 0.15, b: 0.15 } }];
         infoContainer.appendChild(nameText);
 
         const hexText = figma.createText();
-        hexText.fontName = { family: "Inter", style: "Regular" };
+        hexText.fontName = { family: "Poppins", style: "Regular" };
         hexText.fontSize = 11;
         hexText.characters = hexColor.toUpperCase();
         hexText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
@@ -1558,7 +1558,7 @@ function createTokenSection(name, tokenData, parent) {
         tokenCard.primaryAxisAlignItems = 'CENTER';
 
         const nameText = figma.createText();
-        nameText.fontName = { family: "Inter", style: "Medium" };
+        nameText.fontName = { family: "Poppins", style: "Medium" };
         nameText.fontSize = 10;
         safeSetCharacters(nameText, tokenName.toUpperCase());
         nameText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
@@ -1566,7 +1566,7 @@ function createTokenSection(name, tokenData, parent) {
         tokenCard.appendChild(nameText);
 
         const valueText = figma.createText();
-        valueText.fontName = { family: "Inter", style: "Bold" };
+        valueText.fontName = { family: "Poppins", style: "Bold" };
         valueText.fontSize = 28;
         safeSetCharacters(valueText, `${displayValue}`);
         valueText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
@@ -1574,7 +1574,7 @@ function createTokenSection(name, tokenData, parent) {
         tokenCard.appendChild(valueText);
 
         const unitText = figma.createText();
-        unitText.fontName = { family: "Inter", style: "Regular" };
+        unitText.fontName = { family: "Poppins", style: "Regular" };
         unitText.fontSize = 10;
         safeSetCharacters(unitText, "px");
         unitText.fills = [{ type: 'SOLID', color: { r: 0.63, g: 0.63, b: 0.63 } }];
@@ -1596,10 +1596,10 @@ function createTokenSection(name, tokenData, parent) {
 // ============================================
 
 async function createTypographySystem(typography) {
-    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-    await figma.loadFontAsync({ family: "Inter", style: "Medium" });
-    await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
-    await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Semi Bold" });
+    await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
 
     // Create font name variables
     const collections = await figma.variables.getLocalVariableCollectionsAsync();
@@ -1676,7 +1676,7 @@ async function createTypographySystem(typography) {
             matchingFonts = availableFonts.filter(f => f.fontName.family.toLowerCase() === fontFamily.toLowerCase());
         }
         if (matchingFonts.length === 0) {
-            matchingFonts = availableFonts.filter(f => f.fontName.family === 'Inter');
+            matchingFonts = availableFonts.filter(f => f.fontName.family === 'Poppins');
         }
 
         const weightMap = { 100: 'Thin', 200: 'Extra Light', 300: 'Light', 400: 'Regular', 500: 'Medium', 600: 'Semi Bold', 700: 'Bold', 800: 'Extra Bold', 900: 'Black' };
@@ -1694,7 +1694,7 @@ async function createTypographySystem(typography) {
         }
 
         if (!font && matchingFonts.length > 0) font = matchingFonts[0];
-        return font ? font.fontName : { family: 'Inter', style: 'Regular' };
+        return font ? font.fontName : { family: 'Poppins', style: 'Regular' };
     }
 
     let createdStylesCount = 0;
@@ -1799,7 +1799,7 @@ async function createTypographyDocumentation(typography, findBestFont) {
     header.itemSpacing = 8;
 
     const titleText = figma.createText();
-    titleText.fontName = { family: "Inter", style: "Bold" };
+    titleText.fontName = { family: "Poppins", style: "Bold" };
     safeSetCharacters(titleText, "Typography System");
     titleText.fontSize = 32;
     titleText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
@@ -1807,7 +1807,7 @@ async function createTypographyDocumentation(typography, findBestFont) {
 
     const categories = Object.keys(typography.styles);
     const subtitleText = figma.createText();
-    subtitleText.fontName = { family: "Inter", style: "Regular" };
+    subtitleText.fontName = { family: "Poppins", style: "Regular" };
     safeSetCharacters(subtitleText, `${typography.primaryFont} • ${categories.length} Styles • Responsive Design`);
     subtitleText.fontSize = 15;
     subtitleText.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.45, b: 0.45 } }];
@@ -1850,7 +1850,7 @@ async function createTypographyDocumentation(typography, findBestFont) {
 
         // Category label
         const categoryLabel = figma.createText();
-        categoryLabel.fontName = { family: "Inter", style: "Semi Bold" };
+        categoryLabel.fontName = { family: "Poppins", style: "Semi Bold" };
         safeSetCharacters(categoryLabel, category.toUpperCase());
         categoryLabel.fontSize = 13;
         categoryLabel.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
@@ -1869,7 +1869,7 @@ async function createTypographyDocumentation(typography, findBestFont) {
 
         // Specs
         const specsText = figma.createText();
-        specsText.fontName = { family: "Inter", style: "Regular" };
+        specsText.fontName = { family: "Poppins", style: "Regular" };
         const mobileSize = Math.round(styleData.size * 0.85);
         safeSetCharacters(specsText, `Desktop: ${styleData.size}px • Mobile: ${mobileSize}px • Line Height: ${Math.round(styleData.lineHeight * 100)}%`);
         specsText.fontSize = 12;

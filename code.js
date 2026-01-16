@@ -1301,435 +1301,985 @@ figma.ui.onmessage = async (msg) => {
 // TOKEN DOCUMENTATION - START
 // ============================================
 
-// Utility: Calculate relative luminance for WCAG contrast
-function getLuminance(r, g, b) {
-    const [rs, gs, bs] = [r, g, b].map(c => {
-        c = c / 255;
-        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-    });
-    return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-}
-
-// Utility: Calculate WCAG contrast ratio
-function getContrastRatio(rgb1, rgb2) {
-    const lum1 = getLuminance(rgb1.r * 255, rgb1.g * 255, rgb1.b * 255);
-    const lum2 = getLuminance(rgb2.r * 255, rgb2.g * 255, rgb2.b * 255);
-    const lighter = Math.max(lum1, lum2);
-    const darker = Math.min(lum1, lum2);
-    return (lighter + 0.05) / (darker + 0.05);
-}
-
-// Utility: Determine if text should be light or dark based on background
-function getTextColorForBackground(bgColor) {
-    const luminance = getLuminance(bgColor.r * 255, bgColor.g * 255, bgColor.b * 255);
-    return luminance > 0.5
-        ? { r: 0.08, g: 0.08, b: 0.08 } // Dark text
-        : { r: 1, g: 1, b: 1 }; // Light text
-}
-
-// Utility: Get WCAG level badge (AAA, AA, or -)
-function getWCAGLevel(contrastRatio) {
-    if (contrastRatio >= 7) return 'AAA';
-    if (contrastRatio >= 4.5) return 'AA';
-    return '-';
-}
-
 async function createTokenDocumentation(colors, msg, createdCount, spacingCount, paddingCount, radiusCount, strokeCount, shadowCount, gridCount = 0) {
-    // Try to load fonts with fallback
-    let fontFamily = "Inter";
-    let fontStyles = {
-        bold: "Bold",
-        semiBold: "Semi Bold",
-        medium: "Medium",
-        regular: "Regular"
-    };
+    // Load Fonts - using Roboto which is widely available in Figma
+    await Promise.all([
+        figma.loadFontAsync({ family: "Roboto", style: "Bold" }),
+        figma.loadFontAsync({ family: "Roboto", style: "Medium" }),
+        figma.loadFontAsync({ family: "Roboto", style: "Regular" })
+    ]);
 
-    try {
-        await figma.loadFontAsync({ family: "Inter", style: "Bold" });
-        await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
-        await figma.loadFontAsync({ family: "Inter", style: "Medium" });
-        await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-        fontFamily = "Inter";
-    } catch (interError) {
-        console.log('Inter not available, trying Roboto...');
-        try {
-            await figma.loadFontAsync({ family: "Roboto", style: "Bold" });
-            await figma.loadFontAsync({ family: "Roboto", style: "Medium" });
-            await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
-            fontFamily = "Roboto";
-            fontStyles.semiBold = "Bold";
-        } catch (robotoError) {
-            console.error('No suitable fonts available');
-            throw new Error('Failed to load any suitable font (tried Inter, Roboto)');
-        }
-    }
-
-    // ROOT FRAME
+    // Main Documentation Frame
     const frame = figma.createFrame();
-    frame.name = "Design System Tokens";
-    frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }]; // Clean white background
+    frame.name = "Design System Documentation";
+    frame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
     frame.layoutMode = 'VERTICAL';
     frame.primaryAxisSizingMode = 'AUTO';
     frame.counterAxisSizingMode = 'AUTO';
-    frame.itemSpacing = 40;
-    frame.paddingLeft = 32;
-    frame.paddingRight = 32;
-    frame.paddingTop = 32;
-    frame.paddingBottom = 32;
+    frame.paddingBottom = 0;
 
-    // ==========================================
-    // HEADER SECTION
-    // ==========================================
-    const headerFrame = figma.createFrame();
-    headerFrame.name = "Header";
-    headerFrame.fills = [];
-    headerFrame.layoutMode = 'VERTICAL';
-    headerFrame.primaryAxisSizingMode = 'AUTO';
-    headerFrame.counterAxisSizingMode = 'AUTO';
-    headerFrame.itemSpacing = 12;
+    // --- HEADER WITH LOGO ---
+    const header = figma.createFrame();
+    header.name = "Header";
+    header.layoutMode = 'VERTICAL';
+    header.layoutAlign = 'STRETCH';
+    header.primaryAxisSizingMode = 'AUTO';
+    header.paddingLeft = 80;
+    header.paddingRight = 80;
+    header.paddingTop = 64;
+    header.paddingBottom = 80;
+    header.itemSpacing = 56;
 
-    // Logo placeholder (optional - can be replaced with actual logo)
-    const logoContainer = figma.createFrame();
-    logoContainer.name = "Logo";
-    logoContainer.resize(40, 40);
-    logoContainer.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
-    logoContainer.cornerRadius = 8;
-    headerFrame.appendChild(logoContainer);
+    // Premium Dark Gradient Background
+    header.fills = [{
+        type: 'GRADIENT_LINEAR',
+        gradientStops: [
+            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } }, // #0A0F26
+            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } } // Deep purple tone
+        ],
+        gradientTransform: [[1, 0, 0], [0, 1, 0]]
+    }];
 
-    // Title
+    // 1. HEADER TOP BAR (Logo + Brand)
+    const topBar = figma.createFrame();
+    topBar.layoutMode = 'HORIZONTAL';
+    topBar.counterAxisAlignItems = 'CENTER';
+    topBar.primaryAxisAlignItems = 'SPACE_BETWEEN';
+    topBar.layoutAlign = 'STRETCH';
+    topBar.fills = [];
+
+    // Left side - Slate.Design Logo
+    const leftBrand = figma.createFrame();
+    leftBrand.layoutMode = 'HORIZONTAL';
+    leftBrand.counterAxisAlignItems = 'CENTER';
+    leftBrand.itemSpacing = 16;
+    leftBrand.fills = [];
+
+    // Logo SVG (Adjusted ViewBox to crop empty space)
+    const logoSvg = `<svg width="48" height="48" viewBox="0 0 146 146" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M72.7272 130C72.7272 133.515 69.871 136.397 66.374 136.046C56.0327 135.008 46.0681 131.449 37.3728 125.639C26.9078 118.646 18.7514 108.708 13.9349 97.0798C9.11845 85.4518 7.85825 72.6567 10.3137 60.3124C12.7691 47.9682 18.8299 36.6292 27.7296 27.7296C36.6292 18.8299 47.9682 12.7691 60.3124 10.3137C72.6567 7.85825 85.4518 9.11845 97.0798 13.9349C108.708 18.7514 118.646 26.9078 125.639 37.3728C131.449 46.0681 135.008 56.0327 136.046 66.374C136.397 69.871 133.515 72.7272 130 72.7272C126.486 72.7272 123.677 69.8672 123.239 66.38C122.257 58.5603 119.467 51.0449 115.057 44.4438C109.463 36.0717 101.512 29.5465 92.2093 25.6934C82.9068 21.8403 72.6708 20.8321 62.7954 22.7963C52.92 24.7608 43.8488 29.6093 36.7291 36.7291C29.6093 43.8488 24.7608 52.92 22.7963 62.7954C20.8321 72.6708 21.8403 82.9068 25.6934 92.2093C29.5465 101.512 36.0717 109.463 44.4438 115.057C51.0449 119.467 58.5603 122.257 66.38 123.239C69.8672 123.677 72.7272 126.486 72.7272 130Z" fill="#0A5DF5"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M112.065 78.8519C110.221 70.649 98.6814 70.7003 96.9078 78.9191L96.8403 79.2326L96.7086 79.841C94.7743 88.6256 87.8086 95.3666 79.0586 96.9105C70.6167 98.4002 70.6169 110.691 79.0586 112.18C87.8392 113.729 94.8229 120.512 96.7286 129.342L96.9078 130.172C98.6814 138.391 110.221 138.442 112.065 130.239L112.283 129.272C114.261 120.474 121.255 113.741 130.021 112.194C138.478 110.702 138.478 98.3891 130.021 96.8969C121.302 95.3584 114.335 88.6881 112.315 79.9586C112.258 79.7146 112.206 79.4814 112.149 79.2275L112.065 78.8519Z" fill="url(#paint0_linear_574_2423)"/>
+<defs>
+<linearGradient id="paint0_linear_574_2423" x1="104.545" y1="65.4187" x2="104.545" y2="143.672" gradientUnits="userSpaceOnUse">
+<stop stop-color="#D54BF6"/>
+<stop offset="1" stop-color="#4B10D1"/>
+</linearGradient>
+</defs>
+</svg>`;
+
+    // Create Logo Icon
+    const logoIcon = figma.createNodeFromSvg(logoSvg);
+    logoIcon.name = "Logo Icon";
+    logoIcon.resize(48, 48);
+    leftBrand.appendChild(logoIcon);
+
+    // Create Logo Text (Brand Name)
+    const logoText = figma.createText();
+    logoText.fontName = { family: "Roboto", style: "Bold" };
+    logoText.fontSize = 28;
+    logoText.characters = "Slate.Design";
+    logoText.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    leftBrand.appendChild(logoText);
+
+    topBar.appendChild(leftBrand);
+
+    // Right side - CODETHEOREM Logo
+    const rightBrand = figma.createFrame();
+    rightBrand.layoutMode = 'HORIZONTAL';
+    rightBrand.counterAxisAlignItems = 'CENTER';
+    rightBrand.itemSpacing = 12;
+    rightBrand.fills = [];
+
+    // "Created by" text
+    const createdByText = figma.createText();
+    createdByText.fontName = { family: "Roboto", style: "Regular" };
+    createdByText.fontSize = 13;
+    createdByText.characters = "Created by";
+    createdByText.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.75, b: 0.85 }, opacity: 0.8 }];
+    rightBrand.appendChild(createdByText);
+
+    // CODETHEOREM Logo SVG
+    const codetheoremSvg = `<svg width="40" height="40" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="200" height="200" rx="40" fill="url(#paint0_linear_codetheorem)"/>
+<path d="M60 100L80 80M60 100L80 120M140 100L120 80M140 100L120 120" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="100" cy="100" r="8" fill="white"/>
+<defs>
+<linearGradient id="paint0_linear_codetheorem" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+<stop stop-color="#6366F1"/>
+<stop offset="1" stop-color="#8B5CF6"/>
+</linearGradient>
+</defs>
+</svg>`;
+
+    const codetheoremIcon = figma.createNodeFromSvg(codetheoremSvg);
+    codetheoremIcon.name = "CODETHEOREM Icon";
+    codetheoremIcon.resize(40, 40);
+    rightBrand.appendChild(codetheoremIcon);
+
+    // CODETHEOREM Text
+    const codetheoremText = figma.createText();
+    codetheoremText.fontName = { family: "Roboto", style: "Bold" };
+    codetheoremText.fontSize = 18;
+    codetheoremText.characters = "CODETHEOREM";
+    codetheoremText.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    codetheoremText.letterSpacing = { value: 1, unit: 'PIXELS' };
+    rightBrand.appendChild(codetheoremText);
+
+    topBar.appendChild(rightBrand);
+
+    header.appendChild(topBar);
+
+    // 2. HERO TITLE SECTION
+    const titleGroup = figma.createFrame();
+    titleGroup.layoutMode = 'VERTICAL';
+    titleGroup.primaryAxisSizingMode = 'AUTO';
+    titleGroup.counterAxisSizingMode = 'AUTO';
+    titleGroup.itemSpacing = 24;
+    titleGroup.fills = [];
+
     const title = figma.createText();
-    title.fontName = { family: fontFamily, style: fontStyles.semiBold };
-    title.fontSize = 28;
-    title.characters = "Color System";
-    title.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
-    title.letterSpacing = { value: -0.5, unit: "PIXELS" };
-    headerFrame.appendChild(title);
+    title.fontName = { family: "Roboto", style: "Bold" };
+    title.fontSize = 64;
+    title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
+    title.characters = "Design Tokens";
+    title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    titleGroup.appendChild(title);
 
-    // Subtitle
-    const subtitle = figma.createText();
-    subtitle.fontName = { family: fontFamily, style: fontStyles.regular };
-    subtitle.fontSize = 14;
-    subtitle.characters = "A comprehensive color palette designed for accessibility and visual harmony.";
-    subtitle.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.45, b: 0.47 } }];
-    subtitle.lineHeight = { value: 20, unit: "PIXELS" };
-    headerFrame.appendChild(subtitle);
+    const desc = figma.createText();
+    desc.fontName = { family: "Roboto", style: "Regular" };
+    desc.fontSize = 18;
+    desc.lineHeight = { value: 160, unit: 'PERCENT' };
+    desc.characters = "A comprehensive collection of design tokens for building consistent, accessible interfaces.";
+    desc.resize(600, desc.height);
+    desc.fills = [{ type: 'SOLID', color: { r: 0.75, g: 0.8, b: 0.9 } }]; // Light cool gray
+    titleGroup.appendChild(desc);
 
-    // Meta info (date)
-    const metaText = figma.createText();
-    metaText.fontName = { family: fontFamily, style: fontStyles.regular };
-    metaText.fontSize = 12;
-    const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    metaText.characters = date;
-    metaText.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.45, b: 0.47 } }];
-    metaText.opacity = 0.6;
-    headerFrame.appendChild(metaText);
+    header.appendChild(titleGroup);
 
-    frame.appendChild(headerFrame);
+    // 3. STATS ROW (Glassmorphism)
+    const statsRow = figma.createFrame();
+    statsRow.layoutMode = 'HORIZONTAL';
+    statsRow.primaryAxisSizingMode = 'AUTO';
+    statsRow.counterAxisSizingMode = 'AUTO';
+    statsRow.itemSpacing = 16;
+    statsRow.fills = [];
 
-    // ==========================================
-    // COLOR SECTIONS
-    // ==========================================
-    if (colors && typeof colors === 'object') {
-        const colorCategories = [
-            { key: 'primary', label: 'Brand', description: 'Primary brand color – represents your company\'s identity and values' },
-            { key: 'secondary', label: 'Secondary', description: 'Supporting colors for secondary actions and accents' },
-            { key: 'success', label: 'Success', description: 'Positive states, confirmations, and successful operations' },
-            { key: 'error', label: 'Error', description: 'Error states, warnings, and destructive actions' },
-            { key: 'warning', label: 'Warning', description: 'Cautionary states and important notices' },
-            { key: 'info', label: 'Info', description: 'Informational states and neutral notifications' },
-            { key: 'neutral', label: 'Neutral', description: 'Neutral grays for text, backgrounds, and borders' }
-        ];
+    const tokenCount = Object.keys(colors).length + Object.keys(msg.spacing || {}).length + Object.keys(msg.radius || {}).length;
 
-        for (const category of colorCategories) {
-            let colorData = null;
-            if (category.key === 'primary' || category.key === 'secondary' || category.key === 'neutral') {
-                if (colors[category.key] && colors[category.key].light) colorData = colors[category.key].light;
-            } else {
-                if (colors[category.key]) colorData = colors[category.key];
-            }
-
-            if (colorData && Object.keys(colorData).length > 0) {
-                try {
-                    createColorSection(category.label, category.description, colorData, frame, fontFamily, fontStyles);
-                } catch (colorError) {
-                    console.error(`Error creating color section for ${category.key}:`, colorError);
-                }
-            }
-        }
-    }
-
-    // ==========================================
-    // OTHER TOKEN SECTIONS
-    // ==========================================
-    if (msg && msg.spacing && Object.keys(msg.spacing).length > 0) {
-        try {
-            createTokenSection("Spacing", "Consistent spacing scale for layouts and components", msg.spacing, frame, fontFamily, fontStyles);
-        } catch (e) {
-            console.error('Error creating spacing section:', e);
-        }
-    }
-    if (msg && msg.padding && Object.keys(msg.padding).length > 0) {
-        try {
-            createTokenSection("Padding", "Internal spacing for component padding", msg.padding, frame, fontFamily, fontStyles);
-        } catch (e) {
-            console.error('Error creating padding section:', e);
-        }
-    }
-    if (msg && msg.radius && Object.keys(msg.radius).length > 0) {
-        try {
-            createTokenSection("Radius", "Border radius values for rounded corners", msg.radius, frame, fontFamily, fontStyles);
-        } catch (e) {
-            console.error('Error creating radius section:', e);
-        }
-    }
-
-    figma.currentPage.appendChild(frame);
-    figma.viewport.scrollAndZoomIntoView([frame]);
-}
-
-function createColorSection(name, description, colorData, parent, fontFamily = "Inter", fontStyles = { bold: "Bold", semiBold: "Semi Bold", medium: "Medium", regular: "Regular" }) {
-    // SECTION CONTAINER
-    const section = figma.createFrame();
-    section.name = `${name} Colors`;
-    section.fills = [];
-    section.layoutMode = 'VERTICAL';
-    section.primaryAxisSizingMode = 'AUTO';
-    section.counterAxisSizingMode = 'AUTO';
-    section.itemSpacing = 14;
-
-    // SECTION TITLE
-    const sectionTitle = figma.createText();
-    sectionTitle.fontName = { family: fontFamily, style: fontStyles.semiBold };
-    sectionTitle.fontSize = 20;
-    sectionTitle.characters = name;
-    sectionTitle.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
-    section.appendChild(sectionTitle);
-
-    // COLOR SCALE CONTAINER (Horizontal layout)
-    const colorScaleContainer = figma.createFrame();
-    colorScaleContainer.name = "Color Scale";
-    colorScaleContainer.fills = [];
-    colorScaleContainer.layoutMode = 'HORIZONTAL';
-    colorScaleContainer.primaryAxisSizingMode = 'AUTO';
-    colorScaleContainer.counterAxisSizingMode = 'AUTO';
-    colorScaleContainer.itemSpacing = 0;
-    colorScaleContainer.cornerRadius = 4;
-    colorScaleContainer.clipsContent = true;
-    colorScaleContainer.strokes = [{ type: 'SOLID', color: { r: 0.93, g: 0.93, b: 0.93 } }];
-    colorScaleContainer.strokeWeight = 1;
-
-    // Sort color data by shade number (50, 100, 200, etc.)
-    const sortedColors = Object.entries(colorData).sort((a, b) => {
-        const matchA = a[0].match(/\d+/);
-        const matchB = b[0].match(/\d+/);
-        const numA = parseInt(matchA ? matchA[0] : '0');
-        const numB = parseInt(matchB ? matchB[0] : '0');
-        return numA - numB;
-    });
-
-    for (const [shadeName, hexColor] of sortedColors) {
-        const colorCard = createColorTokenCard(shadeName, hexColor, fontFamily, fontStyles);
-        colorScaleContainer.appendChild(colorCard);
-    }
-
-    section.appendChild(colorScaleContainer);
-    parent.appendChild(section);
-}
-
-function createColorTokenCard(shadeName, hexColor, fontFamily, fontStyles) {
-    // INDIVIDUAL COLOR TOKEN CARD
-    const colorCard = figma.createFrame();
-    colorCard.name = shadeName;
-    colorCard.fills = [];
-    colorCard.layoutMode = 'VERTICAL';
-    colorCard.primaryAxisSizingMode = 'AUTO';
-    colorCard.counterAxisSizingMode = 'AUTO';
-    colorCard.itemSpacing = 8;
-    colorCard.paddingLeft = 8;
-    colorCard.paddingRight = 8;
-    colorCard.paddingTop = 8;
-    colorCard.paddingBottom = 8;
-
-    // COLOR SWATCH AREA
-    const swatch = figma.createFrame();
-    swatch.name = "Swatch";
-    swatch.resize(160, 100); // 100px height
-    const bgColor = hexToRgb(hexColor);
-    swatch.fills = [{ type: 'SOLID', color: bgColor }];
-    swatch.cornerRadius = 2;
-    swatch.layoutMode = 'VERTICAL';
-    swatch.primaryAxisSizingMode = 'FIXED';
-    swatch.counterAxisSizingMode = 'FIXED';
-    swatch.itemSpacing = 4;
-    swatch.paddingLeft = 8;
-    swatch.paddingRight = 8;
-    swatch.paddingTop = 8;
-    swatch.paddingBottom = 8;
-    swatch.primaryAxisAlignItems = 'MIN';
-    swatch.counterAxisAlignItems = 'MIN';
-
-    // Calculate contrast ratio with white text
-    const whiteColor = { r: 1, g: 1, b: 1 };
-    const contrastRatio = getContrastRatio(bgColor, whiteColor);
-    const wcagLevel = getWCAGLevel(contrastRatio);
-    const textColor = getTextColorForBackground(bgColor);
-
-    // WCAG Badge
-    if (wcagLevel !== '-') {
+    // Inline function for dark stats to strictly follow design
+    function createDarkStat(label, value) {
         const badge = figma.createFrame();
-        badge.name = "WCAG Badge";
-        badge.fills = [{ type: 'SOLID', color: textColor, opacity: 0.15 }];
-        badge.cornerRadius = 4;
         badge.layoutMode = 'HORIZONTAL';
         badge.primaryAxisSizingMode = 'AUTO';
         badge.counterAxisSizingMode = 'AUTO';
-        badge.paddingLeft = 6;
-        badge.paddingRight = 6;
-        badge.paddingTop = 3;
-        badge.paddingBottom = 3;
+        badge.paddingLeft = 20;
+        badge.paddingRight = 20;
+        badge.paddingTop = 10;
+        badge.paddingBottom = 10;
+        badge.cornerRadius = 100;
 
-        const badgeText = figma.createText();
-        badgeText.fontName = { family: fontFamily, style: fontStyles.semiBold };
-        badgeText.fontSize = 10;
-        badgeText.characters = wcagLevel;
-        badgeText.fills = [{ type: 'SOLID', color: textColor }];
-        badge.appendChild(badgeText);
+        // Glassmorphism Fill
+        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
+        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
+        badge.strokeWeight = 1;
+        badge.itemSpacing = 10;
+        badge.counterAxisAlignItems = 'CENTER';
 
-        swatch.appendChild(badge);
+        // Blur effect
+        badge.effects = [{
+            type: 'BACKGROUND_BLUR',
+            radius: 20,
+            visible: true
+        }];
+
+        const tLabel = figma.createText();
+        tLabel.fontName = { family: "Roboto", style: "Medium" };
+        tLabel.fontSize = 13;
+        tLabel.characters = label;
+        tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
+        badge.appendChild(tLabel);
+
+        const tValue = figma.createText();
+        tValue.fontName = { family: "Roboto", style: "Bold" };
+        tValue.fontSize = 13;
+        tValue.characters = value;
+        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+        badge.appendChild(tValue);
+
+        statsRow.appendChild(badge);
     }
 
-    // Contrast ratio text
-    const contrastText = figma.createText();
-    contrastText.fontName = { family: fontFamily, style: fontStyles.medium };
-    contrastText.fontSize = 11;
-    contrastText.characters = `${contrastRatio.toFixed(1)}:1`;
-    contrastText.fills = [{ type: 'SOLID', color: textColor, opacity: 0.8 }];
-    swatch.appendChild(contrastText);
+    createDarkStat("Total Tokens", String(tokenCount));
+    const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    createDarkStat("Last Updated", dateStr);
 
-    colorCard.appendChild(swatch);
+    header.appendChild(statsRow);
+    frame.appendChild(header);
 
-    // TOKEN DETAILS
-    const detailsContainer = figma.createFrame();
-    detailsContainer.name = "Details";
-    detailsContainer.fills = [];
-    detailsContainer.layoutMode = 'VERTICAL';
-    detailsContainer.primaryAxisSizingMode = 'AUTO';
-    detailsContainer.counterAxisSizingMode = 'AUTO';
-    detailsContainer.itemSpacing = 4;
+    // --- CONTENT BODY ---
+    const content = figma.createFrame();
+    content.name = "Content";
+    content.layoutMode = 'VERTICAL';
+    content.layoutAlign = 'STRETCH';
+    content.primaryAxisSizingMode = 'AUTO';
+    content.itemSpacing = 48;
+    content.paddingLeft = 80;
+    content.paddingRight = 80;
+    content.paddingTop = 24;
+    content.paddingBottom = 80;
+    content.fills = [];
+    frame.appendChild(content);
 
-    // Token name
-    const tokenName = figma.createText();
-    tokenName.fontName = { family: fontFamily, style: fontStyles.medium };
-    tokenName.fontSize = 12;
-    const shadeMatch = shadeName.match(/\d+/);
-    const shadeNumber = shadeMatch ? shadeMatch[0] : shadeName;
-    tokenName.characters = shadeNumber;
-    tokenName.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
-    detailsContainer.appendChild(tokenName);
+    // Color Rows
+    const colorCategories = [
+        { key: 'primary', title: 'Primary Colors', desc: 'Main brand and interactive colors.' },
+        { key: 'secondary', title: 'Secondary Colors', desc: 'Supporting brand colors.' },
+        { key: 'neutral', title: 'Neutral Colors', desc: 'Grays for text, borders, and backgrounds.' },
+        { key: 'success', title: 'Success', desc: 'Positive feedback states.' },
+        { key: 'warning', title: 'Warning', desc: 'Cautionary states.' },
+        { key: 'error', title: 'Error', desc: 'Critical alerts and errors.' },
+        { key: 'info', title: 'Info', desc: 'Informational elements.' },
+        { key: 'brand', title: 'Brand Colors', desc: 'Primary identity colors.' },
+    ];
 
-    // HEX value
-    const hexText = figma.createText();
-    hexText.fontName = { family: fontFamily, style: fontStyles.regular };
-    hexText.fontSize = 11;
-    hexText.characters = hexColor.toUpperCase();
-    hexText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
-    detailsContainer.appendChild(hexText);
+    for (const cat of colorCategories) {
+        let colorData = null;
+        if (colors[cat.key]) {
+            colorData = colors[cat.key].light || colors[cat.key];
+        }
 
-    // RGB value
-    const rgbText = figma.createText();
-    rgbText.fontName = { family: fontFamily, style: fontStyles.regular };
-    rgbText.fontSize = 11;
-    const r = Math.round(bgColor.r * 255);
-    const g = Math.round(bgColor.g * 255);
-    const b = Math.round(bgColor.b * 255);
-    rgbText.characters = `${r}, ${g}, ${b}`;
-    rgbText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
-    detailsContainer.appendChild(rgbText);
+        if (colorData && Object.keys(colorData).length > 0) {
+            createDetailedColorRow(cat.title, cat.desc, colorData, content);
+        }
+    }
+    figma.currentPage.appendChild(frame);
 
-    colorCard.appendChild(detailsContainer);
+    // ============================================
+    // CREATE TOKENS FRAME (Side by Side)
+    // ============================================
 
-    return colorCard;
+    const tokensFrame = figma.createFrame();
+    tokensFrame.name = "Tokens";
+    tokensFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
+    tokensFrame.layoutMode = 'VERTICAL';
+    tokensFrame.primaryAxisSizingMode = 'AUTO';
+    tokensFrame.counterAxisSizingMode = 'AUTO';
+    tokensFrame.paddingBottom = 0;
+
+    // --- TOKENS HEADER WITH LOGO ---
+    const tokensHeader = figma.createFrame();
+    tokensHeader.name = "Tokens Header";
+    tokensHeader.layoutMode = 'VERTICAL';
+    tokensHeader.layoutAlign = 'STRETCH';
+    tokensHeader.primaryAxisSizingMode = 'AUTO';
+    tokensHeader.paddingLeft = 80;
+    tokensHeader.paddingRight = 80;
+    tokensHeader.paddingTop = 64;
+    tokensHeader.paddingBottom = 80;
+    tokensHeader.itemSpacing = 56;
+
+    // Premium Dark Gradient Background (same as main header)
+    tokensHeader.fills = [{
+        type: 'GRADIENT_LINEAR',
+        gradientStops: [
+            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
+            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
+        ],
+        gradientTransform: [[1, 0, 0], [0, 1, 0]]
+    }];
+
+    // 1. HEADER TOP BAR (Logo + Brand)
+    const tokensTopBar = figma.createFrame();
+    tokensTopBar.layoutMode = 'HORIZONTAL';
+    tokensTopBar.counterAxisAlignItems = 'CENTER';
+    tokensTopBar.primaryAxisAlignItems = 'SPACE_BETWEEN';
+    tokensTopBar.layoutAlign = 'STRETCH';
+    tokensTopBar.fills = [];
+
+    // Left side - Slate.Design Logo
+    const tokensLeftBrand = figma.createFrame();
+    tokensLeftBrand.layoutMode = 'HORIZONTAL';
+    tokensLeftBrand.counterAxisAlignItems = 'CENTER';
+    tokensLeftBrand.itemSpacing = 16;
+    tokensLeftBrand.fills = [];
+
+    // Logo SVG
+    const tokensLogoSvg = `<svg width="48" height="48" viewBox="0 0 146 146" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M72.7272 130C72.7272 133.515 69.871 136.397 66.374 136.046C56.0327 135.008 46.0681 131.449 37.3728 125.639C26.9078 118.646 18.7514 108.708 13.9349 97.0798C9.11845 85.4518 7.85825 72.6567 10.3137 60.3124C12.7691 47.9682 18.8299 36.6292 27.7296 27.7296C36.6292 18.8299 47.9682 12.7691 60.3124 10.3137C72.6567 7.85825 85.4518 9.11845 97.0798 13.9349C108.708 18.7514 118.646 26.9078 125.639 37.3728C131.449 46.0681 135.008 56.0327 136.046 66.374C136.397 69.871 133.515 72.7272 130 72.7272C126.486 72.7272 123.677 69.8672 123.239 66.38C122.257 58.5603 119.467 51.0449 115.057 44.4438C109.463 36.0717 101.512 29.5465 92.2093 25.6934C82.9068 21.8403 72.6708 20.8321 62.7954 22.7963C52.92 24.7608 43.8488 29.6093 36.7291 36.7291C29.6093 43.8488 24.7608 52.92 22.7963 62.7954C20.8321 72.6708 21.8403 82.9068 25.6934 92.2093C29.5465 101.512 36.0717 109.463 44.4438 115.057C51.0449 119.467 58.5603 122.257 66.38 123.239C69.8672 123.677 72.7272 126.486 72.7272 130Z" fill="#0A5DF5"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M112.065 78.8519C110.221 70.649 98.6814 70.7003 96.9078 78.9191L96.8403 79.2326L96.7086 79.841C94.7743 88.6256 87.8086 95.3666 79.0586 96.9105C70.6167 98.4002 70.6169 110.691 79.0586 112.18C87.8392 113.729 94.8229 120.512 96.7286 129.342L96.9078 130.172C98.6814 138.391 110.221 138.442 112.065 130.239L112.283 129.272C114.261 120.474 121.255 113.741 130.021 112.194C138.478 110.702 138.478 98.3891 130.021 96.8969C121.302 95.3584 114.335 88.6881 112.315 79.9586C112.258 79.7146 112.206 79.4814 112.149 79.2275L112.065 78.8519Z" fill="url(#paint0_linear_574_2423)"/>
+<defs>
+<linearGradient id="paint0_linear_574_2423" x1="104.545" y1="65.4187" x2="104.545" y2="143.672" gradientUnits="userSpaceOnUse">
+<stop stop-color="#D54BF6"/>
+<stop offset="1" stop-color="#4B10D1"/>
+</linearGradient>
+</defs>
+</svg>`;
+
+    const tokensLogoIcon = figma.createNodeFromSvg(tokensLogoSvg);
+    tokensLogoIcon.name = "Logo Icon";
+    tokensLogoIcon.resize(48, 48);
+    tokensLeftBrand.appendChild(tokensLogoIcon);
+
+    const tokensLogoText = figma.createText();
+    tokensLogoText.fontName = { family: "Roboto", style: "Bold" };
+    tokensLogoText.fontSize = 28;
+    tokensLogoText.characters = "Slate.Design";
+    tokensLogoText.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    tokensLeftBrand.appendChild(tokensLogoText);
+
+    tokensTopBar.appendChild(tokensLeftBrand);
+
+    // Right side - CODETHEOREM Logo
+    const tokensRightBrand = figma.createFrame();
+    tokensRightBrand.layoutMode = 'HORIZONTAL';
+    tokensRightBrand.counterAxisAlignItems = 'CENTER';
+    tokensRightBrand.itemSpacing = 12;
+    tokensRightBrand.fills = [];
+
+    // "Created by" text
+    const tokensCreatedByText = figma.createText();
+    tokensCreatedByText.fontName = { family: "Roboto", style: "Regular" };
+    tokensCreatedByText.fontSize = 13;
+    tokensCreatedByText.characters = "Created by";
+    tokensCreatedByText.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.75, b: 0.85 }, opacity: 0.8 }];
+    tokensRightBrand.appendChild(tokensCreatedByText);
+
+    // CODETHEOREM Logo SVG
+    const tokensCodetheoremSvg = `<svg width="40" height="40" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="200" height="200" rx="40" fill="url(#paint0_linear_codetheorem_tokens)"/>
+<path d="M60 100L80 80M60 100L80 120M140 100L120 80M140 100L120 120" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="100" cy="100" r="8" fill="white"/>
+<defs>
+<linearGradient id="paint0_linear_codetheorem_tokens" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+<stop stop-color="#6366F1"/>
+<stop offset="1" stop-color="#8B5CF6"/>
+</linearGradient>
+</defs>
+</svg>`;
+
+    const tokensCodetheoremIcon = figma.createNodeFromSvg(tokensCodetheoremSvg);
+    tokensCodetheoremIcon.name = "CODETHEOREM Icon";
+    tokensCodetheoremIcon.resize(40, 40);
+    tokensRightBrand.appendChild(tokensCodetheoremIcon);
+
+    // CODETHEOREM Text
+    const tokensCodetheoremText = figma.createText();
+    tokensCodetheoremText.fontName = { family: "Roboto", style: "Bold" };
+    tokensCodetheoremText.fontSize = 18;
+    tokensCodetheoremText.characters = "CODETHEOREM";
+    tokensCodetheoremText.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    tokensCodetheoremText.letterSpacing = { value: 1, unit: 'PIXELS' };
+    tokensRightBrand.appendChild(tokensCodetheoremText);
+
+    tokensTopBar.appendChild(tokensRightBrand);
+
+    tokensHeader.appendChild(tokensTopBar);
+
+    // 2. HERO TITLE SECTION
+    const tokensTitleGroup = figma.createFrame();
+    tokensTitleGroup.layoutMode = 'VERTICAL';
+    tokensTitleGroup.primaryAxisSizingMode = 'AUTO';
+    tokensTitleGroup.counterAxisSizingMode = 'AUTO';
+    tokensTitleGroup.itemSpacing = 24;
+    tokensTitleGroup.fills = [];
+
+    const tokensTitle = figma.createText();
+    tokensTitle.fontName = { family: "Roboto", style: "Bold" };
+    tokensTitle.fontSize = 64;
+    tokensTitle.letterSpacing = { value: -1.5, unit: 'PIXELS' };
+    tokensTitle.characters = "Design Tokens";
+    tokensTitle.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    tokensTitleGroup.appendChild(tokensTitle);
+
+    const tokensDesc = figma.createText();
+    tokensDesc.fontName = { family: "Roboto", style: "Regular" };
+    tokensDesc.fontSize = 18;
+    tokensDesc.lineHeight = { value: 160, unit: 'PERCENT' };
+    tokensDesc.characters = "Spacing, padding, radius, stroke, and shadow values for consistent design.";
+    tokensDesc.resize(600, tokensDesc.height);
+    tokensDesc.fills = [{ type: 'SOLID', color: { r: 0.75, g: 0.8, b: 0.9 } }];
+    tokensTitleGroup.appendChild(tokensDesc);
+
+    tokensHeader.appendChild(tokensTitleGroup);
+
+    // 3. STATS ROW (Glassmorphism)
+    const tokensStatsRow = figma.createFrame();
+    tokensStatsRow.layoutMode = 'HORIZONTAL';
+    tokensStatsRow.primaryAxisSizingMode = 'AUTO';
+    tokensStatsRow.counterAxisSizingMode = 'AUTO';
+    tokensStatsRow.itemSpacing = 16;
+    tokensStatsRow.fills = [];
+
+    // Calculate token counts
+    const spacingTokens = (msg.spacing && Object.keys(msg.spacing).length) || 0;
+    const paddingTokens = (msg.padding && Object.keys(msg.padding).length) || 0;
+    const radiusTokens = (msg.radius && Object.keys(msg.radius).length) || 0;
+    const strokeTokens = (msg.strokes && Object.keys(msg.strokes).length) || 0;
+    const shadowTokens = (msg.shadows && Object.keys(msg.shadows).length) || 0;
+    const totalTokens = spacingTokens + paddingTokens + radiusTokens + strokeTokens + shadowTokens;
+
+    // Create stats badges
+    function createTokensDarkStat(label, value) {
+        const badge = figma.createFrame();
+        badge.layoutMode = 'HORIZONTAL';
+        badge.primaryAxisSizingMode = 'AUTO';
+        badge.counterAxisSizingMode = 'AUTO';
+        badge.paddingLeft = 20;
+        badge.paddingRight = 20;
+        badge.paddingTop = 10;
+        badge.paddingBottom = 10;
+        badge.cornerRadius = 100;
+        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
+        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
+        badge.strokeWeight = 1;
+        badge.itemSpacing = 10;
+        badge.counterAxisAlignItems = 'CENTER';
+
+        const tLabel = figma.createText();
+        tLabel.fontName = { family: "Roboto", style: "Medium" };
+        tLabel.fontSize = 13;
+        tLabel.characters = label;
+        tLabel.fills = [{ type: 'SOLID', color: { r: 0.75, g: 0.8, b: 0.9 } }];
+        badge.appendChild(tLabel);
+
+        const tValue = figma.createText();
+        tValue.fontName = { family: "Roboto", style: "Bold" };
+        tValue.fontSize = 13;
+        tValue.characters = value;
+        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+        badge.appendChild(tValue);
+
+        return badge;
+    }
+
+    tokensStatsRow.appendChild(createTokensDarkStat("Total Tokens", String(totalTokens)));
+    tokensStatsRow.appendChild(createTokensDarkStat("Last Updated", new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })));
+
+    tokensHeader.appendChild(tokensStatsRow);
+    tokensFrame.appendChild(tokensHeader);
+
+    // Tokens Content
+    const tokensContent = figma.createFrame();
+    tokensContent.name = "Tokens Content";
+    tokensContent.layoutMode = 'VERTICAL';
+    tokensContent.primaryAxisSizingMode = 'AUTO';
+    tokensContent.counterAxisSizingMode = 'AUTO';
+    tokensContent.itemSpacing = 48;
+    tokensContent.paddingLeft = 80;
+    tokensContent.paddingRight = 80;
+    tokensContent.paddingTop = 80;
+    tokensContent.paddingBottom = 80;
+    tokensContent.fills = [];
+
+    // Add token sections
+    if (msg.spacing && Object.keys(msg.spacing).length > 0) {
+        createDetailedSystemTokenRow("Spacing Scale", "Consistent spacing values for layout and component sizing.", msg.spacing, "spacing", tokensContent);
+    }
+    if (msg.padding && Object.keys(msg.padding).length > 0) {
+        createDetailedSystemTokenRow("Padding Scale", "Internal spacing for containers and components.", msg.padding, "padding", tokensContent);
+    }
+    if (msg.radius && Object.keys(msg.radius).length > 0) {
+        createDetailedSystemTokenRow("Corner Radius", "Rounding values for creating organic shapes.", msg.radius, "radius", tokensContent);
+    }
+    if (msg.strokes && Object.keys(msg.strokes).length > 0) {
+        createDetailedSystemTokenRow("Stroke Widths", "Border thickness values for definition and hierarchy.", msg.strokes, "stroke", tokensContent);
+    }
+    if (msg.shadows && Object.keys(msg.shadows).length > 0) {
+        createDetailedShadowRow("Shadow Effects", "Depth and elevation values using drop shadows.", msg.shadows, tokensContent);
+    }
+
+    tokensFrame.appendChild(tokensContent);
+    figma.currentPage.appendChild(tokensFrame);
+
+    // Position Tokens frame side by side with Design System Documentation
+    tokensFrame.x = frame.x + frame.width + 80;
+    tokensFrame.y = frame.y;
+
+    figma.viewport.scrollAndZoomIntoView([frame, tokensFrame]);
 }
 
-function createTokenSection(name, description, tokenData, parent, fontFamily = "Inter", fontStyles = { bold: "Bold", semiBold: "Semi Bold", medium: "Medium", regular: "Regular" }) {
-    // SECTION CONTAINER
-    const section = figma.createFrame();
-    section.name = `${name} Tokens`;
-    section.fills = [];
-    section.layoutMode = 'VERTICAL';
-    section.primaryAxisSizingMode = 'AUTO';
-    section.counterAxisSizingMode = 'AUTO';
-    section.itemSpacing = 8;
+function hexToRgbValues(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return { r: 0, g: 0, b: 0 };
+    return {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    };
+}
 
-    // SECTION TITLE
-    const sectionTitle = figma.createText();
-    sectionTitle.fontName = { family: fontFamily, style: fontStyles.semiBold };
-    sectionTitle.fontSize = 20;
-    sectionTitle.characters = name;
-    sectionTitle.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
-    section.appendChild(sectionTitle);
+function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
 
-    // TOKEN GRID
-    const tokenGrid = figma.createFrame();
-    tokenGrid.name = "Token Grid";
-    tokenGrid.fills = [];
-    tokenGrid.layoutMode = 'HORIZONTAL';
-    tokenGrid.primaryAxisSizingMode = 'AUTO';
-    tokenGrid.counterAxisSizingMode = 'AUTO';
-    tokenGrid.itemSpacing = 12;
-    tokenGrid.layoutWrap = 'WRAP';
-
-    for (const [tokenName, valueData] of Object.entries(tokenData)) {
-        if (!tokenName || tokenName.trim() === '') continue;
-
-        const displayValue = typeof valueData === 'object' ? valueData.desktop : valueData;
-        if (displayValue === undefined || displayValue === null) continue;
-
-        const tokenCard = figma.createFrame();
-        tokenCard.name = tokenName;
-        tokenCard.resize(100, 100);
-        tokenCard.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-        tokenCard.cornerRadius = name === 'Radius' ? Math.min(displayValue, 20) : 8;
-        tokenCard.strokes = [{ type: 'SOLID', color: { r: 0.93, g: 0.93, b: 0.93 } }];
-        tokenCard.strokeWeight = 1;
-        tokenCard.layoutMode = 'VERTICAL';
-        tokenCard.primaryAxisSizingMode = 'AUTO';
-        tokenCard.counterAxisSizingMode = 'FIXED';
-        tokenCard.itemSpacing = 6;
-        tokenCard.paddingLeft = 12;
-        tokenCard.paddingRight = 12;
-        tokenCard.paddingTop = 14;
-        tokenCard.paddingBottom = 14;
-        tokenCard.primaryAxisAlignItems = 'CENTER';
-
-        const nameText = figma.createText();
-        nameText.fontName = { family: fontFamily, style: fontStyles.medium };
-        nameText.fontSize = 10;
-        safeSetCharacters(nameText, tokenName.toUpperCase());
-        nameText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
-        nameText.letterSpacing = { value: 0.3, unit: "PIXELS" };
-        tokenCard.appendChild(nameText);
-
-        const valueText = figma.createText();
-        valueText.fontName = { family: fontFamily, style: fontStyles.semiBold };
-        valueText.fontSize = 24;
-        safeSetCharacters(valueText, `${displayValue}`);
-        valueText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
-        valueText.letterSpacing = { value: -0.5, unit: "PIXELS" };
-        tokenCard.appendChild(valueText);
-
-        const unitText = figma.createText();
-        unitText.fontName = { family: fontFamily, style: fontStyles.regular };
-        unitText.fontSize = 10;
-        safeSetCharacters(unitText, "px");
-        unitText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.57 } }];
-        tokenCard.appendChild(unitText);
-
-        tokenGrid.appendChild(tokenCard);
+    if (max === min) {
+        h = s = 0;
+    } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+            case g: h = ((b - r) / d + 2) / 6; break;
+            case b: h = ((r - g) / d + 4) / 6; break;
+        }
     }
 
-    section.appendChild(tokenGrid);
-    parent.appendChild(section);
+    return {
+        h: Math.round(h * 360),
+        s: Math.round(s * 100),
+        l: Math.round(l * 100)
+    };
+}
+
+function createDetailedColorRow(title, description, data, parent) {
+    const row = figma.createFrame();
+    row.name = `Section - ${title}`;
+    row.layoutMode = 'VERTICAL';
+    row.primaryAxisSizingMode = 'AUTO';
+    row.counterAxisSizingMode = 'AUTO';
+    row.itemSpacing = 24;
+    row.fills = [];
+
+    // Section Header
+    const header = figma.createFrame();
+    header.layoutMode = 'VERTICAL';
+    header.primaryAxisSizingMode = 'AUTO';
+    header.counterAxisSizingMode = 'AUTO';
+    header.itemSpacing = 8;
+    header.fills = [];
+
+    const h3 = figma.createText();
+    h3.fontName = { family: "Roboto", style: "Bold" };
+    h3.fontSize = 20;
+    h3.characters = title;
+    h3.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
+    header.appendChild(h3);
+
+    const p = figma.createText();
+    p.fontName = { family: "Roboto", style: "Regular" };
+    p.fontSize = 14;
+    p.characters = description;
+    p.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.47, b: 0.53 } }];
+    header.appendChild(p);
+
+    row.appendChild(header);
+
+    // Cards Grid
+    const grid = figma.createFrame();
+    grid.layoutMode = 'HORIZONTAL';
+    grid.layoutWrap = 'WRAP';
+    grid.primaryAxisSizingMode = 'AUTO';
+    grid.counterAxisSizingMode = 'AUTO';
+    grid.itemSpacing = 4;
+    grid.counterAxisSpacing = 16;
+    grid.fills = [];
+
+    const entries = Object.entries(data).sort((a, b) => {
+        const numA = parseInt(a[0].match(/\d+/) || 0);
+        const numB = parseInt(b[0].match(/\d+/) || 0);
+        return numA - numB;
+    });
+
+    for (const [key, hex] of entries) {
+        // Map common naming patterns to numeric shades
+        let shade;
+        if (key.match(/\d+/)) {
+            shade = key.match(/\d+/)[0];
+        } else if (key.includes('light')) {
+            shade = '100';
+        } else if (key.includes('default') || key.includes('main')) {
+            shade = '200';
+        } else if (key.includes('dark')) {
+            shade = '300';
+        } else {
+            shade = '200'; // default
+        }
+
+        const colorName = title.split(' ')[0];
+
+        const card = figma.createFrame();
+        card.name = `${colorName}-${shade}`;
+        card.layoutMode = 'VERTICAL';
+        card.primaryAxisSizingMode = 'AUTO';
+        card.counterAxisSizingMode = 'AUTO';
+        card.cornerRadius = 4;
+        card.itemSpacing = 0;
+        card.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+        card.effects = [{
+            type: 'DROP_SHADOW',
+            color: { r: 0, g: 0, b: 0, a: 0.04 },
+            offset: { x: 0, y: 1 },
+            radius: 3,
+            visible: true,
+            blendMode: 'NORMAL'
+        }];
+        card.strokes = [{ type: 'SOLID', color: { r: 0.93, g: 0.94, b: 0.95 } }];
+        card.strokeWeight = 1;
+
+        // Color Swatch Area
+        const swatch = figma.createRectangle();
+        swatch.name = "Color Swatch";
+        swatch.resize(240, 120);
+        const rgb = hexToRgb(hex);
+        swatch.fills = [{ type: 'SOLID', color: rgb }];
+        swatch.topLeftRadius = 4;
+        swatch.topRightRadius = 4;
+        swatch.bottomLeftRadius = 0;
+        swatch.bottomRightRadius = 0;
+        card.appendChild(swatch);
+
+        // Info Area
+        const info = figma.createFrame();
+        info.name = "Info";
+        info.layoutMode = 'HORIZONTAL';
+        info.layoutAlign = 'STRETCH';
+        info.primaryAxisSizingMode = 'AUTO';
+        info.counterAxisSizingMode = 'AUTO';
+        info.primaryAxisAlignItems = 'SPACE_BETWEEN';
+        info.resize(218, 59);
+        info.paddingLeft = 12;
+        info.paddingRight = 12;
+        info.paddingTop = 12;
+        info.paddingBottom = 12;
+        info.fills = [];
+
+        // Left side - Name and Hex
+        const leftInfo = figma.createFrame();
+        leftInfo.name = "Left Info";
+        leftInfo.layoutMode = 'VERTICAL';
+        leftInfo.primaryAxisSizingMode = 'AUTO';
+        leftInfo.counterAxisSizingMode = 'AUTO';
+        leftInfo.itemSpacing = 4;
+        leftInfo.fills = [];
+
+        const tShade = figma.createText();
+        tShade.fontName = { family: "Roboto", style: "Medium" };
+        tShade.fontSize = 14;
+        tShade.characters = `${colorName}-${shade}`;
+        tShade.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
+        leftInfo.appendChild(tShade);
+
+        const tHex = figma.createText();
+        tHex.fontName = { family: "Roboto", style: "Regular" };
+        tHex.fontSize = 13;
+        tHex.characters = hex.toUpperCase();
+        tHex.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.57, b: 0.63 } }];
+        leftInfo.appendChild(tHex);
+
+        info.appendChild(leftInfo);
+
+        // Right side - RGB and HSL
+        const rightInfo = figma.createFrame();
+        rightInfo.name = "Right Info";
+        rightInfo.layoutMode = 'VERTICAL';
+        rightInfo.primaryAxisSizingMode = 'AUTO';
+        rightInfo.counterAxisSizingMode = 'AUTO';
+        rightInfo.counterAxisAlignItems = 'MAX';
+        rightInfo.itemSpacing = 4;
+        rightInfo.fills = [];
+
+        const rgbValues = hexToRgbValues(hex);
+        const hslValues = rgbToHsl(rgbValues.r, rgbValues.g, rgbValues.b);
+
+        const tRgb = figma.createText();
+        tRgb.fontName = { family: "Roboto", style: "Regular" };
+        tRgb.fontSize = 13;
+        tRgb.characters = `RGB(${rgbValues.r}, ${rgbValues.g}, ${rgbValues.b})`;
+        tRgb.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.57, b: 0.63 } }];
+        tRgb.textAlignHorizontal = 'RIGHT';
+        rightInfo.appendChild(tRgb);
+
+        const tHsl = figma.createText();
+        tHsl.fontName = { family: "Roboto", style: "Regular" };
+        tHsl.fontSize = 13;
+        tHsl.characters = `HSL(${hslValues.h}, ${hslValues.s}%, ${hslValues.l}%)`;
+        tHsl.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.57, b: 0.63 } }];
+        tHsl.textAlignHorizontal = 'RIGHT';
+        rightInfo.appendChild(tHsl);
+
+        info.appendChild(rightInfo);
+
+        card.appendChild(info);
+        grid.appendChild(card);
+    }
+    row.appendChild(grid);
+    parent.appendChild(row);
+}
+
+function createDetailedSystemTokenRow(title, description, data, type, parent) {
+    const row = figma.createFrame();
+    row.name = `Section - ${title}`;
+    row.resize(2272, 100);
+    row.layoutMode = 'VERTICAL';
+    row.primaryAxisSizingMode = 'AUTO';
+    row.itemSpacing = 24;
+    row.fills = [];
+
+    // Header
+    const header = figma.createFrame();
+    header.layoutMode = 'VERTICAL';
+    header.primaryAxisSizingMode = 'AUTO';
+    header.counterAxisSizingMode = 'AUTO';
+    header.itemSpacing = 8;
+    header.fills = [];
+
+    const h3 = figma.createText();
+    h3.fontName = { family: "Roboto", style: "Bold" };
+    h3.fontSize = 20;
+    h3.characters = title;
+    h3.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
+    header.appendChild(h3);
+
+    const p = figma.createText();
+    p.fontName = { family: "Roboto", style: "Regular" };
+    p.fontSize = 14;
+    p.characters = description;
+    p.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.47, b: 0.53 } }];
+    header.appendChild(p);
+
+    row.appendChild(header);
+
+    const grid = figma.createFrame();
+    grid.layoutMode = 'HORIZONTAL';
+    grid.layoutWrap = 'WRAP';
+    grid.primaryAxisSizingMode = 'AUTO';
+    grid.counterAxisSizingMode = 'AUTO';
+    grid.itemSpacing = 16;
+    grid.counterAxisSpacing = 16;
+    grid.fills = [];
+
+    for (const [key, val] of Object.entries(data)) {
+        // Safe value retrieval/parsing
+        let rawVal = val;
+        if (typeof val === 'object' && val !== null) {
+            rawVal = val.desktop !== undefined ? val.desktop : (val.value !== undefined ? val.value : 0);
+        }
+        const displayVal = rawVal !== undefined ? rawVal : 0;
+        const floatVal = parseFloat(displayVal) || 0;
+
+        const card = figma.createFrame();
+        card.name = key;
+        card.layoutMode = 'VERTICAL';
+        card.primaryAxisSizingMode = 'AUTO';
+        card.counterAxisSizingMode = 'AUTO';
+        card.cornerRadius = 8;
+        card.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+        card.strokes = [{ type: 'SOLID', color: { r: 0.9, g: 0.91, b: 0.93 } }];
+        card.strokeWeight = 1;
+        card.paddingLeft = 16;
+        card.paddingRight = 16;
+        card.paddingTop = 16;
+        card.paddingBottom = 16;
+        card.itemSpacing = 12;
+
+        // Visual Preview Area
+        const preview = figma.createFrame();
+        preview.layoutMode = 'HORIZONTAL';
+        preview.layoutAlign = 'STRETCH';
+        preview.resize(preview.width, 60);
+        preview.primaryAxisSizingMode = 'FIXED';
+        preview.primaryAxisAlignItems = 'CENTER';
+        preview.counterAxisAlignItems = 'CENTER';
+        preview.fills = [];
+
+        // Visualization Logic
+        if (type === 'spacing') {
+            const spacer = figma.createRectangle();
+            const width = Math.max(2, Math.min(100, floatVal));
+            spacer.resize(width, 20);
+            spacer.cornerRadius = 2;
+            spacer.fills = [{ type: 'SOLID', color: { r: 0.04, g: 0.36, b: 0.96 } }];
+            preview.appendChild(spacer);
+        } else if (type === 'padding') {
+            const container = figma.createFrame();
+            container.resize(56, 56);
+            container.cornerRadius = 4;
+            container.fills = [];
+            container.strokes = [{ type: 'SOLID', color: { r: 0.8, g: 0.82, b: 0.88 } }];
+
+            const content = figma.createRectangle();
+            const vizPadding = Math.min(20, floatVal);
+            const contentSize = 56 - (vizPadding * 2);
+            content.resize(Math.max(4, contentSize), Math.max(4, contentSize));
+            content.cornerRadius = 2;
+            content.fills = [{ type: 'SOLID', color: { r: 0.04, g: 0.36, b: 0.96 }, opacity: 0.2 }];
+
+            content.x = (56 - content.width) / 2;
+            content.y = (56 - content.height) / 2;
+            container.appendChild(content);
+            preview.appendChild(container);
+        } else if (type === 'radius') {
+            const shape = figma.createRectangle();
+            shape.resize(48, 48);
+            shape.cornerRadius = Math.min(24, floatVal);
+            shape.fills = [];
+            shape.strokes = [{ type: 'SOLID', color: { r: 0.04, g: 0.36, b: 0.96 } }];
+            shape.strokeWeight = 2;
+            preview.appendChild(shape);
+        } else if (type === 'stroke') {
+            const line = figma.createRectangle();
+            line.resize(64, Math.max(1, floatVal));
+            line.fills = [{ type: 'SOLID', color: { r: 0.04, g: 0.36, b: 0.96 } }];
+            preview.appendChild(line);
+        }
+
+        card.appendChild(preview);
+
+        // Info
+        const info = figma.createFrame();
+        info.layoutMode = 'VERTICAL';
+        info.primaryAxisSizingMode = 'AUTO';
+        info.counterAxisSizingMode = 'AUTO';
+        info.itemSpacing = 2;
+        info.fills = [];
+
+        const t1 = figma.createText();
+        t1.fontName = { family: "Roboto", style: "Medium" };
+        t1.fontSize = 14;
+        t1.characters = key;
+        t1.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.12, b: 0.16 } }];
+        info.appendChild(t1);
+
+        const t2 = figma.createText();
+        t2.fontName = { family: "Roboto", style: "Regular" };
+        t2.fontSize = 12;
+        t2.characters = `${floatVal}px`;
+        t2.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.52, b: 0.58 } }];
+        info.appendChild(t2);
+
+        card.appendChild(info);
+        grid.appendChild(card);
+    }
+    row.appendChild(grid);
+    parent.appendChild(row);
+}
+
+function createDetailedShadowRow(title, description, data, parent) {
+    const row = figma.createFrame();
+    row.name = `Section - ${title}`;
+    row.resize(2272, 100);
+    row.layoutMode = 'VERTICAL';
+    row.primaryAxisSizingMode = 'AUTO';
+    row.itemSpacing = 24;
+    row.fills = [];
+
+    // Header
+    const header = figma.createFrame();
+    header.layoutMode = 'VERTICAL';
+    header.primaryAxisSizingMode = 'AUTO';
+    header.counterAxisSizingMode = 'AUTO';
+    header.itemSpacing = 8;
+    header.fills = [];
+
+    const h3 = figma.createText();
+    h3.fontName = { family: "Roboto", style: "Bold" };
+    h3.fontSize = 20;
+    h3.characters = title;
+    h3.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
+    header.appendChild(h3);
+
+    const p = figma.createText();
+    p.fontName = { family: "Roboto", style: "Regular" };
+    p.fontSize = 14;
+    p.characters = description;
+    p.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.47, b: 0.53 } }];
+    header.appendChild(p);
+
+    row.appendChild(header);
+
+    const grid = figma.createFrame();
+    grid.layoutMode = 'HORIZONTAL';
+    grid.layoutWrap = 'WRAP';
+    grid.primaryAxisSizingMode = 'AUTO';
+    grid.counterAxisSizingMode = 'AUTO';
+    grid.itemSpacing = 16;
+    grid.counterAxisSpacing = 16;
+    grid.fills = [];
+
+    for (const [key, val] of Object.entries(data)) {
+        if (val === 'none') continue;
+
+        const card = figma.createFrame();
+        card.name = key;
+        card.layoutMode = 'VERTICAL';
+        card.primaryAxisSizingMode = 'AUTO';
+        card.counterAxisSizingMode = 'AUTO';
+        card.cornerRadius = 12;
+        card.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+        card.strokes = [{ type: 'SOLID', color: { r: 0.93, g: 0.94, b: 0.95 } }];
+        card.strokeWeight = 1;
+        card.paddingLeft = 16;
+        card.paddingRight = 16;
+        card.paddingTop = 16;
+        card.paddingBottom = 16;
+        card.itemSpacing = 12;
+
+        // Visual Preview
+        const preview = figma.createFrame();
+        preview.layoutMode = 'HORIZONTAL';
+        preview.primaryAxisSizingMode = 'FIXED';
+        preview.counterAxisSizingMode = 'FIXED';
+        preview.resize(148, 80);
+        preview.primaryAxisAlignItems = 'CENTER';
+        preview.counterAxisAlignItems = 'CENTER';
+        preview.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
+        preview.cornerRadius = 8;
+
+        const shape = figma.createRectangle();
+        shape.resize(48, 48);
+        shape.cornerRadius = 8;
+        shape.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+        // Parse shadow
+        const shadowMatch = val.match(/(-?\d+)(?:px)?\s+(-?\d+)(?:px)?\s+(-?\d+)(?:px)?\s+rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+        if (shadowMatch) {
+            const [, x, y, blur, r, g, b, a] = shadowMatch;
+            shape.effects = [{
+                type: 'DROP_SHADOW',
+                color: { r: parseInt(r) / 255, g: parseInt(g) / 255, b: parseInt(b) / 255, a: parseFloat(a) },
+                offset: { x: parseInt(x), y: parseInt(y) },
+                radius: parseInt(blur),
+                visible: true,
+                blendMode: 'NORMAL'
+            }];
+        } else {
+            shape.strokes = [{ type: 'SOLID', color: { r: 0.9, g: 0.9, b: 0.9 } }];
+        }
+
+        preview.appendChild(shape);
+        card.appendChild(preview);
+
+        // Info
+        const info = figma.createFrame();
+        info.layoutMode = 'VERTICAL';
+        info.primaryAxisSizingMode = 'AUTO';
+        info.counterAxisSizingMode = 'AUTO';
+        info.itemSpacing = 4;
+        info.fills = [];
+
+        const t1 = figma.createText();
+        t1.fontName = { family: "Roboto", style: "Medium" };
+        t1.fontSize = 14;
+        t1.characters = key;
+        t1.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
+        info.appendChild(t1);
+
+        const t2 = figma.createText();
+        t2.fontName = { family: "Roboto", style: "Regular" };
+        t2.fontSize = 11;
+        t2.characters = val;
+        t2.textAutoResize = 'HEIGHT';
+        t2.resize(148, t2.height);
+        t2.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.57, b: 0.63 } }];
+        info.appendChild(t2);
+
+        card.appendChild(info);
+        grid.appendChild(card);
+    }
+
+    row.appendChild(grid);
+    parent.appendChild(row);
 }
 
 // ============================================
@@ -1742,10 +2292,39 @@ function createTokenSection(name, description, tokenData, parent, fontFamily = "
 // ============================================
 
 async function createTypographySystem(typography) {
-    await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
-    await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
-    await figma.loadFontAsync({ family: "Poppins", style: "Semi Bold" });
-    await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
+    // Validate typography data
+    if (!typography || !typography.primaryFont || !typography.styles) {
+        throw new Error('Invalid typography data. Please ensure primaryFont and styles are defined.');
+    }
+
+    // Try to load fonts with fallback options
+    let fallbackFont = { family: "Roboto", style: "Regular" };
+    try {
+        // Try Inter first (most common in Figma)
+        await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+        await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+        await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
+        await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+        fallbackFont = { family: "Inter", style: "Regular" };
+    } catch (interError) {
+        try {
+            // Try Roboto as fallback
+            await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
+            await figma.loadFontAsync({ family: "Roboto", style: "Medium" });
+            await figma.loadFontAsync({ family: "Roboto", style: "Bold" });
+            fallbackFont = { family: "Roboto", style: "Regular" };
+        } catch (robotoError) {
+            try {
+                // Try Arial as last resort (always available)
+                await figma.loadFontAsync({ family: "Arial", style: "Regular" });
+                await figma.loadFontAsync({ family: "Arial", style: "Bold" });
+                fallbackFont = { family: "Arial", style: "Regular" };
+            } catch (arialError) {
+                console.error('No suitable fonts available');
+                throw new Error('Failed to load any fonts. Please ensure Inter, Roboto, or Arial fonts are available.');
+            }
+        }
+    }
 
     // Create font name variables
     const collections = await figma.variables.getLocalVariableCollectionsAsync();
@@ -1791,7 +2370,18 @@ async function createTypographySystem(typography) {
     const existingFloatVars = await figma.variables.getLocalVariablesAsync('FLOAT');
     const typographyVariables = {};
 
+    // Validate styles exist
+    if (!typography.styles || Object.keys(typography.styles).length === 0) {
+        throw new Error('No typography styles found. Please define at least one style.');
+    }
+
     for (const [key, style] of Object.entries(typography.styles)) {
+        // Validate style properties
+        if (!style || typeof style.size !== 'number') {
+            console.warn(`Invalid style data for ${key}, skipping...`);
+            continue;
+        }
+
         const mobileSize = Math.round(style.size * 0.85);
 
         const sizeVarName = `typography/${key}/size`;
@@ -1807,10 +2397,11 @@ async function createTypographySystem(typography) {
         if (!letterSpacingVar) {
             letterSpacingVar = figma.variables.createVariable(letterSpacingVarName, typographyCollection, 'FLOAT');
         }
-        letterSpacingVar.setValueForMode(desktopModeId, style.letterSpacing);
-        letterSpacingVar.setValueForMode(mobileModeId, style.letterSpacing);
+        const letterSpacing = style.letterSpacing || 0;
+        letterSpacingVar.setValueForMode(desktopModeId, letterSpacing);
+        letterSpacingVar.setValueForMode(mobileModeId, letterSpacing);
 
-        typographyVariables[key] = { size: sizeVar, letterSpacing: letterSpacingVar, lineHeight: style.lineHeight };
+        typographyVariables[key] = { size: sizeVar, letterSpacing: letterSpacingVar, lineHeight: style.lineHeight || 1.5 };
     }
 
     // Find best matching font
@@ -1822,7 +2413,12 @@ async function createTypographySystem(typography) {
             matchingFonts = availableFonts.filter(f => f.fontName.family.toLowerCase() === fontFamily.toLowerCase());
         }
         if (matchingFonts.length === 0) {
-            matchingFonts = availableFonts.filter(f => f.fontName.family === 'Poppins');
+            // Try fallback fonts in order
+            const fallbackFamilies = [fallbackFont.family, 'Inter', 'Roboto', 'Arial'];
+            for (const fallbackFamily of fallbackFamilies) {
+                matchingFonts = availableFonts.filter(f => f.fontName.family === fallbackFamily);
+                if (matchingFonts.length > 0) break;
+            }
         }
 
         const weightMap = { 100: 'Thin', 200: 'Extra Light', 300: 'Light', 400: 'Regular', 500: 'Medium', 600: 'Semi Bold', 700: 'Bold', 800: 'Extra Bold', 900: 'Black' };
@@ -1840,7 +2436,7 @@ async function createTypographySystem(typography) {
         }
 
         if (!font && matchingFonts.length > 0) font = matchingFonts[0];
-        return font ? font.fontName : { family: 'Poppins', style: 'Regular' };
+        return font ? font.fontName : fallbackFont;
     }
 
     let createdStylesCount = 0;
@@ -1853,43 +2449,17 @@ async function createTypographySystem(typography) {
 
     // Create text styles for PRIMARY font
     for (const [key, style] of Object.entries(typography.styles)) {
-        for (const weight of weights) {
-            const fontName = findBestFont(typography.primaryFont, weight.value);
-            await figma.loadFontAsync(fontName);
-
-            const styleName = `Primary/${key.toUpperCase()}/${weight.name}`;
-            const existingStyles = await figma.getLocalTextStylesAsync();
-            let textStyle = existingStyles.find(s => s.name === styleName);
-
-            if (!textStyle) {
-                textStyle = figma.createTextStyle();
-                textStyle.name = styleName;
-            }
-
-            textStyle.fontName = fontName;
-            textStyle.fontSize = style.size;
-            textStyle.lineHeight = { value: style.lineHeight * 100, unit: 'PERCENT' };
-            textStyle.letterSpacing = { value: style.letterSpacing, unit: 'PIXELS' };
-
-            if (typographyVariables[key]) {
-                try {
-                    textStyle.setBoundVariable('fontSize', typographyVariables[key].size);
-                    textStyle.setBoundVariable('letterSpacing', typographyVariables[key].letterSpacing);
-                } catch (e) { }
-            }
-
-            createdStylesCount++;
+        // Skip invalid styles
+        if (!style || typeof style.size !== 'number') {
+            continue;
         }
-    }
 
-    // Create text styles for SECONDARY font
-    if (typography.secondaryEnabled && typography.secondaryFont) {
-        for (const [key, style] of Object.entries(typography.styles)) {
-            for (const weight of weights) {
-                const fontName = findBestFont(typography.secondaryFont, weight.value);
+        for (const weight of weights) {
+            try {
+                const fontName = findBestFont(typography.primaryFont, weight.value);
                 await figma.loadFontAsync(fontName);
 
-                const styleName = `Secondary/${key.toUpperCase()}/${weight.name}`;
+                const styleName = `Primary/${key.toUpperCase()}/${weight.name}`;
                 const existingStyles = await figma.getLocalTextStylesAsync();
                 let textStyle = existingStyles.find(s => s.name === styleName);
 
@@ -1900,28 +2470,100 @@ async function createTypographySystem(typography) {
 
                 textStyle.fontName = fontName;
                 textStyle.fontSize = style.size;
-                textStyle.lineHeight = { value: style.lineHeight * 100, unit: 'PERCENT' };
-                textStyle.letterSpacing = { value: style.letterSpacing, unit: 'PIXELS' };
+                textStyle.lineHeight = { value: (style.lineHeight || 1.5) * 100, unit: 'PERCENT' };
+                textStyle.letterSpacing = { value: style.letterSpacing || 0, unit: 'PIXELS' };
 
                 if (typographyVariables[key]) {
                     try {
                         textStyle.setBoundVariable('fontSize', typographyVariables[key].size);
                         textStyle.setBoundVariable('letterSpacing', typographyVariables[key].letterSpacing);
-                    } catch (e) { }
+                    } catch (e) { 
+                        console.warn(`Could not bind variables for ${styleName}:`, e);
+                    }
                 }
 
                 createdStylesCount++;
+            } catch (styleError) {
+                console.error(`Error creating style ${key} with weight ${weight.name}:`, styleError);
+            }
+        }
+    }
+
+    // Create text styles for SECONDARY font
+    if (typography.secondaryEnabled && typography.secondaryFont) {
+        for (const [key, style] of Object.entries(typography.styles)) {
+            // Skip invalid styles
+            if (!style || typeof style.size !== 'number') {
+                continue;
+            }
+
+            for (const weight of weights) {
+                try {
+                    const fontName = findBestFont(typography.secondaryFont, weight.value);
+                    await figma.loadFontAsync(fontName);
+
+                    const styleName = `Secondary/${key.toUpperCase()}/${weight.name}`;
+                    const existingStyles = await figma.getLocalTextStylesAsync();
+                    let textStyle = existingStyles.find(s => s.name === styleName);
+
+                    if (!textStyle) {
+                        textStyle = figma.createTextStyle();
+                        textStyle.name = styleName;
+                    }
+
+                    textStyle.fontName = fontName;
+                    textStyle.fontSize = style.size;
+                    textStyle.lineHeight = { value: (style.lineHeight || 1.5) * 100, unit: 'PERCENT' };
+                    textStyle.letterSpacing = { value: style.letterSpacing || 0, unit: 'PIXELS' };
+
+                    if (typographyVariables[key]) {
+                        try {
+                            textStyle.setBoundVariable('fontSize', typographyVariables[key].size);
+                            textStyle.setBoundVariable('letterSpacing', typographyVariables[key].letterSpacing);
+                        } catch (e) { 
+                            console.warn(`Could not bind variables for ${styleName}:`, e);
+                        }
+                    }
+
+                    createdStylesCount++;
+                } catch (styleError) {
+                    console.error(`Error creating secondary style ${key} with weight ${weight.name}:`, styleError);
+                }
             }
         }
     }
 
     // Create typography documentation
-    await createTypographyDocumentation(typography, findBestFont);
+    try {
+        await createTypographyDocumentation(typography, findBestFont);
+    } catch (docError) {
+        console.error('Error creating typography documentation:', docError);
+        // Don't throw - documentation is optional
+    }
 
     figma.notify(`✅ Created ${createdStylesCount} text styles!`);
 }
 
 async function createTypographyDocumentation(typography, findBestFont) {
+    // Get a safe fallback font for documentation
+    let docFont = { family: "Inter", style: "Regular" };
+    try {
+        await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+        await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+        await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
+        docFont = { family: "Inter", style: "Regular" };
+    } catch (e) {
+        try {
+            await figma.loadFontAsync({ family: "Roboto", style: "Bold" });
+            await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
+            docFont = { family: "Roboto", style: "Regular" };
+        } catch (e2) {
+            await figma.loadFontAsync({ family: "Arial", style: "Bold" });
+            await figma.loadFontAsync({ family: "Arial", style: "Regular" });
+            docFont = { family: "Arial", style: "Regular" };
+        }
+    }
+
     const container = figma.createFrame();
     container.name = "Typography System";
     container.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
@@ -1945,7 +2587,7 @@ async function createTypographyDocumentation(typography, findBestFont) {
     header.itemSpacing = 8;
 
     const titleText = figma.createText();
-    titleText.fontName = { family: "Poppins", style: "Bold" };
+    titleText.fontName = { family: docFont.family, style: "Bold" };
     safeSetCharacters(titleText, "Typography System");
     titleText.fontSize = 32;
     titleText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
@@ -1953,7 +2595,7 @@ async function createTypographyDocumentation(typography, findBestFont) {
 
     const categories = Object.keys(typography.styles);
     const subtitleText = figma.createText();
-    subtitleText.fontName = { family: "Poppins", style: "Regular" };
+    subtitleText.fontName = docFont;
     safeSetCharacters(subtitleText, `${typography.primaryFont} • ${categories.length} Styles • Responsive Design`);
     subtitleText.fontSize = 15;
     subtitleText.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.45, b: 0.45 } }];
@@ -1996,7 +2638,7 @@ async function createTypographyDocumentation(typography, findBestFont) {
 
         // Category label
         const categoryLabel = figma.createText();
-        categoryLabel.fontName = { family: "Poppins", style: "Semi Bold" };
+        categoryLabel.fontName = { family: docFont.family, style: "Bold" };
         safeSetCharacters(categoryLabel, category.toUpperCase());
         categoryLabel.fontSize = 13;
         categoryLabel.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
@@ -2009,15 +2651,15 @@ async function createTypographyDocumentation(typography, findBestFont) {
         safeSetCharacters(previewText, "The quick brown fox jumps over the lazy dog");
         previewText.fontSize = styleData.size;
         previewText.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
-        previewText.lineHeight = { value: styleData.lineHeight * 100, unit: 'PERCENT' };
-        previewText.letterSpacing = { value: styleData.letterSpacing, unit: 'PIXELS' };
+        previewText.lineHeight = { value: (styleData.lineHeight || 1.5) * 100, unit: 'PERCENT' };
+        previewText.letterSpacing = { value: styleData.letterSpacing || 0, unit: 'PIXELS' };
         card.appendChild(previewText);
 
         // Specs
         const specsText = figma.createText();
-        specsText.fontName = { family: "Poppins", style: "Regular" };
+        specsText.fontName = docFont;
         const mobileSize = Math.round(styleData.size * 0.85);
-        safeSetCharacters(specsText, `Desktop: ${styleData.size}px • Mobile: ${mobileSize}px • Line Height: ${Math.round(styleData.lineHeight * 100)}%`);
+        safeSetCharacters(specsText, `Desktop: ${styleData.size}px • Mobile: ${mobileSize}px • Line Height: ${Math.round((styleData.lineHeight || 1.5) * 100)}%`);
         specsText.fontSize = 12;
         specsText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.55 } }];
         card.appendChild(specsText);

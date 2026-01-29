@@ -77,25 +77,28 @@ function applyColorToNode(node, color) {
 // ============================================
 
 async function createButtonComponentSet(buttonText, bgColor, textColor, radius) {
-    await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
-    await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
-    await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
+    await Promise.all([
+        figma.loadFontAsync({ family: "Poppins", style: "Medium" }),
+        figma.loadFontAsync({ family: "Poppins", style: "Bold" }),
+        figma.loadFontAsync({ family: "Poppins", style: "Regular" })
+    ]);
 
     const baseRgb = hexToRgb(bgColor);
     const textRgb = hexToRgb(textColor);
+    const destructiveRgb = { r: 0.937, g: 0.267, b: 0.267 }; // #EF4444
 
     // Arrow icons SVG
     const arrowLeftSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M20.5 12H3.67" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M20.5 12H3.67" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`;
 
     const arrowRightSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M14.43 5.93L20.5 12L14.43 18.07" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M3.5 12H20.33" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M14.43 5.93L20.5 12L14.43 18.07" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M3.5 12H20.33" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`;
 
-    // Create icon components
+    // Create icon components for property swap
     function createIconComponent(svgString, name, color, size = 16) {
         const iconComponent = figma.createComponent();
         iconComponent.name = name;
@@ -123,79 +126,62 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
         return iconComponent;
     }
 
-    const leftIconComponent = createIconComponent(arrowLeftSVG, "Icon/arrow-left", textRgb, 16);
-    const rightIconComponent = createIconComponent(arrowRightSVG, "Icon/arrow-right", textRgb, 16);
-    figma.currentPage.appendChild(leftIconComponent);
-    figma.currentPage.appendChild(rightIconComponent);
+    const iconStore = figma.createFrame();
+    iconStore.name = "Button Icons";
+    iconStore.resize(100, 100);
+    iconStore.fills = [];
+    iconStore.visible = false;
+    figma.currentPage.appendChild(iconStore);
+
+    const leftIconComp = createIconComponent(arrowLeftSVG, "Icon/arrow-left", textRgb, 16);
+    const rightIconComp = createIconComponent(arrowRightSVG, "Icon/arrow-right-1", textRgb, 16);
+    iconStore.appendChild(leftIconComp);
+    iconStore.appendChild(rightIconComp);
 
     // Button configurations
     const sizes = [
-        { name: 'Small', height: 32, paddingX: 12, paddingY: 6, fontSize: 12, iconSize: 14 },
-        { name: 'Medium', height: 40, paddingX: 16, paddingY: 10, fontSize: 14, iconSize: 16 },
-        { name: 'Large', height: 48, paddingX: 20, paddingY: 12, fontSize: 16, iconSize: 18 }
+        { name: 'SM', height: 32, paddingX: 12, fontSize: 12, iconSize: 14, gap: 6 },
+        { name: 'MD', height: 40, paddingX: 16, fontSize: 14, iconSize: 16, gap: 8 },
+        { name: 'LG', height: 48, paddingX: 20, fontSize: 16, iconSize: 18, gap: 10 }
     ];
 
-    const variants = [
-        {
-            name: 'Primary',
-            states: [
-                { name: 'Default', bgColor: baseRgb, textColor: textRgb, borderColor: null, borderWidth: 0 },
-                { name: 'Hover', bgColor: darkenColor(baseRgb, 0.08), textColor: textRgb, borderColor: null, borderWidth: 0 },
-                { name: 'Click', bgColor: darkenColor(baseRgb, 0.15), textColor: textRgb, borderColor: null, borderWidth: 0 },
-                { name: 'Disabled', bgColor: { r: 0.88, g: 0.88, b: 0.88 }, textColor: { r: 0.6, g: 0.6, b: 0.6 }, borderColor: null, borderWidth: 0 }
-            ]
-        },
-        {
-            name: 'Secondary',
-            states: [
-                { name: 'Default', bgColor: { r: 1, g: 1, b: 1 }, textColor: baseRgb, borderColor: baseRgb, borderWidth: 1 },
-                { name: 'Hover', bgColor: lightenColor(baseRgb, 0.85), textColor: baseRgb, borderColor: baseRgb, borderWidth: 1 },
-                { name: 'Click', bgColor: lightenColor(baseRgb, 0.75), textColor: baseRgb, borderColor: baseRgb, borderWidth: 1 },
-                { name: 'Disabled', bgColor: { r: 0.98, g: 0.98, b: 0.98 }, textColor: { r: 0.7, g: 0.7, b: 0.7 }, borderColor: { r: 0.85, g: 0.85, b: 0.85 }, borderWidth: 1 }
-            ]
-        },
-        {
-            name: 'Link',
-            states: [
-                { name: 'Default', bgColor: { r: 0, g: 0, b: 0, a: 0 }, textColor: baseRgb, borderColor: null, borderWidth: 0, textDecoration: 'UNDERLINE' },
-                { name: 'Hover', bgColor: { r: 0, g: 0, b: 0, a: 0 }, textColor: darkenColor(baseRgb, 0.1), borderColor: null, borderWidth: 0, textDecoration: 'UNDERLINE' },
-                { name: 'Click', bgColor: { r: 0, g: 0, b: 0, a: 0 }, textColor: darkenColor(baseRgb, 0.15), borderColor: null, borderWidth: 0, textDecoration: 'UNDERLINE' },
-                { name: 'Disabled', bgColor: { r: 0, g: 0, b: 0, a: 0 }, textColor: { r: 0.7, g: 0.7, b: 0.7 }, borderColor: null, borderWidth: 0, textDecoration: 'UNDERLINE' }
-            ]
-        }
+    const types = [
+        { name: 'Primary', color: baseRgb },
+        { name: 'Destructive', color: destructiveRgb },
+        { name: 'Line', color: baseRgb },
+        { name: 'Ghost', color: baseRgb },
+        { name: 'Link', color: baseRgb }
     ];
+    const states = ['Normal', 'Hover', 'Click', 'Disabled'];
 
     const components = [];
-    const buttonWidth = 140;
-    const componentSpacing = 16;
-    const sizeGroupSpacing = 32;
-    let xOffset = 0;
-    let yOffset = 0;
+    const blockWidth = 600; // Total width for a block of 4 buttons + spacing
+    const blockHeight = 250; // Total height for a block of 3 sizes + spacing
+    const groupGapX = 120;
+    const groupGapY = 100;
 
-    // Create all button variants
-    for (const size of sizes) {
-        xOffset = 0;
-        for (const variant of variants) {
-            xOffset = 0;
-            for (const state of variant.states) {
+    for (let tIndex = 0; tIndex < types.length; tIndex++) {
+        const typeObj = types[tIndex];
+        const type = typeObj.name;
+        const typeColor = typeObj.color;
+
+        // Calculate block base position (2 columns)
+        const col = tIndex % 2;
+        const row = Math.floor(tIndex / 2);
+        const blockBaseX = col * (blockWidth + groupGapX);
+        const blockBaseY = row * (blockHeight + groupGapY);
+
+        for (let sIndex = 0; sIndex < sizes.length; sIndex++) {
+            const size = sizes[sIndex];
+            for (let stIndex = 0; stIndex < states.length; stIndex++) {
+                const state = states[stIndex];
+
                 const button = figma.createComponent();
-                button.name = `Size=${size.name}, Variant=${variant.name}, State=${state.name}`;
-                button.resize(buttonWidth, size.height);
-                button.x = xOffset;
-                button.y = yOffset;
+                button.name = `Type=${type}, Size=${size.name}, State=${state}`;
+                button.resize(120, size.height);
 
-                if (state.bgColor.a === 0) {
-                    button.fills = [];
-                } else {
-                    button.fills = [{ type: 'SOLID', color: state.bgColor }];
-                }
-
-                button.cornerRadius = radius;
-
-                if (state.borderColor && state.borderWidth > 0) {
-                    button.strokes = [{ type: 'SOLID', color: state.borderColor }];
-                    button.strokeWeight = state.borderWidth;
-                }
+                button.x = blockBaseX + (stIndex * 140);
+                button.y = blockBaseY + (sIndex * 60);
 
                 button.layoutMode = 'HORIZONTAL';
                 button.primaryAxisAlignItems = 'CENTER';
@@ -203,125 +189,272 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
                 button.primaryAxisSizingMode = 'AUTO';
                 button.paddingLeft = size.paddingX;
                 button.paddingRight = size.paddingX;
-                button.paddingTop = size.paddingY;
-                button.paddingBottom = size.paddingY;
-                button.itemSpacing = 8;
+                button.itemSpacing = size.gap;
+                button.cornerRadius = radius;
 
-                // Left icon
-                const leftIcon = leftIconComponent.createInstance();
+                // Define colors based on type and state
+                let fill = null;
+                let stroke = null;
+                let strokeW = 0;
+                let currentTextColor = textRgb;
+
+                if (type === 'Primary' || type === 'Destructive') {
+                    const mainColor = type === 'Primary' ? baseRgb : destructiveRgb;
+                    currentTextColor = { r: 1, g: 1, b: 1 }; // Default for solid buttons
+
+                    if (state === 'Normal') fill = mainColor;
+                    else if (state === 'Hover') fill = darkenColor(mainColor, 0.1);
+                    else if (state === 'Click') fill = darkenColor(mainColor, 0.2);
+                    else {
+                        fill = { r: 0.85, g: 0.85, b: 0.85 };
+                        currentTextColor = { r: 0.6, g: 0.6, b: 0.6 };
+                    }
+                } else if (type === 'Line') {
+                    currentTextColor = typeColor;
+                    stroke = { r: 0.8, g: 0.8, b: 0.85 };
+                    strokeW = 1;
+                    if (state === 'Normal') fill = { r: 1, g: 1, b: 1, a: 0 };
+                    else if (state === 'Hover') {
+                        fill = lightenColor(typeColor, 0.95);
+                        stroke = typeColor;
+                    }
+                    else if (state === 'Click') {
+                        fill = lightenColor(typeColor, 0.9);
+                        stroke = typeColor;
+                    }
+                    else {
+                        fill = { r: 0.98, g: 0.98, b: 0.98, a: 0.5 };
+                        stroke = { r: 0.9, g: 0.9, b: 0.9 };
+                        currentTextColor = { r: 0.8, g: 0.8, b: 0.8 };
+                    }
+                } else if (type === 'Ghost') {
+                    currentTextColor = typeColor;
+                    if (state === 'Normal') fill = { r: 1, g: 1, b: 1, a: 0 };
+                    else if (state === 'Hover') fill = lightenColor(typeColor, 0.95);
+                    else if (state === 'Click') fill = lightenColor(typeColor, 0.9);
+                    else {
+                        fill = { r: 1, g: 1, b: 1, a: 0 };
+                        currentTextColor = { r: 0.8, g: 0.8, b: 0.8 };
+                    }
+                } else if (type === 'Link') {
+                    currentTextColor = typeColor;
+                    fill = { r: 1, g: 1, b: 1, a: 0 };
+                    if (state === 'Hover') currentTextColor = darkenColor(typeColor, 0.2);
+                    else if (state === 'Click') currentTextColor = darkenColor(typeColor, 0.3);
+                    else if (state === 'Disabled') currentTextColor = { r: 0.8, g: 0.8, b: 0.8 };
+                }
+
+                if (fill && fill.a !== 0) {
+                    const colorVal = { r: fill.r, g: fill.g, b: fill.b };
+                    const opacityVal = fill.a !== undefined ? fill.a : 1;
+                    button.fills = [{ type: 'SOLID', color: colorVal, opacity: opacityVal }];
+                } else {
+                    button.fills = [];
+                }
+
+                if (stroke) {
+                    button.strokes = [{ type: 'SOLID', color: stroke }];
+                    button.strokeWeight = strokeW;
+                }
+
+                // Left Icon
+                const leftIcon = leftIconComp.createInstance();
                 leftIcon.name = "LeftIcon";
                 leftIcon.resize(size.iconSize, size.iconSize);
-                leftIcon.visible = false;
+                applyColorToNode(leftIcon, currentTextColor);
                 button.appendChild(leftIcon);
 
                 // Text
                 const text = figma.createText();
+                text.name = "ButtonText";
                 text.fontName = { family: "Poppins", style: "Medium" };
                 text.fontSize = size.fontSize;
                 text.characters = buttonText;
-                text.fills = [{ type: 'SOLID', color: state.textColor }];
-                if (state.textDecoration === 'UNDERLINE') {
-                    text.textDecoration = 'UNDERLINE';
-                }
+                text.fills = [{ type: 'SOLID', color: currentTextColor }];
+                if (type === 'Link') text.textDecoration = 'UNDERLINE';
                 button.appendChild(text);
 
-                // Right icon
-                const rightIcon = rightIconComponent.createInstance();
+                // Right Icon
+                const rightIcon = rightIconComp.createInstance();
                 rightIcon.name = "RightIcon";
                 rightIcon.resize(size.iconSize, size.iconSize);
-                rightIcon.visible = false;
+                applyColorToNode(rightIcon, currentTextColor);
                 button.appendChild(rightIcon);
 
-                figma.currentPage.appendChild(button);
                 components.push(button);
-                xOffset += buttonWidth + componentSpacing;
             }
-            yOffset += size.height + componentSpacing;
         }
-        yOffset += sizeGroupSpacing;
     }
 
     // Create component set
     const componentSet = figma.combineAsVariants(components, figma.currentPage);
     componentSet.name = "Button";
-    componentSet.layoutMode = 'NONE';
-    componentSet.fills = [];
 
-    // Container frame
+    // Add Component Properties
+    const textProp = componentSet.addComponentProperty("Button Text", "TEXT", buttonText);
+    const showLeftIconProp = componentSet.addComponentProperty("Show Left Icon", "BOOLEAN", false);
+    const leftIconProp = componentSet.addComponentProperty("Left Icon", "INSTANCE_SWAP", leftIconComp.id);
+    const showRightIconProp = componentSet.addComponentProperty("Show Right Icon", "BOOLEAN", false);
+    const rightIconProp = componentSet.addComponentProperty("Right Icon", "INSTANCE_SWAP", rightIconComp.id);
+    const showTextProp = componentSet.addComponentProperty("Text", "BOOLEAN", true);
+
+    // Apply properties to instances
+    componentSet.children.forEach(variant => {
+        const textLayer = variant.findOne(n => n.name === "ButtonText");
+        const leftIconLayer = variant.findOne(n => n.name === "LeftIcon");
+        const rightIconLayer = variant.findOne(n => n.name === "RightIcon");
+
+        if (textLayer) {
+            textLayer.componentPropertyReferences = {
+                characters: textProp,
+                visible: showTextProp
+            };
+        }
+        if (leftIconLayer) {
+            leftIconLayer.componentPropertyReferences = {
+                visible: showLeftIconProp,
+                mainComponent: leftIconProp
+            };
+        }
+        if (rightIconLayer) {
+            rightIconLayer.componentPropertyReferences = {
+                visible: showRightIconProp,
+                mainComponent: rightIconProp
+            };
+        }
+    });
+
+    // Container frame for documentation
     const containerFrame = figma.createFrame();
-    containerFrame.name = "🎨 Button Component System";
-    containerFrame.resize(componentSet.width + 128, componentSet.height + 200);
-    containerFrame.fills = [{ type: 'SOLID', color: { r: 0.97, g: 0.97, b: 0.98 } }];
-    containerFrame.cornerRadius = 12;
+    containerFrame.name = "Button Component System";
+    containerFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
     containerFrame.layoutMode = 'VERTICAL';
     containerFrame.primaryAxisSizingMode = 'AUTO';
     containerFrame.counterAxisSizingMode = 'AUTO';
-    containerFrame.itemSpacing = 34;
-    containerFrame.paddingLeft = 48;
-    containerFrame.paddingRight = 48;
-    containerFrame.paddingTop = 40;
-    containerFrame.paddingBottom = 40;
+    containerFrame.paddingBottom = 48;
 
-    // Title
-    const titleFrame = figma.createFrame();
-    titleFrame.name = "Title";
-    titleFrame.layoutMode = 'VERTICAL';
-    titleFrame.primaryAxisSizingMode = 'AUTO';
-    titleFrame.counterAxisSizingMode = 'AUTO';
-    titleFrame.itemSpacing = 8;
-    titleFrame.fills = [];
+    // --- PREMIUM CENTERED HEADER ---
+    const headerFrame = figma.createFrame();
+    headerFrame.name = "Header";
+    headerFrame.layoutMode = 'VERTICAL';
+    headerFrame.layoutAlign = 'STRETCH';
+    headerFrame.primaryAxisSizingMode = 'AUTO';
+    headerFrame.paddingLeft = 80; headerFrame.paddingRight = 80; headerFrame.paddingTop = 80; headerFrame.paddingBottom = 100;
+    headerFrame.itemSpacing = 40;
+    headerFrame.counterAxisAlignItems = 'CENTER'; // Left align content
+    headerFrame.fills = [{
+        type: 'GRADIENT_LINEAR',
+        gradientStops: [
+            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
+            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
+        ],
+        gradientTransform: [[1, 0, 0], [0, 1, 0]]
+    }];
 
-    const titleText = figma.createText();
-    titleText.fontName = { family: "Poppins", style: "Bold" };
-    titleText.fontSize = 28;
-    titleText.characters = "Button Component";
-    titleText.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
-    titleFrame.appendChild(titleText);
+    // Logo & Title Container
+    const headerMain = figma.createFrame();
+    headerMain.layoutMode = 'VERTICAL';
+    headerMain.primaryAxisSizingMode = 'AUTO';
+    headerMain.counterAxisSizingMode = 'AUTO';
+    headerMain.counterAxisAlignItems = 'CENTER';
+    headerMain.itemSpacing = 24;
+    headerMain.fills = [];
+    headerFrame.appendChild(headerMain);
 
-    const subtitleText = figma.createText();
-    subtitleText.fontName = { family: "Poppins", style: "Regular" };
-    subtitleText.fontSize = 14;
-    subtitleText.characters = "3 Variants • 3 Sizes • 4 States • Swappable Icons";
-    subtitleText.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
-    titleFrame.appendChild(subtitleText);
+    const title = figma.createText();
+    title.fontName = { family: "Poppins", style: "Bold" };
+    title.characters = "Button Component System";
+    title.fontSize = 56;
+    title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
+    title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    headerMain.appendChild(title);
+
+    const desc = figma.createText();
+    desc.fontName = { family: "Poppins", style: "Regular" };
+    desc.characters = `A comprehensive button system with ${components.length} variants, including Primary, Line, Ghost, Link, and Destructive styles.`;
+    desc.fontSize = 18;
+    desc.opacity = 0.6;
+    desc.textAlignHorizontal = 'CENTER';
+    desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    desc.resize(800, desc.height);
+    headerMain.appendChild(desc);
+
+    // STATS ROW (Glassmorphism)
+    const statsRow = figma.createFrame();
+    statsRow.layoutMode = 'HORIZONTAL';
+    statsRow.primaryAxisSizingMode = 'AUTO';
+    statsRow.counterAxisSizingMode = 'AUTO';
+    statsRow.itemSpacing = 16;
+    statsRow.fills = [];
+    statsRow.itemSpacing = 16; // Maintain spacing
+
+    // Ensure stats are centered in the header
+    headerFrame.primaryAxisAlignItems = 'CENTER';
+    headerFrame.counterAxisAlignItems = 'CENTER';
+
+    function createStatBadge(label, value) {
+        const badge = figma.createFrame();
+        badge.layoutMode = 'HORIZONTAL';
+        badge.primaryAxisSizingMode = 'AUTO';
+        badge.counterAxisSizingMode = 'AUTO';
+        badge.paddingLeft = 20;
+        badge.paddingRight = 20;
+        badge.paddingTop = 10;
+        badge.paddingBottom = 10;
+        badge.cornerRadius = 100;
+        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
+        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
+        badge.strokeWeight = 1;
+        badge.itemSpacing = 10;
+        badge.counterAxisAlignItems = 'CENTER';
+        badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
+
+        const tLabel = figma.createText();
+        tLabel.fontName = { family: "Poppins", style: "Medium" };
+        tLabel.fontSize = 13;
+        tLabel.characters = label;
+        tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
+        badge.appendChild(tLabel);
+
+        const tValue = figma.createText();
+        tValue.fontName = { family: "Poppins", style: "Bold" };
+        tValue.fontSize = 13;
+        tValue.characters = value;
+        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+        badge.appendChild(tValue);
+
+        return badge;
+    }
+
+    statsRow.appendChild(createStatBadge("Variants", String(components.length)));
+    statsRow.appendChild(createStatBadge("Types", String(types.length)));
+    statsRow.appendChild(createStatBadge("Sizes", String(sizes.length)));
+    const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    statsRow.appendChild(createStatBadge("Last Updated", dateText));
+
+    headerFrame.appendChild(statsRow);
+    containerFrame.appendChild(headerFrame);
+
+    const contentWrapper = figma.createFrame();
+    contentWrapper.name = "Content";
+    contentWrapper.layoutMode = 'VERTICAL';
+    contentWrapper.primaryAxisSizingMode = 'AUTO';
+    contentWrapper.counterAxisSizingMode = 'AUTO';
+    contentWrapper.layoutAlign = 'STRETCH';
+    contentWrapper.paddingLeft = 48;
+    contentWrapper.paddingRight = 48;
+    contentWrapper.paddingTop = 48;
+    contentWrapper.paddingBottom = 48;
+    contentWrapper.fills = [];
+
+    contentWrapper.appendChild(componentSet);
+    containerFrame.appendChild(contentWrapper);
 
     figma.currentPage.appendChild(containerFrame);
-    containerFrame.appendChild(titleFrame);
-    containerFrame.appendChild(componentSet);
 
-    // Icons frame
-    const iconsFrame = figma.createFrame();
-    iconsFrame.name = "🎯 Icons";
-    iconsFrame.layoutMode = 'HORIZONTAL';
-    iconsFrame.primaryAxisSizingMode = 'AUTO';
-    iconsFrame.counterAxisSizingMode = 'AUTO';
-    iconsFrame.itemSpacing = 16;
-    iconsFrame.paddingLeft = 24;
-    iconsFrame.paddingRight = 24;
-    iconsFrame.paddingTop = 24;
-    iconsFrame.paddingBottom = 24;
-    iconsFrame.fills = [{ type: 'SOLID', color: { r: 0.95, g: 0.95, b: 0.96 } }];
-    iconsFrame.cornerRadius = 12;
-
-    figma.currentPage.appendChild(iconsFrame);
-    iconsFrame.appendChild(leftIconComponent);
-    iconsFrame.appendChild(rightIconComponent);
-    iconsFrame.x = containerFrame.x + containerFrame.width + 40;
-    iconsFrame.y = containerFrame.y;
-
-    // Add boolean properties
-    const leftIconPropKey = componentSet.addComponentProperty("LeftIcon", "BOOLEAN", false);
-    const rightIconPropKey = componentSet.addComponentProperty("RightIcon", "BOOLEAN", false);
-
-    componentSet.children.forEach(component => {
-        const leftIconLayer = component.findOne(node => node.name === "LeftIcon");
-        const rightIconLayer = component.findOne(node => node.name === "RightIcon");
-        if (leftIconLayer) leftIconLayer.componentPropertyReferences = { visible: leftIconPropKey };
-        if (rightIconLayer) rightIconLayer.componentPropertyReferences = { visible: rightIconPropKey };
-    });
-
-    figma.viewport.scrollAndZoomIntoView([containerFrame, iconsFrame]);
-    figma.notify(`✅ Button Component System created!`);
+    // Cleanup and zoom
+    figma.viewport.scrollAndZoomIntoView([containerFrame]);
+    figma.notify(`✅ Premium Button System with ${components.length} variants created!`);
 }
 
 // ============================================
@@ -334,298 +467,513 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
 // ============================================
 
 async function createInputComponentSet(placeholder, borderColor, primaryColor, textColor, radius) {
-    await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
-    await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
-    await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
+    await Promise.all([
+        figma.loadFontAsync({ family: "Poppins", style: "Regular" }),
+        figma.loadFontAsync({ family: "Poppins", style: "Medium" }),
+        figma.loadFontAsync({ family: "Poppins", style: "Bold" }),
+        figma.loadFontAsync({ family: "Inter", style: "Regular" })
+    ]);
 
-    const borderRgb = hexToRgb(borderColor);
-    const textRgb = hexToRgb(textColor);
+    const borderRgb = hexToRgb('#E5E7EB');
+    const textRgb = hexToRgb('#1F2937');
+    const mutedRgb = hexToRgb('#9CA3AF');
     const primaryRgb = hexToRgb(primaryColor);
-    const successRgb = hexToRgb('#10b981');
-    const errorRgb = hexToRgb('#ef4444');
+    const errorRgb = hexToRgb('#EF4444');
+    const warningRgb = hexToRgb('#EF4444'); // Back to red for Asterisk as requested
+    const successRgb = hexToRgb('#10B981');
 
     // Icon SVGs
-    const searchIconSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M11.5 21C16.7467 21 21 16.7467 21 11.5C21 6.25329 16.7467 2 11.5 2C6.25329 2 2 6.25329 2 11.5C2 16.7467 6.25329 21 11.5 21Z" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M22 22L20 20" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`;
-
-    const closeIconSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M9.17 14.83L14.83 9.17" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M14.83 14.83L9.17 9.17" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`;
+    const iconSVGs = {
+        search: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M11.5 21C16.7467 21 21 16.7467 21 11.5C21 6.25329 16.7467 2 11.5 2C6.25329 2 2 6.25329 2 11.5C2 16.7467 6.25329 21 11.5 21Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 22L20 20" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        left: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="currentColor" stroke-width="1" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.5 12H3.67" stroke="currentColor" stroke-width="1" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        right: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14.43 5.93L20.5 12L14.43 18.07" stroke="currentColor" stroke-width="1" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 12H20.33" stroke="currentColor" stroke-width="1" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        info: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8V13" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.9945 16H12.0035" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        chevron: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M19.92 8.95L13.4 15.47C12.63 16.24 11.37 16.24 10.6 15.47L4.08 8.95" stroke="currentColor" stroke-width="1" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        close: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    };
 
     function createIconComponent(svgString, name, color, size = 16) {
         const iconComponent = figma.createComponent();
         iconComponent.name = name;
         iconComponent.resize(size, size);
         iconComponent.fills = [];
-
         const svgNode = figma.createNodeFromSvg(svgString);
+
+        // Proportional scaling
         const scale = Math.min(size / svgNode.width, size / svgNode.height);
         svgNode.resize(svgNode.width * scale, svgNode.height * scale);
         svgNode.x = (size - svgNode.width) / 2;
         svgNode.y = (size - svgNode.height) / 2;
 
         applyColorToNode(svgNode, color);
-
-        if (svgNode.type === 'FRAME' || svgNode.type === 'GROUP') {
-            [...svgNode.children].forEach(child => {
-                child.x += svgNode.x;
-                child.y += svgNode.y;
-                iconComponent.appendChild(child);
-            });
-            svgNode.remove();
-        } else {
-            iconComponent.appendChild(svgNode);
-        }
+        iconComponent.appendChild(svgNode);
         return iconComponent;
     }
 
-    const searchIconComponent = createIconComponent(searchIconSVG, "Icon/search", textRgb, 16);
-    const closeIconComponent = createIconComponent(closeIconSVG, "Icon/close", textRgb, 16);
-    figma.currentPage.appendChild(searchIconComponent);
-    figma.currentPage.appendChild(closeIconComponent);
+    const iconSection = figma.createFrame();
+    iconSection.name = "🎯 Icons Library";
+    iconSection.layoutMode = 'HORIZONTAL';
+    iconSection.primaryAxisSizingMode = 'AUTO';
+    iconSection.counterAxisSizingMode = 'AUTO';
+    iconSection.itemSpacing = 16;
+    iconSection.paddingLeft = 24; iconSection.paddingRight = 24; iconSection.paddingTop = 24; iconSection.paddingBottom = 24;
+    iconSection.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.8 }];
+    iconSection.cornerRadius = 16;
+    iconSection.strokes = [{ type: 'SOLID', color: { r: 0.9, g: 0.9, b: 0.9 } }];
 
-    // Input states
-    const states = [
-        { name: 'Default', borderColor: borderRgb, borderWidth: 1, bgColor: { r: 1, g: 1, b: 1 }, textColor: textRgb, placeholderOpacity: 0.5, hasErrorMsg: false },
-        { name: 'Click', borderColor: primaryRgb, borderWidth: 2, bgColor: { r: 1, g: 1, b: 1 }, textColor: textRgb, placeholderOpacity: 0.5, hasErrorMsg: false },
-        { name: 'Error', borderColor: errorRgb, borderWidth: 1, bgColor: { r: 1, g: 1, b: 1 }, textColor: textRgb, placeholderOpacity: 0.5, hasErrorMsg: true },
-        { name: 'Success', borderColor: successRgb, borderWidth: 1, bgColor: { r: 1, g: 1, b: 1 }, textColor: textRgb, placeholderOpacity: 0.5, hasErrorMsg: false },
-        { name: 'Disabled', borderColor: { r: 0.88, g: 0.88, b: 0.88 }, borderWidth: 1, bgColor: { r: 0.98, g: 0.98, b: 0.98 }, textColor: { r: 0.6, g: 0.6, b: 0.6 }, placeholderOpacity: 1, hasErrorMsg: false }
-    ];
+    const searchIconComp = createIconComponent(iconSVGs.search, "Icon/search", mutedRgb, 20);
+    const leftIconComp = createIconComponent(iconSVGs.left, "Icon/arrow-left", mutedRgb, 20);
+    const rightIconComp = createIconComponent(iconSVGs.right, "Icon/arrow-right-1", mutedRgb, 20);
+    const closeIconComp = createIconComponent(iconSVGs.close, "Icon/close", mutedRgb, 20);
+    const infoIconComp = createIconComponent(iconSVGs.info, "Icon/info-circle", mutedRgb, 16);
+    const chevronIconComp = createIconComponent(iconSVGs.chevron, "Icon/chevron-down", mutedRgb, 14);
 
-    // Input types
+    [searchIconComp, leftIconComp, rightIconComp, closeIconComp, infoIconComp, chevronIconComp].forEach(c => iconSection.appendChild(c));
+
     const types = [
-        { name: 'Text', placeholder: placeholder, height: 40, showIcons: true, isOTP: false, isTextarea: false },
-        { name: 'Textarea', placeholder: placeholder, height: 120, showIcons: false, isOTP: false, isTextarea: true },
-        { name: 'OTP', placeholder: '0', height: 56, showIcons: false, isOTP: true, isTextarea: false, digitCount: 4 }
+        { name: 'Search field', isSearch: true },
+        { name: 'OTP Shared', isOTP: true },
+        { name: 'Input field', isStandard: true },
+        { name: 'Phone number', isPhone: true },
+        { name: 'Rich Text Box', isRichText: true }
     ];
+    const states = ['Normal', 'Hover', 'Click', 'Error', 'Disabled'];
 
     const components = [];
-    let yOffset = 0;
+    // Grid Arrangement: Types (Columns), States (Rows)
+    let currentX = 0;
+    for (let tIndex = 0; tIndex < types.length; tIndex++) {
+        const type = types[tIndex];
+        const xOffset = currentX;
+        let currentY = 0;
 
-    for (const type of types) {
-        for (const state of states) {
+        for (let sIndex = 0; sIndex < states.length; sIndex++) {
+            const state = states[sIndex];
+            const yOffset = currentY;
             const wrapper = figma.createComponent();
-            wrapper.name = `Type=${type.name}, State=${state.name}`;
-            wrapper.x = 0;
-            wrapper.y = yOffset;
-            wrapper.fills = [];
+            wrapper.name = `Type=${type.name}, State=${state}`;
             wrapper.layoutMode = 'VERTICAL';
-            wrapper.primaryAxisAlignItems = 'MIN';
-            wrapper.counterAxisAlignItems = 'MIN';
             wrapper.primaryAxisSizingMode = 'AUTO';
             wrapper.counterAxisSizingMode = 'AUTO';
-            wrapper.itemSpacing = 6;
+            wrapper.itemSpacing = 8;
+            wrapper.fills = [];
 
-            // Label
-            const label = figma.createText();
-            label.fontName = { family: "Poppins", style: "Medium" };
-            label.fontSize = 12;
-            label.characters = "Label";
-            label.fills = [{ type: 'SOLID', color: state.textColor }];
-            label.name = "Label";
-            label.visible = false;
-            wrapper.appendChild(label);
+            // Label Row (Hidden for Search field)
+            if (!type.isSearch) {
+                const labelRow = figma.createFrame();
+                labelRow.name = "LabelRow";
+                labelRow.layoutMode = 'HORIZONTAL';
+                labelRow.primaryAxisSizingMode = 'AUTO';
+                labelRow.counterAxisSizingMode = 'AUTO';
+                labelRow.itemSpacing = 4;
+                labelRow.fills = [];
+                labelRow.counterAxisAlignItems = 'CENTER';
+
+                const labelText = figma.createText();
+                labelText.name = "LabelText";
+                labelText.characters = "Label";
+                labelText.fontName = { family: "Poppins", style: "Medium" };
+                labelText.fontSize = 13;
+                labelText.fills = [{ type: 'SOLID', color: { r: 0.22, g: 0.25, b: 0.32 } }]; // #374151
+                labelRow.appendChild(labelText);
+
+                const requiredDot = figma.createText();
+                requiredDot.name = "RequiredDot";
+                requiredDot.fontName = { family: "Poppins", style: "Regular" };
+                requiredDot.characters = "*";
+                requiredDot.fills = [{ type: 'SOLID', color: warningRgb }];
+                labelRow.appendChild(requiredDot);
+
+                const labelInfoIcon = infoIconComp.createInstance();
+                labelInfoIcon.name = "LabelInfoIcon";
+                labelInfoIcon.resize(16, 16);
+                labelRow.appendChild(labelInfoIcon);
+
+                wrapper.appendChild(labelRow);
+            }
+
+            // Input Body
+            let body;
+            const bodyColor = (state === 'Disabled') ? { r: 0.95, g: 0.95, b: 0.95 } : { r: 1, g: 1, b: 1 };
+
+            let strokeColor = borderRgb;
+            if (state === 'Hover') strokeColor = { r: 0.4, g: 0.4, b: 0.4 }; // Darker border on hover
+            if (state === 'Click') strokeColor = primaryRgb;
+            if (state === 'Error') strokeColor = errorRgb;
+
+            const strokeWidth = 1; // All borders 1px as requested for Click and others
+
+            const contentColor = (state === 'Hover' || state === 'Click') ? textRgb : mutedRgb; // Darker text/icons on hover/click
 
             if (type.isOTP) {
-                // OTP input
-                const otpContainer = figma.createFrame();
-                otpContainer.name = "InputField";
-                otpContainer.fills = [];
-                otpContainer.layoutMode = 'HORIZONTAL';
-                otpContainer.primaryAxisAlignItems = 'CENTER';
-                otpContainer.counterAxisAlignItems = 'CENTER';
-                otpContainer.primaryAxisSizingMode = 'AUTO';
-                otpContainer.counterAxisSizingMode = 'AUTO';
-                otpContainer.itemSpacing = 10;
-
-                const boxSize = 48;
+                body = figma.createFrame();
+                body.name = "OTPContainer";
+                body.layoutMode = 'HORIZONTAL';
+                body.primaryAxisSizingMode = 'AUTO';
+                body.counterAxisSizingMode = 'AUTO';
+                body.itemSpacing = 12;
+                body.fills = [];
                 for (let i = 0; i < 6; i++) {
-                    const digitBox = figma.createFrame();
-                    digitBox.name = `Digit${i + 1}`;
-                    digitBox.resize(boxSize, boxSize);
-                    if (i >= 4) digitBox.visible = false;
-                    digitBox.fills = [{ type: 'SOLID', color: state.bgColor }];
-                    digitBox.cornerRadius = 12;
-                    digitBox.strokes = [{ type: 'SOLID', color: state.borderColor }];
-                    digitBox.strokeWeight = state.borderWidth;
-                    digitBox.layoutMode = 'HORIZONTAL';
-                    digitBox.primaryAxisAlignItems = 'CENTER';
-                    digitBox.counterAxisAlignItems = 'CENTER';
-                    digitBox.primaryAxisSizingMode = 'FIXED';
-
-                    const digitText = figma.createText();
-                    digitText.fontName = { family: "Poppins", style: "Medium" };
-                    digitText.fontSize = 20;
-                    digitText.characters = type.placeholder;
-                    digitText.fills = [{ type: 'SOLID', color: state.textColor, opacity: state.placeholderOpacity }];
-                    digitText.textAlignHorizontal = 'CENTER';
-                    digitText.textAlignVertical = 'CENTER';
-
-                    digitBox.appendChild(digitText);
-                    otpContainer.appendChild(digitBox);
+                    const box = figma.createFrame();
+                    box.name = `Digit${i + 1}`;
+                    box.resize(48, 48);
+                    box.primaryAxisSizingMode = 'FIXED';
+                    box.counterAxisSizingMode = 'FIXED';
+                    box.cornerRadius = radius;
+                    box.fills = [{ type: 'SOLID', color: bodyColor }];
+                    box.strokes = [{ type: 'SOLID', color: strokeColor }];
+                    box.strokeWeight = strokeWidth;
+                    box.layoutMode = 'HORIZONTAL';
+                    box.primaryAxisAlignItems = 'CENTER';
+                    box.counterAxisAlignItems = 'CENTER';
+                    const dText = figma.createText();
+                    dText.fontName = { family: "Poppins", style: "Medium" };
+                    dText.characters = "0";
+                    dText.fontSize = 18;
+                    dText.fills = [{ type: 'SOLID', color: contentColor }];
+                    box.appendChild(dText);
+                    body.appendChild(box);
                 }
-                wrapper.appendChild(otpContainer);
             } else {
-                // Regular input
-                const input = figma.createFrame();
-                input.name = "InputField";
-                input.fills = [{ type: 'SOLID', color: state.bgColor }];
-                input.cornerRadius = radius;
-                input.strokes = [{ type: 'SOLID', color: state.borderColor }];
-                input.strokeWeight = state.borderWidth;
-                input.layoutMode = 'HORIZONTAL';
-                input.primaryAxisAlignItems = type.isTextarea ? 'MIN' : 'CENTER';
-                input.counterAxisAlignItems = type.isTextarea ? 'MIN' : 'CENTER';
-                input.primaryAxisSizingMode = 'FIXED';
-                input.counterAxisSizingMode = 'FIXED';
-                input.paddingLeft = 12;
-                input.paddingRight = 12;
-                input.paddingTop = 10;
-                input.paddingBottom = 10;
-                input.itemSpacing = 8;
-                input.resize(324, type.height);
+                body = figma.createFrame();
+                body.name = "InputBody";
+                body.layoutMode = 'HORIZONTAL';
+                body.counterAxisAlignItems = 'CENTER';
+                body.paddingLeft = 14;
+                body.paddingRight = 14;
+                body.paddingTop = type.isRichText ? 12 : 10;
+                body.paddingBottom = type.isRichText ? 12 : 10;
+                body.itemSpacing = 10;
+                body.cornerRadius = radius;
+                body.fills = [{ type: 'SOLID', color: bodyColor }];
+                body.strokes = [{ type: 'SOLID', color: strokeColor }];
+                body.strokeWeight = strokeWidth;
 
-                if (type.showIcons) {
-                    const leftIcon = searchIconComponent.createInstance();
-                    leftIcon.name = "LeftIcon";
-                    leftIcon.resize(16, 16);
-                    leftIcon.visible = false;
-                    input.appendChild(leftIcon);
+                // Set Width to 324px (FIXED) and Height logic
+                if (type.isRichText) {
+                    body.resize(324, 114); // Fixed height 114px for rich text
+                    body.primaryAxisSizingMode = 'FIXED';
+                    body.counterAxisSizingMode = 'FIXED';
+                    body.counterAxisAlignItems = 'MIN'; // Top align content
+                } else {
+                    body.resize(324, body.height);
+                    body.primaryAxisSizingMode = 'FIXED';
+                    body.counterAxisSizingMode = 'AUTO'; // Hug content for others
                 }
 
-                const text = figma.createText();
-                text.fontName = { family: "Poppins", style: "Regular" };
-                text.fontSize = 14;
-                text.characters = type.placeholder;
-                text.textAlignHorizontal = 'LEFT';
-                text.textAlignVertical = 'TOP';
-                text.fills = [{ type: 'SOLID', color: state.textColor, opacity: state.placeholderOpacity }];
-                text.layoutGrow = 1;
-                input.appendChild(text);
-
-                if (type.showIcons) {
-                    const rightIcon = closeIconComponent.createInstance();
-                    rightIcon.name = "RightIcon";
-                    rightIcon.resize(16, 16);
-                    rightIcon.visible = false;
-                    input.appendChild(rightIcon);
+                if (type.isPhone) {
+                    const country = figma.createFrame();
+                    country.name = "CountrySelect";
+                    country.layoutMode = 'HORIZONTAL';
+                    country.itemSpacing = 4;
+                    country.primaryAxisSizingMode = 'AUTO';
+                    country.counterAxisSizingMode = 'AUTO'; // Hug content height
+                    country.counterAxisAlignItems = 'CENTER';
+                    country.fills = [];
+                    const cText = figma.createText();
+                    cText.fontName = { family: "Poppins", style: "Regular" };
+                    cText.characters = "+91";
+                    cText.fontSize = 14;
+                    cText.fills = [{ type: 'SOLID', color: (state === 'Hover' || state === 'Click') ? textRgb : { r: 0.2, g: 0.2, b: 0.2 } }];
+                    country.appendChild(cText);
+                    const chev = chevronIconComp.createInstance();
+                    chev.resize(14, 14);
+                    applyColorToNode(chev, contentColor);
+                    country.appendChild(chev);
+                    body.appendChild(country);
+                    const divider = figma.createFrame();
+                    divider.resize(1, 20);
+                    divider.fills = [{ type: 'SOLID', color: borderRgb }];
+                    body.appendChild(divider);
                 }
 
-                wrapper.appendChild(input);
-            }
+                const leftInstance = (type.isSearch ? searchIconComp : leftIconComp).createInstance();
+                leftInstance.name = "LeftIcon";
+                applyColorToNode(leftInstance, contentColor);
+                body.appendChild(leftInstance);
 
-            if (state.hasErrorMsg) {
-                const errorMsg = figma.createText();
-                errorMsg.fontName = { family: "Poppins", style: "Regular" };
-                errorMsg.fontSize = 11;
-                errorMsg.characters = "This field has an error";
-                errorMsg.fills = [{ type: 'SOLID', color: errorRgb }];
-                errorMsg.name = "ErrorMessage";
-                wrapper.appendChild(errorMsg);
-            }
+                const mainText = figma.createText();
+                mainText.name = "PlaceholderText";
+                mainText.fontName = { family: "Poppins", style: "Regular" };
+                mainText.characters = type.isPhone ? "1234567890" : placeholder;
+                mainText.layoutGrow = 1;
+                mainText.fontSize = 14;
+                mainText.fills = [{ type: 'SOLID', color: (state === 'Error') ? errorRgb : contentColor }];
+                if (type.isRichText) mainText.textAlignVertical = 'TOP';
+                body.appendChild(mainText);
 
-            figma.currentPage.appendChild(wrapper);
+                const rightInstance = (type.isSearch ? closeIconComp : rightIconComp).createInstance();
+                rightInstance.name = "RightIcon";
+                applyColorToNode(rightInstance, contentColor);
+                body.appendChild(rightInstance);
+            }
+            wrapper.appendChild(body);
+
+            // Hint Row
+            const hintRow = figma.createFrame();
+            hintRow.name = "HintRow";
+            hintRow.layoutMode = 'HORIZONTAL';
+            hintRow.primaryAxisSizingMode = 'AUTO';
+            hintRow.counterAxisSizingMode = 'AUTO';
+            hintRow.itemSpacing = 6;
+            hintRow.counterAxisAlignItems = 'CENTER';
+            hintRow.fills = [];
+
+            const hintIcon = infoIconComp.createInstance();
+            hintIcon.name = "HintIcon";
+            hintIcon.resize(16, 16);
+            hintRow.appendChild(hintIcon);
+
+            const hintText = figma.createText();
+            hintText.name = "HintText";
+            hintText.fontName = { family: "Poppins", style: "Regular" };
+            hintText.characters = "Hint text to help users";
+            hintText.fontSize = 12;
+            hintText.fills = [{ type: 'SOLID', color: (state === 'Error') ? errorRgb : mutedRgb }];
+            hintRow.appendChild(hintText);
+            wrapper.appendChild(hintRow);
+
+            wrapper.x = xOffset;
+            wrapper.y = yOffset;
             components.push(wrapper);
-            yOffset += wrapper.height + 24;
+
+            // Row spacing: component height + 34px
+            currentY += wrapper.height + 34;
         }
-        yOffset += 24;
+
+        // Column spacing: component width + 84px
+        // Get width of last created wrapper (or max width in column)
+        const lastWrapper = components[components.length - 1];
+        currentX += (type.isOTP ? 348 : 324) + 84;
     }
 
-    // Create component set
     const componentSet = figma.combineAsVariants(components, figma.currentPage);
     componentSet.name = "Input";
-    componentSet.layoutMode = 'NONE';
-    componentSet.fills = [];
 
-    // Container frame
+    // Properties (Type and State are automatically created by combineAsVariants)
+    const labelVisibleProp = componentSet.addComponentProperty("Label", "BOOLEAN", true);
+    const labelTextProp = componentSet.addComponentProperty("Label Text", "TEXT", "label");
+    const requiredProp = componentSet.addComponentProperty("Required filed", "BOOLEAN", false);
+    const labelInfoProp = componentSet.addComponentProperty("Label - Info", "BOOLEAN", false);
+    const labelInfoIconProp = componentSet.addComponentProperty("Label Info Icon", "INSTANCE_SWAP", infoIconComp.id);
+    const placeholderProp = componentSet.addComponentProperty("Placeholder", "TEXT", placeholder);
+    const showLeftIconProp = componentSet.addComponentProperty("Show Left Icon", "BOOLEAN", false);
+    const leftIconProp = componentSet.addComponentProperty("Left Icon", "INSTANCE_SWAP", (types.find(t => t.isSearch) ? searchIconComp : leftIconComp).id);
+    const showRightIconProp = componentSet.addComponentProperty("Show Right Icon", "BOOLEAN", false);
+    const rightIconProp = componentSet.addComponentProperty("Right Icon", "INSTANCE_SWAP", rightIconComp.id);
+    const hintVisibleProp = componentSet.addComponentProperty("Hint", "BOOLEAN", false);
+    const hintIconProp = componentSet.addComponentProperty("Hint Icon", "INSTANCE_SWAP", infoIconComp.id);
+    const hintTextProp = componentSet.addComponentProperty("Hint Text", "TEXT", "Hint text to help users");
+    const sixDigitProp = componentSet.addComponentProperty("6 Digit", "BOOLEAN", false);
+
+    componentSet.children.forEach(variant => {
+        // Extract properties from variant name
+        const variantProps = variant.name.split(', ').reduce((acc, p) => {
+            const [k, v] = p.split('=');
+            acc[k] = v;
+            return acc;
+        }, {});
+
+        const isSearchField = variantProps['Type'] === 'Search field';
+        const isNumberField = variantProps['Type'] === 'Phone number';
+        const isRichTextBox = variantProps['Type'] === 'Rich Text Box';
+
+        const lr = variant.findOne(n => n.name === "LabelRow");
+        const lt = variant.findOne(n => n.name === "LabelText");
+        const rd = variant.findOne(n => n.name === "RequiredDot");
+        const li = variant.findOne(n => n.name === "LabelInfoIcon");
+        const pt = variant.findOne(n => n.name === "PlaceholderText");
+        const lic = variant.findOne(n => n.name === "LeftIcon");
+        const ric = variant.findOne(n => n.name === "RightIcon");
+        const hr = variant.findOne(n => n.name === "HintRow");
+        const hi = variant.findOne(n => n.name === "HintIcon");
+        const ht = variant.findOne(n => n.name === "HintText");
+        const d5 = variant.findOne(n => n.name === "Digit5");
+        const d6 = variant.findOne(n => n.name === "Digit6");
+
+        if (lr) lr.componentPropertyReferences = { visible: labelVisibleProp };
+        if (lt) lt.componentPropertyReferences = { characters: labelTextProp };
+        if (rd) rd.componentPropertyReferences = { visible: requiredProp };
+        if (li) li.componentPropertyReferences = { visible: labelInfoProp, mainComponent: labelInfoIconProp };
+        if (pt) pt.componentPropertyReferences = { characters: placeholderProp };
+
+        if (lic) {
+            if (isSearchField) {
+                lic.visible = true; // Always show search icon for search field
+                lic.componentPropertyReferences = { mainComponent: leftIconProp };
+            } else if (isNumberField || isRichTextBox) {
+                // Remove icon properties for Phone and Rich Text as requested
+                lic.visible = false;
+            } else {
+                lic.componentPropertyReferences = {
+                    visible: showLeftIconProp,
+                    mainComponent: leftIconProp
+                };
+            }
+        }
+
+        if (ric) {
+            if (isNumberField || isRichTextBox) {
+                // Remove icon properties for Phone and Rich Text as requested
+                ric.visible = false;
+            } else {
+                ric.componentPropertyReferences = { visible: showRightIconProp, mainComponent: rightIconProp };
+            }
+        }
+        if (hr) hr.componentPropertyReferences = { visible: hintVisibleProp };
+        if (hi) hi.componentPropertyReferences = { mainComponent: hintIconProp };
+        if (ht) ht.componentPropertyReferences = { characters: hintTextProp };
+
+        if (d5 && d6) {
+            d5.componentPropertyReferences = { visible: sixDigitProp };
+            d6.componentPropertyReferences = { visible: sixDigitProp };
+        }
+    });
+
+    // Create Premium Documentation
     const containerFrame = figma.createFrame();
-    containerFrame.name = "🎨 Input Component System";
-    containerFrame.resize(componentSet.width + 128, componentSet.height + 200);
-    containerFrame.fills = [{ type: 'SOLID', color: { r: 0.97, g: 0.97, b: 0.98 } }];
-    containerFrame.cornerRadius = 12;
+    containerFrame.name = "Input Component System";
+    containerFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
     containerFrame.layoutMode = 'VERTICAL';
     containerFrame.primaryAxisSizingMode = 'AUTO';
     containerFrame.counterAxisSizingMode = 'AUTO';
-    containerFrame.itemSpacing = 34;
-    containerFrame.paddingLeft = 48;
-    containerFrame.paddingRight = 48;
-    containerFrame.paddingTop = 40;
-    containerFrame.paddingBottom = 40;
 
-    // Title
-    const titleFrame = figma.createFrame();
-    titleFrame.name = "Title";
-    titleFrame.layoutMode = 'VERTICAL';
-    titleFrame.primaryAxisSizingMode = 'AUTO';
-    titleFrame.counterAxisSizingMode = 'AUTO';
-    titleFrame.itemSpacing = 8;
-    titleFrame.fills = [];
+    // 1. PREMIUM HEADER SECTION
+    const header = figma.createFrame();
+    header.name = "Header";
+    header.layoutMode = 'VERTICAL';
+    header.layoutAlign = 'STRETCH';
+    header.primaryAxisSizingMode = 'AUTO';
+    header.paddingLeft = 80; header.paddingRight = 80; header.paddingTop = 80; header.paddingBottom = 100;
+    header.itemSpacing = 40;
+    header.counterAxisAlignItems = 'CENTER'; // Left align content
+    header.fills = [{
+        type: 'GRADIENT_LINEAR',
+        gradientStops: [
+            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
+            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
+        ],
+        gradientTransform: [[1, 0, 0], [0, 1, 0]]
+    }];
 
-    const titleText = figma.createText();
-    titleText.fontName = { family: "Poppins", style: "Bold" };
-    titleText.fontSize = 28;
-    titleText.characters = "Input Component";
-    titleText.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
-    titleFrame.appendChild(titleText);
+    // Logo & Title Container
+    const headerMain = figma.createFrame();
+    headerMain.layoutMode = 'VERTICAL';
+    headerMain.primaryAxisSizingMode = 'AUTO';
+    headerMain.counterAxisSizingMode = 'AUTO';
+    headerMain.counterAxisAlignItems = 'CENTER';
+    headerMain.itemSpacing = 24;
+    headerMain.fills = [];
+    header.appendChild(headerMain);
 
-    const subtitleText = figma.createText();
-    subtitleText.fontName = { family: "Poppins", style: "Regular" };
-    subtitleText.fontSize = 14;
-    subtitleText.characters = "3 Types • 5 States • Label & Icons • OTP Support";
-    subtitleText.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
-    titleFrame.appendChild(subtitleText);
+    const title = figma.createText();
+    title.fontName = { family: "Poppins", style: "Bold" };
+    title.characters = "Input Component System";
+    title.fontSize = 56;
+    title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    headerMain.appendChild(title);
+
+    const desc = figma.createText();
+    desc.fontName = { family: "Poppins", style: "Regular" };
+    desc.characters = "A comprehensive collection of input fields, including Search, OTP, Phone Number, and Rich Text with multiple states.";
+    desc.fontSize = 18;
+    desc.opacity = 0.6;
+    desc.textAlignHorizontal = 'CENTER';
+    desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    desc.resize(800, desc.height);
+    headerMain.appendChild(desc);
+
+    // STATS ROW (Glassmorphism)
+    const statsRow = figma.createFrame();
+    statsRow.layoutMode = 'HORIZONTAL';
+    statsRow.primaryAxisSizingMode = 'AUTO';
+    statsRow.counterAxisSizingMode = 'AUTO';
+    statsRow.itemSpacing = 16;
+    statsRow.fills = [];
+
+    function createStatBadge(label, value) {
+        const badge = figma.createFrame();
+        badge.layoutMode = 'HORIZONTAL';
+        badge.primaryAxisSizingMode = 'AUTO';
+        badge.counterAxisSizingMode = 'AUTO';
+        badge.paddingLeft = 20; badge.paddingRight = 20; badge.paddingTop = 10; badge.paddingBottom = 10;
+        badge.cornerRadius = 100;
+        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
+        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
+        badge.strokeWeight = 1;
+        badge.itemSpacing = 10;
+        badge.counterAxisAlignItems = 'CENTER';
+        badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
+
+        const tLabel = figma.createText();
+        tLabel.fontName = { family: "Poppins", style: "Medium" };
+        tLabel.fontSize = 13;
+        tLabel.characters = label;
+        tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
+        badge.appendChild(tLabel);
+
+        const tValue = figma.createText();
+        tValue.fontName = { family: "Poppins", style: "Bold" };
+        tValue.fontSize = 13;
+        tValue.characters = value;
+        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+        badge.appendChild(tValue);
+
+        return badge;
+    }
+
+    statsRow.appendChild(createStatBadge("Variants", String(components.length)));
+    statsRow.appendChild(createStatBadge("Types", String(types.length)));
+    statsRow.appendChild(createStatBadge("States", String(states.length)));
+    const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    statsRow.appendChild(createStatBadge("Last Updated", dateText));
+
+    header.appendChild(statsRow);
+
+    containerFrame.appendChild(header);
+
+    // 2. ICONS REPOSITORY SECTION
+    const iconSectionWrapper = figma.createFrame();
+    iconSectionWrapper.name = "Icon Library Section";
+    iconSectionWrapper.layoutMode = 'VERTICAL';
+    iconSectionWrapper.layoutAlign = 'STRETCH';
+    iconSectionWrapper.paddingLeft = 80; iconSectionWrapper.paddingRight = 80; iconSectionWrapper.paddingTop = 80; iconSectionWrapper.paddingBottom = 40;
+    iconSectionWrapper.itemSpacing = 24;
+    iconSectionWrapper.fills = [];
+
+    const iconTitle = figma.createText();
+    iconTitle.fontName = { family: "Poppins", style: "Bold" };
+    iconTitle.characters = "System Icons";
+    iconTitle.fontSize = 24;
+    iconTitle.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
+    iconSectionWrapper.appendChild(iconTitle);
+
+    iconSectionWrapper.appendChild(iconSection);
+    containerFrame.appendChild(iconSectionWrapper);
+
+    // 3. MAIN COMPONENT SET SECTION
+    const content = figma.createFrame();
+    content.name = "Component Variants";
+    content.layoutMode = 'VERTICAL';
+    content.primaryAxisSizingMode = 'AUTO';
+    content.counterAxisSizingMode = 'AUTO';
+    content.paddingLeft = 80; content.paddingRight = 80; content.paddingTop = 80; content.paddingBottom = 80;
+    content.itemSpacing = 34;
+    content.fills = [];
+
+    const variantTitle = figma.createText();
+    variantTitle.fontName = { family: "Poppins", style: "Bold" };
+    variantTitle.characters = "Variants & States";
+    variantTitle.fontSize = 24;
+    variantTitle.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
+    content.appendChild(variantTitle);
+
+    content.appendChild(componentSet);
+    containerFrame.appendChild(content);
 
     figma.currentPage.appendChild(containerFrame);
-    containerFrame.appendChild(titleFrame);
-    containerFrame.appendChild(componentSet);
-
-    // Icons frame
-    const iconsFrame = figma.createFrame();
-    iconsFrame.name = "🎯 Icons";
-    iconsFrame.layoutMode = 'HORIZONTAL';
-    iconsFrame.primaryAxisSizingMode = 'AUTO';
-    iconsFrame.counterAxisSizingMode = 'AUTO';
-    iconsFrame.itemSpacing = 16;
-    iconsFrame.paddingLeft = 24;
-    iconsFrame.paddingRight = 24;
-    iconsFrame.paddingTop = 24;
-    iconsFrame.paddingBottom = 24;
-    iconsFrame.fills = [{ type: 'SOLID', color: { r: 0.95, g: 0.95, b: 0.96 } }];
-    iconsFrame.cornerRadius = 12;
-
-    figma.currentPage.appendChild(iconsFrame);
-    iconsFrame.appendChild(searchIconComponent);
-    iconsFrame.appendChild(closeIconComponent);
-    iconsFrame.x = containerFrame.x + containerFrame.width + 40;
-    iconsFrame.y = containerFrame.y;
-
-    // Add boolean properties
-    const labelPropKey = componentSet.addComponentProperty("Label", "BOOLEAN", false);
-    const leftIconPropKey = componentSet.addComponentProperty("LeftIcon", "BOOLEAN", false);
-    const rightIconPropKey = componentSet.addComponentProperty("RightIcon", "BOOLEAN", false);
-    const sixDigitPropKey = componentSet.addComponentProperty("6-Digit", "BOOLEAN", false);
-
-    componentSet.children.forEach(component => {
-        const labelLayer = component.findOne(node => node.name === "Label");
-        const leftIconLayer = component.findOne(node => node.name === "LeftIcon");
-        const rightIconLayer = component.findOne(node => node.name === "RightIcon");
-        const digit5Layer = component.findOne(node => node.name === "Digit5");
-        const digit6Layer = component.findOne(node => node.name === "Digit6");
-
-        if (labelLayer) labelLayer.componentPropertyReferences = { visible: labelPropKey };
-        if (leftIconLayer) leftIconLayer.componentPropertyReferences = { visible: leftIconPropKey };
-        if (rightIconLayer) rightIconLayer.componentPropertyReferences = { visible: rightIconPropKey };
-        if (digit5Layer) digit5Layer.componentPropertyReferences = { visible: sixDigitPropKey };
-        if (digit6Layer) digit6Layer.componentPropertyReferences = { visible: sixDigitPropKey };
-    });
-
-    figma.viewport.scrollAndZoomIntoView([containerFrame, iconsFrame]);
-    figma.notify(`✅ Input Component System created!`);
+    figma.viewport.scrollAndZoomIntoView([containerFrame]);
+    figma.notify("✅ Complete Input System Created!");
 }
 
 // ============================================
@@ -777,32 +1125,116 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
 
         if (components.length > 0) {
             await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
+            await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
             await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
 
             const containerFrame = figma.createFrame();
-            containerFrame.name = `🎨 ${library.name} / ${category.name}`;
+            containerFrame.name = `${library.name} / ${category.name}`;
             containerFrame.layoutMode = 'VERTICAL';
             containerFrame.primaryAxisSizingMode = 'AUTO';
             containerFrame.counterAxisSizingMode = 'AUTO';
-            containerFrame.itemSpacing = 24;
-            containerFrame.paddingLeft = 40;
-            containerFrame.paddingRight = 40;
-            containerFrame.paddingTop = 40;
-            containerFrame.paddingBottom = 40;
-            containerFrame.fills = [{ type: 'SOLID', color: { r: 0.97, g: 0.97, b: 0.98 } }];
-            containerFrame.cornerRadius = 12;
+            containerFrame.paddingLeft = 0;
+            containerFrame.paddingRight = 0;
+            containerFrame.paddingTop = 0;
+            containerFrame.paddingBottom = 0;
+            containerFrame.itemSpacing = 0;
+            containerFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
+            containerFrame.cornerRadius = 0;
 
-            const heading = figma.createText();
-            heading.fontName = { family: "Poppins", style: "Bold" };
-            heading.fontSize = 24;
-            heading.characters = `${library.name} / ${category.name}`;
-            heading.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
+            // --- PREMIUM CENTERED HEADER ---
+            const headerFrame = figma.createFrame();
+            headerFrame.name = "Header";
+            headerFrame.layoutMode = 'VERTICAL';
+            headerFrame.layoutAlign = 'STRETCH';
+            headerFrame.primaryAxisSizingMode = 'AUTO';
+            headerFrame.paddingLeft = 80; headerFrame.paddingRight = 80; headerFrame.paddingTop = 46; headerFrame.paddingBottom = 46;
+            headerFrame.itemSpacing = 40;
+            headerFrame.counterAxisAlignItems = 'CENTER'; // Center content
+            headerFrame.fills = [{
+                type: 'GRADIENT_LINEAR',
+                gradientStops: [
+                    { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
+                    { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
+                ],
+                gradientTransform: [[1, 0, 0], [0, 1, 0]]
+            }];
 
-            const subheading = figma.createText();
-            subheading.fontName = { family: "Poppins", style: "Regular" };
-            subheading.fontSize = 14;
-            subheading.characters = `${successCount} icons • ${iconList.length} total`;
-            subheading.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
+            // Logo & Title Group
+            const headerMain = figma.createFrame();
+            headerMain.layoutMode = 'VERTICAL';
+            headerMain.primaryAxisSizingMode = 'AUTO';
+            headerMain.counterAxisSizingMode = 'AUTO';
+            headerMain.counterAxisAlignItems = 'CENTER';
+            headerMain.itemSpacing = 24;
+            headerMain.fills = [];
+            headerFrame.appendChild(headerMain);
+
+            const title = figma.createText();
+            title.fontName = { family: "Poppins", style: "Bold" };
+            title.characters = `${library.name} / ${category.name}`;
+            title.fontSize = 34;
+            title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
+            title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            headerMain.appendChild(title);
+
+            const desc = figma.createText();
+            desc.fontName = { family: "Poppins", style: "Regular" };
+            desc.characters = `A collection of ${successCount} high-fidelity icons for professional consistency.`;
+            desc.fontSize = 18;
+            desc.opacity = 0.6;
+            desc.textAlignHorizontal = 'CENTER';
+            desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            headerMain.appendChild(desc);
+
+            // STATS ROW (Glassmorphism)
+            const statsRow = figma.createFrame();
+            statsRow.layoutMode = 'HORIZONTAL';
+            statsRow.primaryAxisSizingMode = 'AUTO';
+            statsRow.counterAxisSizingMode = 'AUTO';
+            statsRow.itemSpacing = 16;
+            statsRow.fills = [];
+
+            // Helper function for glassmorphism badges
+            function createStatBadge(label, value) {
+                const badge = figma.createFrame();
+                badge.layoutMode = 'HORIZONTAL';
+                badge.primaryAxisSizingMode = 'AUTO';
+                badge.counterAxisSizingMode = 'AUTO';
+                badge.paddingLeft = 20;
+                badge.paddingRight = 20;
+                badge.paddingTop = 12;
+                badge.paddingBottom = 12;
+                badge.cornerRadius = 100;
+                badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
+                badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
+                badge.strokeWeight = 1;
+                badge.itemSpacing = 10;
+                badge.counterAxisAlignItems = 'CENTER';
+                badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
+
+                const tLabel = figma.createText();
+                tLabel.fontName = { family: "Poppins", style: "Medium" };
+                tLabel.fontSize = 13;
+                tLabel.characters = label;
+                tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
+                badge.appendChild(tLabel);
+
+                const tValue = figma.createText();
+                tValue.fontName = { family: "Poppins", style: "Bold" };
+                tValue.fontSize = 13;
+                tValue.characters = value;
+                tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                badge.appendChild(tValue);
+
+                return badge;
+            }
+
+            statsRow.appendChild(createStatBadge("Icons", successCount.toString()));
+            statsRow.appendChild(createStatBadge("Category", category.name));
+            const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+            statsRow.appendChild(createStatBadge("Last Updated", dateText));
+
+            headerFrame.appendChild(statsRow);
 
             const iconsFrame = figma.createFrame();
             iconsFrame.name = "Icons";
@@ -821,10 +1253,24 @@ async function generateIconLibrary(libraryId, categoryId, iconList) {
 
             components.forEach(component => iconsFrame.appendChild(component));
 
+            // CONTENT WRAPPER FRAME
+            const contentWrapper = figma.createFrame();
+            contentWrapper.name = "Content";
+            contentWrapper.layoutMode = 'VERTICAL';
+            contentWrapper.primaryAxisSizingMode = 'AUTO';
+            contentWrapper.counterAxisSizingMode = 'AUTO';
+            contentWrapper.layoutAlign = 'STRETCH';
+            contentWrapper.paddingLeft = 16;
+            contentWrapper.paddingRight = 16;
+            contentWrapper.paddingTop = 16;
+            contentWrapper.paddingBottom = 16;
+            contentWrapper.fills = [];
+
+            contentWrapper.appendChild(iconsFrame);
+
             page.appendChild(containerFrame);
-            containerFrame.appendChild(heading);
-            containerFrame.appendChild(subheading);
-            containerFrame.appendChild(iconsFrame);
+            containerFrame.appendChild(headerFrame);
+            containerFrame.appendChild(contentWrapper);
 
             figma.viewport.scrollAndZoomIntoView([containerFrame]);
         }
@@ -854,6 +1300,7 @@ async function generateAllLibraryIcons(libraryId, categories) {
         const BATCH_SIZE = 20;
 
         await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
+        await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
         await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
 
         for (const categoryData of categories) {
@@ -889,30 +1336,113 @@ async function generateAllLibraryIcons(libraryId, categories) {
 
             if (components.length > 0) {
                 const containerFrame = figma.createFrame();
-                containerFrame.name = `🎨 ${library.name} / ${categoryName}`;
+                containerFrame.name = `${library.name} / ${categoryName}`;
                 containerFrame.layoutMode = 'VERTICAL';
                 containerFrame.primaryAxisSizingMode = 'AUTO';
                 containerFrame.counterAxisSizingMode = 'AUTO';
-                containerFrame.itemSpacing = 24;
-                containerFrame.paddingLeft = 40;
-                containerFrame.paddingRight = 40;
-                containerFrame.paddingTop = 40;
-                containerFrame.paddingBottom = 40;
-                containerFrame.fills = [{ type: 'SOLID', color: { r: 0.97, g: 0.97, b: 0.98 } }];
-                containerFrame.cornerRadius = 12;
+                containerFrame.itemSpacing = 0;
+                containerFrame.paddingLeft = 0;
+                containerFrame.paddingRight = 0;
+                containerFrame.paddingTop = 0;
+                containerFrame.paddingBottom = 0;
+                containerFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
+                containerFrame.cornerRadius = 0;
                 containerFrame.y = yOffset;
 
-                const heading = figma.createText();
-                heading.fontName = { family: "Poppins", style: "Bold" };
-                heading.fontSize = 24;
-                heading.characters = `${library.name} / ${categoryName}`;
-                heading.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
+                // --- PREMIUM CENTERED HEADER ---
+                const headerFrame = figma.createFrame();
+                headerFrame.name = "Header";
+                headerFrame.layoutMode = 'VERTICAL';
+                headerFrame.layoutAlign = 'STRETCH';
+                headerFrame.primaryAxisSizingMode = 'AUTO';
+                headerFrame.paddingLeft = 80; headerFrame.paddingRight = 80; headerFrame.paddingTop = 80; headerFrame.paddingBottom = 100;
+                headerFrame.itemSpacing = 40;
+                headerFrame.counterAxisAlignItems = 'CENTER'; // Center content
+                headerFrame.fills = [{
+                    type: 'GRADIENT_LINEAR',
+                    gradientStops: [
+                        { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
+                        { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
+                    ],
+                    gradientTransform: [[1, 0, 0], [0, 1, 0]]
+                }];
 
-                const subheading = figma.createText();
-                subheading.fontName = { family: "Poppins", style: "Regular" };
-                subheading.fontSize = 14;
-                subheading.characters = `${successCount} icons • ${iconList.length} total`;
-                subheading.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
+                // Logo & Title Group
+                const headerMain = figma.createFrame();
+                headerMain.layoutMode = 'VERTICAL';
+                headerMain.primaryAxisSizingMode = 'AUTO';
+                headerMain.counterAxisSizingMode = 'AUTO';
+                headerMain.counterAxisAlignItems = 'CENTER';
+                headerMain.itemSpacing = 24;
+                headerMain.fills = [];
+                headerFrame.appendChild(headerMain);
+
+                const title = figma.createText();
+                title.fontName = { family: "Poppins", style: "Bold" };
+                title.characters = `${library.name} / ${categoryName}`;
+                title.fontSize = 34;
+                title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
+                title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                headerMain.appendChild(title);
+
+                const desc = figma.createText();
+                desc.fontName = { family: "Poppins", style: "Regular" };
+                desc.characters = "Collection of premium icon assets.";
+                desc.fontSize = 18;
+                desc.opacity = 0.6;
+                desc.textAlignHorizontal = 'CENTER';
+                desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                headerMain.appendChild(desc);
+
+                // STATS ROW (Glassmorphism)
+                const statsRow = figma.createFrame();
+                statsRow.layoutMode = 'HORIZONTAL';
+                statsRow.primaryAxisSizingMode = 'AUTO';
+                statsRow.counterAxisSizingMode = 'AUTO';
+                statsRow.itemSpacing = 16;
+                statsRow.fills = [];
+
+                // Helper function for glassmorphism badges
+                function createStatBadge(label, value) {
+                    const badge = figma.createFrame();
+                    badge.layoutMode = 'HORIZONTAL';
+                    badge.primaryAxisSizingMode = 'AUTO';
+                    badge.counterAxisSizingMode = 'AUTO';
+                    badge.paddingLeft = 20;
+                    badge.paddingRight = 20;
+                    badge.paddingTop = 12;
+                    badge.paddingBottom = 12;
+                    badge.cornerRadius = 100;
+                    badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
+                    badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
+                    badge.strokeWeight = 1;
+                    badge.itemSpacing = 10;
+                    badge.counterAxisAlignItems = 'CENTER';
+                    badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
+
+                    const tLabel = figma.createText();
+                    tLabel.fontName = { family: "Poppins", style: "Medium" };
+                    tLabel.fontSize = 13;
+                    tLabel.characters = label;
+                    tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
+                    badge.appendChild(tLabel);
+
+                    const tValue = figma.createText();
+                    tValue.fontName = { family: "Poppins", style: "Bold" };
+                    tValue.fontSize = 13;
+                    tValue.characters = String(value);
+                    tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                    badge.appendChild(tValue);
+
+                    return badge;
+                }
+
+                statsRow.appendChild(createStatBadge("Icons", successCount.toString()));
+                statsRow.appendChild(createStatBadge("Category", categoryName));
+                const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+                statsRow.appendChild(createStatBadge("Last Updated", dateText));
+
+                headerFrame.appendChild(statsRow);
 
                 const iconsFrame = figma.createFrame();
                 iconsFrame.name = "Icons";
@@ -931,10 +1461,24 @@ async function generateAllLibraryIcons(libraryId, categories) {
 
                 components.forEach(component => iconsFrame.appendChild(component));
 
+                // CONTENT WRAPPER FRAME
+                const contentWrapper = figma.createFrame();
+                contentWrapper.name = "Content";
+                contentWrapper.layoutMode = 'VERTICAL';
+                contentWrapper.primaryAxisSizingMode = 'AUTO';
+                contentWrapper.counterAxisSizingMode = 'AUTO';
+                contentWrapper.layoutAlign = 'STRETCH';
+                contentWrapper.paddingLeft = 48;
+                contentWrapper.paddingRight = 48;
+                contentWrapper.paddingTop = 48;
+                contentWrapper.paddingBottom = 48;
+                contentWrapper.fills = [];
+
+                contentWrapper.appendChild(iconsFrame);
+
                 page.appendChild(containerFrame);
-                containerFrame.appendChild(heading);
-                containerFrame.appendChild(subheading);
-                containerFrame.appendChild(iconsFrame);
+                containerFrame.appendChild(headerFrame);
+                containerFrame.appendChild(contentWrapper);
 
                 allContainerFrames.push(containerFrame);
                 yOffset += containerFrame.height + 100;
@@ -1102,7 +1646,15 @@ figma.ui.onmessage = async (msg) => {
                         for (let i = 0; i < keys.length; i++) {
                             const name = keys[i];
                             const value = Object.values(colorData)[i];
-                            const cleanName = name.replace(new RegExp(`^${cat.prefix}-`), '');
+                            let cleanName = name.replace(new RegExp(`^${cat.prefix}-`), '');
+
+                            // Rename status color variants: light->100, default->200, dark->300
+                            if (!cat.hasLightDark) {
+                                cleanName = cleanName.replace(/light$/, '100')
+                                    .replace(/default$/, '200')
+                                    .replace(/dark$/, '300');
+                            }
+
                             await createOrUpdateVariable(`${cat.prefix}/${cleanName}`, value, value, collection, lightModeId, darkModeId);
                             createdCount++;
                         }
@@ -1141,18 +1693,23 @@ figma.ui.onmessage = async (msg) => {
 
                     for (const [name, valueData] of Object.entries(rc.data)) {
                         const existingVars = await figma.variables.getLocalVariablesAsync('FLOAT');
-                        const existingVar = existingVars.find(v => v.name === name && v.variableCollectionId === coll.id);
 
                         const desktopVal = typeof valueData === 'object' ? valueData.desktop : valueData;
                         const tabletVal = typeof valueData === 'object' ? valueData.tablet : valueData;
                         const mobileVal = typeof valueData === 'object' ? valueData.mobile : valueData;
+
+                        // Create name with pixel value (e.g., "padding-8px" instead of "padding-2")
+                        const baseName = name.split('-')[0]; // Get "padding", "spacing", etc.
+                        const newName = `${baseName}-${desktopVal}px`;
+
+                        const existingVar = existingVars.find(v => v.name === newName && v.variableCollectionId === coll.id);
 
                         if (existingVar) {
                             existingVar.setValueForMode(desktopId, desktopVal);
                             existingVar.setValueForMode(tabletId, tabletVal);
                             existingVar.setValueForMode(mobileId, mobileVal);
                         } else {
-                            const variable = figma.variables.createVariable(name, coll, 'FLOAT');
+                            const variable = figma.variables.createVariable(newName, coll, 'FLOAT');
                             variable.setValueForMode(desktopId, desktopVal);
                             variable.setValueForMode(tabletId, tabletVal);
                             variable.setValueForMode(mobileId, mobileVal);
@@ -1302,8 +1859,11 @@ figma.ui.onmessage = async (msg) => {
 // ============================================
 
 async function createTokenDocumentation(colors, msg, createdCount, spacingCount, paddingCount, radiusCount, strokeCount, shadowCount, gridCount = 0) {
-    // Load Fonts - using Roboto which is widely available in Figma
+    // Load Fonts - Loading both to ensure internal functions don't crash
     await Promise.all([
+        figma.loadFontAsync({ family: "Poppins", style: "Bold" }),
+        figma.loadFontAsync({ family: "Poppins", style: "Medium" }),
+        figma.loadFontAsync({ family: "Poppins", style: "Regular" }),
         figma.loadFontAsync({ family: "Roboto", style: "Bold" }),
         figma.loadFontAsync({ family: "Roboto", style: "Medium" }),
         figma.loadFontAsync({ family: "Roboto", style: "Regular" })
@@ -1316,112 +1876,53 @@ async function createTokenDocumentation(colors, msg, createdCount, spacingCount,
     frame.layoutMode = 'VERTICAL';
     frame.primaryAxisSizingMode = 'AUTO';
     frame.counterAxisSizingMode = 'AUTO';
-    frame.paddingBottom = 0;
 
-    // --- HEADER WITH LOGO ---
+    // --- PREMIUM CENTERED HEADER ---
     const header = figma.createFrame();
     header.name = "Header";
     header.layoutMode = 'VERTICAL';
     header.layoutAlign = 'STRETCH';
     header.primaryAxisSizingMode = 'AUTO';
-    header.paddingLeft = 80;
-    header.paddingRight = 80;
-    header.paddingTop = 64;
-    header.paddingBottom = 80;
-    header.itemSpacing = 56;
-
-    // Premium Dark Gradient Background
+    header.paddingLeft = 80; header.paddingRight = 80; header.paddingTop = 80; header.paddingBottom = 100;
+    header.itemSpacing = 40;
+    header.counterAxisAlignItems = 'CENTER'; // Center everything
     header.fills = [{
         type: 'GRADIENT_LINEAR',
         gradientStops: [
-            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } }, // #0A0F26
-            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } } // Deep purple tone
+            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
+            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
         ],
         gradientTransform: [[1, 0, 0], [0, 1, 0]]
     }];
 
-    //     // 1. CENTERED LOGO SECTION
-    //     const logoSection = figma.createFrame();
-    //     logoSection.layoutMode = 'HORIZONTAL';
-    //     logoSection.counterAxisAlignItems = 'CENTER';
-    //     logoSection.primaryAxisAlignItems = 'CENTER';
-    //     logoSection.layoutAlign = 'STRETCH';
-    //     logoSection.itemSpacing = 16;
-    //     logoSection.fills = [];
-
-    //     // Slate.Design Logo SVG
-    //     const logoSvg = `<svg width="48" height="48" viewBox="0 0 146 146" fill="none" xmlns="http://www.w3.org/2000/svg">
-    // <path d="M72.7272 130C72.7272 133.515 69.871 136.397 66.374 136.046C56.0327 135.008 46.0681 131.449 37.3728 125.639C26.9078 118.646 18.7514 108.708 13.9349 97.0798C9.11845 85.4518 7.85825 72.6567 10.3137 60.3124C12.7691 47.9682 18.8299 36.6292 27.7296 27.7296C36.6292 18.8299 47.9682 12.7691 60.3124 10.3137C72.6567 7.85825 85.4518 9.11845 97.0798 13.9349C108.708 18.7514 118.646 26.9078 125.639 37.3728C131.449 46.0681 135.008 56.0327 136.046 66.374C136.397 69.871 133.515 72.7272 130 72.7272C126.486 72.7272 123.677 69.8672 123.239 66.38C122.257 58.5603 119.467 51.0449 115.057 44.4438C109.463 36.0717 101.512 29.5465 92.2093 25.6934C82.9068 21.8403 72.6708 20.8321 62.7954 22.7963C52.92 24.7608 43.8488 29.6093 36.7291 36.7291C29.6093 43.8488 24.7608 52.92 22.7963 62.7954C20.8321 72.6708 21.8403 82.9068 25.6934 92.2093C29.5465 101.512 36.0717 109.463 44.4438 115.057C51.0449 119.467 58.5603 122.257 66.38 123.239C69.8672 123.677 72.7272 126.486 72.7272 130Z" fill="#0A5DF5"/>
-    // <path fill-rule="evenodd" clip-rule="evenodd" d="M112.065 78.8519C110.221 70.649 98.6814 70.7003 96.9078 78.9191L96.8403 79.2326L96.7086 79.841C94.7743 88.6256 87.8086 95.3666 79.0586 96.9105C70.6167 98.4002 70.6169 110.691 79.0586 112.18C87.8392 113.729 94.8229 120.512 96.7286 129.342L96.9078 130.172C98.6814 138.391 110.221 138.442 112.065 130.239L112.283 129.272C114.261 120.474 121.255 113.741 130.021 112.194C138.478 110.702 138.478 98.3891 130.021 96.8969C121.302 95.3584 114.335 88.6881 112.315 79.9586C112.258 79.7146 112.206 79.4814 112.149 79.2275L112.065 78.8519Z" fill="url(#paint0_linear_574_2423)"/>
-    // <defs>
-    // <linearGradient id="paint0_linear_574_2423" x1="104.545" y1="65.4187" x2="104.545" y2="143.672" gradientUnits="userSpaceOnUse">
-    // <stop stop-color="#D54BF6"/>
-    // <stop offset="1" stop-color="#4B10D1"/>
-    // </linearGradient>
-    // </defs>
-    // </svg>`;
-
-    //     const logoIcon = figma.createNodeFromSvg(logoSvg);
-    //     logoIcon.name = "Slate.Design Logo";
-    //     logoIcon.resize(56, 56);
-    //     logoSection.appendChild(logoIcon);
-
-    //     // "Created by" text
-    //     const createdByText = figma.createText();
-    //     createdByText.fontName = { family: "Roboto", style: "Regular" };
-    //     createdByText.fontSize = 14;
-    //     createdByText.characters = "Created by";
-    //     createdByText.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.75, b: 0.85 }, opacity: 0.7 }];
-    //     logoSection.appendChild(createdByText);
-
-    //     // CODETHEOREM Logo SVG
-    //     const codetheoremSvg = `<svg width="40" height="40" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-    // <rect width="200" height="200" rx="40" fill="url(#paint0_linear_codetheorem)"/>
-    // <path d="M60 100L80 80M60 100L80 120M140 100L120 80M140 100L120 120" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-    // <circle cx="100" cy="100" r="8" fill="white"/>
-    // <defs>
-    // <linearGradient id="paint0_linear_codetheorem" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
-    // <stop stop-color="#6366F1"/>
-    // <stop offset="1" stop-color="#8B5CF6"/>
-    // </linearGradient>
-    // </defs>
-    // </svg>`;
-
-    //     const codetheoremIcon = figma.createNodeFromSvg(codetheoremSvg);
-    //     codetheoremIcon.name = "CODETHEOREM Icon";
-    //     codetheoremIcon.resize(32, 32);
-    //     logoSection.appendChild(codetheoremIcon);
-
-    //     header.appendChild(logoSection);
-
-    // 2. HERO TITLE SECTION
-    const titleGroup = figma.createFrame();
-    titleGroup.layoutMode = 'VERTICAL';
-    titleGroup.primaryAxisSizingMode = 'AUTO';
-    titleGroup.counterAxisSizingMode = 'AUTO';
-    titleGroup.itemSpacing = 24;
-    titleGroup.fills = [];
+    // Logo & Title Group
+    const headerMain = figma.createFrame();
+    headerMain.layoutMode = 'VERTICAL';
+    headerMain.primaryAxisSizingMode = 'AUTO';
+    headerMain.counterAxisSizingMode = 'AUTO';
+    headerMain.counterAxisAlignItems = 'CENTER';
+    headerMain.itemSpacing = 24;
+    headerMain.fills = [];
+    header.appendChild(headerMain);
 
     const title = figma.createText();
-    title.fontName = { family: "Roboto", style: "Bold" };
-    title.fontSize = 64;
+    title.fontName = { family: "Poppins", style: "Bold" };
+    title.characters = "Slate Design Tokens";
+    title.fontSize = 56;
     title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
-    title.characters = "Color System";
     title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    titleGroup.appendChild(title);
+    headerMain.appendChild(title);
 
-    const desc = figma.createText();
-    desc.fontName = { family: "Roboto", style: "Regular" };
-    desc.fontSize = 18;
-    desc.lineHeight = { value: 160, unit: 'PERCENT' };
-    desc.characters = "A comprehensive collection of design tokens for building consistent, accessible interfaces.";
-    desc.resize(600, desc.height);
-    desc.fills = [{ type: 'SOLID', color: { r: 0.75, g: 0.8, b: 0.9 } }]; // Light cool gray
-    titleGroup.appendChild(desc);
+    const sysDesc = figma.createText();
+    sysDesc.fontName = { family: "Poppins", style: "Regular" };
+    sysDesc.characters = "The atomic foundation of Slate. A comprehensive collection of colors, spacing, and utility tokens to ensure pixel-perfect consistency.";
+    sysDesc.fontSize = 18;
+    sysDesc.opacity = 0.6;
+    sysDesc.textAlignHorizontal = 'CENTER';
+    sysDesc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    headerMain.appendChild(sysDesc);
 
-    header.appendChild(titleGroup);
-
-    // 3. STATS ROW (Glassmorphism)
+    // STATS ROW (Glassmorphism)
     const statsRow = figma.createFrame();
     statsRow.layoutMode = 'HORIZONTAL';
     statsRow.primaryAxisSizingMode = 'AUTO';
@@ -1429,55 +1930,40 @@ async function createTokenDocumentation(colors, msg, createdCount, spacingCount,
     statsRow.itemSpacing = 16;
     statsRow.fills = [];
 
-    const tokenCount = Object.keys(colors).length + Object.keys(msg.spacing || {}).length + Object.keys(msg.radius || {}).length;
+    function createStatBadge(label, value) {
+        const sBadge = figma.createFrame();
+        sBadge.layoutMode = 'HORIZONTAL';
+        sBadge.primaryAxisSizingMode = 'AUTO';
+        sBadge.counterAxisSizingMode = 'AUTO';
+        sBadge.paddingLeft = 20; sBadge.paddingRight = 20; sBadge.paddingTop = 12; sBadge.paddingBottom = 12;
+        sBadge.cornerRadius = 100;
+        sBadge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
+        sBadge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
+        sBadge.itemSpacing = 10;
+        sBadge.counterAxisAlignItems = 'CENTER';
+        sBadge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
 
-    // Inline function for dark stats to strictly follow design
-    function createDarkStat(label, value) {
-        const badge = figma.createFrame();
-        badge.layoutMode = 'HORIZONTAL';
-        badge.primaryAxisSizingMode = 'AUTO';
-        badge.counterAxisSizingMode = 'AUTO';
-        badge.paddingLeft = 20;
-        badge.paddingRight = 20;
-        badge.paddingTop = 10;
-        badge.paddingBottom = 10;
-        badge.cornerRadius = 100;
+        const lText = figma.createText();
+        lText.fontName = { family: "Poppins", style: "Medium" };
+        lText.fontSize = 13;
+        lText.characters = label;
+        lText.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
+        sBadge.appendChild(lText);
 
-        // Glassmorphism Fill
-        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
-        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
-        badge.strokeWeight = 1;
-        badge.itemSpacing = 10;
-        badge.counterAxisAlignItems = 'CENTER';
+        const vText = figma.createText();
+        vText.fontName = { family: "Poppins", style: "Bold" };
+        vText.fontSize = 13;
+        vText.characters = value;
+        vText.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+        sBadge.appendChild(vText);
 
-        // Blur effect
-        badge.effects = [{
-            type: 'BACKGROUND_BLUR',
-            radius: 20,
-            visible: true
-        }];
-
-        const tLabel = figma.createText();
-        tLabel.fontName = { family: "Roboto", style: "Medium" };
-        tLabel.fontSize = 13;
-        tLabel.characters = label;
-        tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
-        badge.appendChild(tLabel);
-
-        const tValue = figma.createText();
-        tValue.fontName = { family: "Roboto", style: "Bold" };
-        tValue.fontSize = 13;
-        tValue.characters = value;
-        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        badge.appendChild(tValue);
-
-        statsRow.appendChild(badge);
+        return sBadge;
     }
 
-    createDarkStat("Total Tokens", String(tokenCount));
-    const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    createDarkStat("Last Updated", dateStr);
-
+    statsRow.appendChild(createStatBadge("Colors", String(createdCount)));
+    statsRow.appendChild(createStatBadge("Spacing", String(spacingCount)));
+    statsRow.appendChild(createStatBadge("Radius", String(radiusCount)));
+    statsRow.appendChild(createStatBadge("Date", new Date().toLocaleDateString()));
     header.appendChild(statsRow);
     frame.appendChild(header);
 
@@ -1490,7 +1976,7 @@ async function createTokenDocumentation(colors, msg, createdCount, spacingCount,
     content.itemSpacing = 48;
     content.paddingLeft = 80;
     content.paddingRight = 80;
-    content.paddingTop = 24;
+    content.paddingTop = 40; // Spacing after header
     content.paddingBottom = 80;
     content.fills = [];
     frame.appendChild(content);
@@ -1537,6 +2023,7 @@ async function createTokenDocumentation(colors, msg, createdCount, spacingCount,
     tokensHeader.layoutMode = 'VERTICAL';
     tokensHeader.layoutAlign = 'STRETCH';
     tokensHeader.primaryAxisSizingMode = 'AUTO';
+    tokensHeader.counterAxisAlignItems = 'CENTER';
     tokensHeader.paddingLeft = 80;
     tokensHeader.paddingRight = 80;
     tokensHeader.paddingTop = 64;
@@ -1557,7 +2044,7 @@ async function createTokenDocumentation(colors, msg, createdCount, spacingCount,
     const tokensTopBar = figma.createFrame();
     tokensTopBar.layoutMode = 'HORIZONTAL';
     tokensTopBar.counterAxisAlignItems = 'CENTER';
-    tokensTopBar.primaryAxisAlignItems = 'SPACE_BETWEEN';
+    tokensTopBar.primaryAxisAlignItems = 'CENTER'; // Center the top bar content if any
     tokensTopBar.layoutAlign = 'STRETCH';
     tokensTopBar.fills = [];
 
@@ -1679,23 +2166,25 @@ async function createTokenDocumentation(colors, msg, createdCount, spacingCount,
     tokensTitleGroup.layoutMode = 'VERTICAL';
     tokensTitleGroup.primaryAxisSizingMode = 'AUTO';
     tokensTitleGroup.counterAxisSizingMode = 'AUTO';
+    tokensTitleGroup.counterAxisAlignItems = 'CENTER';
     tokensTitleGroup.itemSpacing = 24;
     tokensTitleGroup.fills = [];
 
     const tokensTitle = figma.createText();
-    tokensTitle.fontName = { family: "Roboto", style: "Bold" };
+    tokensTitle.fontName = { family: "Poppins", style: "Bold" };
     tokensTitle.fontSize = 64;
     tokensTitle.letterSpacing = { value: -1.5, unit: 'PIXELS' };
     tokensTitle.characters = "Design Tokens";
     tokensTitle.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    tokensTitle.textAlignHorizontal = 'CENTER';
     tokensTitleGroup.appendChild(tokensTitle);
 
     const tokensDesc = figma.createText();
-    tokensDesc.fontName = { family: "Roboto", style: "Regular" };
+    tokensDesc.fontName = { family: "Poppins", style: "Regular" };
     tokensDesc.fontSize = 18;
     tokensDesc.lineHeight = { value: 160, unit: 'PERCENT' };
     tokensDesc.characters = "Spacing, padding, radius, stroke, and shadow values for consistent design.";
-    tokensDesc.resize(600, tokensDesc.height);
+    tokensDesc.textAlignHorizontal = 'CENTER';
     tokensDesc.fills = [{ type: 'SOLID', color: { r: 0.75, g: 0.8, b: 0.9 } }];
     tokensTitleGroup.appendChild(tokensDesc);
 
@@ -1706,6 +2195,7 @@ async function createTokenDocumentation(colors, msg, createdCount, spacingCount,
     tokensStatsRow.layoutMode = 'HORIZONTAL';
     tokensStatsRow.primaryAxisSizingMode = 'AUTO';
     tokensStatsRow.counterAxisSizingMode = 'AUTO';
+    tokensStatsRow.primaryAxisAlignItems = 'CENTER';
     tokensStatsRow.itemSpacing = 16;
     tokensStatsRow.fills = [];
 
@@ -1735,14 +2225,14 @@ async function createTokenDocumentation(colors, msg, createdCount, spacingCount,
         badge.counterAxisAlignItems = 'CENTER';
 
         const tLabel = figma.createText();
-        tLabel.fontName = { family: "Roboto", style: "Medium" };
+        tLabel.fontName = { family: "Poppins", style: "Medium" };
         tLabel.fontSize = 13;
         tLabel.characters = label;
         tLabel.fills = [{ type: 'SOLID', color: { r: 0.75, g: 0.8, b: 0.9 } }];
         badge.appendChild(tLabel);
 
         const tValue = figma.createText();
-        tValue.fontName = { family: "Roboto", style: "Bold" };
+        tValue.fontName = { family: "Poppins", style: "Bold" };
         tValue.fontSize = 13;
         tValue.characters = value;
         tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
@@ -1849,14 +2339,14 @@ function createDetailedColorRow(title, description, data, parent) {
     header.fills = [];
 
     const h3 = figma.createText();
-    h3.fontName = { family: "Roboto", style: "Bold" };
+    h3.fontName = { family: "Poppins", style: "Bold" };
     h3.fontSize = 20;
     h3.characters = title;
     h3.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
     header.appendChild(h3);
 
     const p = figma.createText();
-    p.fontName = { family: "Roboto", style: "Regular" };
+    p.fontName = { family: "Poppins", style: "Regular" };
     p.fontSize = 14;
     p.characters = description;
     p.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.47, b: 0.53 } }];
@@ -1953,14 +2443,14 @@ function createDetailedColorRow(title, description, data, parent) {
         leftInfo.fills = [];
 
         const tShade = figma.createText();
-        tShade.fontName = { family: "Roboto", style: "Medium" };
+        tShade.fontName = { family: "Poppins", style: "Medium" };
         tShade.fontSize = 14;
         tShade.characters = `${colorName}-${shade}`;
         tShade.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
         leftInfo.appendChild(tShade);
 
         const tHex = figma.createText();
-        tHex.fontName = { family: "Roboto", style: "Regular" };
+        tHex.fontName = { family: "Poppins", style: "Regular" };
         tHex.fontSize = 13;
         tHex.characters = hex.toUpperCase();
         tHex.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.57, b: 0.63 } }];
@@ -1982,7 +2472,7 @@ function createDetailedColorRow(title, description, data, parent) {
         const hslValues = rgbToHsl(rgbValues.r, rgbValues.g, rgbValues.b);
 
         const tRgb = figma.createText();
-        tRgb.fontName = { family: "Roboto", style: "Regular" };
+        tRgb.fontName = { family: "Poppins", style: "Regular" };
         tRgb.fontSize = 13;
         tRgb.characters = `RGB(${rgbValues.r}, ${rgbValues.g}, ${rgbValues.b})`;
         tRgb.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.57, b: 0.63 } }];
@@ -1990,7 +2480,7 @@ function createDetailedColorRow(title, description, data, parent) {
         rightInfo.appendChild(tRgb);
 
         const tHsl = figma.createText();
-        tHsl.fontName = { family: "Roboto", style: "Regular" };
+        tHsl.fontName = { family: "Poppins", style: "Regular" };
         tHsl.fontSize = 13;
         tHsl.characters = `HSL(${hslValues.h}, ${hslValues.s}%, ${hslValues.l}%)`;
         tHsl.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.57, b: 0.63 } }];
@@ -2024,14 +2514,14 @@ function createDetailedSystemTokenRow(title, description, data, type, parent) {
     header.fills = [];
 
     const h3 = figma.createText();
-    h3.fontName = { family: "Roboto", style: "Bold" };
+    h3.fontName = { family: "Poppins", style: "Bold" };
     h3.fontSize = 20;
     h3.characters = title;
     h3.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
     header.appendChild(h3);
 
     const p = figma.createText();
-    p.fontName = { family: "Roboto", style: "Regular" };
+    p.fontName = { family: "Poppins", style: "Regular" };
     p.fontSize = 14;
     p.characters = description;
     p.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.47, b: 0.53 } }];
@@ -2134,14 +2624,14 @@ function createDetailedSystemTokenRow(title, description, data, type, parent) {
         info.fills = [];
 
         const t1 = figma.createText();
-        t1.fontName = { family: "Roboto", style: "Medium" };
+        t1.fontName = { family: "Poppins", style: "Medium" };
         t1.fontSize = 14;
         t1.characters = key;
         t1.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.12, b: 0.16 } }];
         info.appendChild(t1);
 
         const t2 = figma.createText();
-        t2.fontName = { family: "Roboto", style: "Regular" };
+        t2.fontName = { family: "Poppins", style: "Regular" };
         t2.fontSize = 12;
         t2.characters = `${floatVal}px`;
         t2.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.52, b: 0.58 } }];
@@ -2172,14 +2662,14 @@ function createDetailedShadowRow(title, description, data, parent) {
     header.fills = [];
 
     const h3 = figma.createText();
-    h3.fontName = { family: "Roboto", style: "Bold" };
+    h3.fontName = { family: "Poppins", style: "Bold" };
     h3.fontSize = 20;
     h3.characters = title;
     h3.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
     header.appendChild(h3);
 
     const p = figma.createText();
-    p.fontName = { family: "Roboto", style: "Regular" };
+    p.fontName = { family: "Poppins", style: "Regular" };
     p.fontSize = 14;
     p.characters = description;
     p.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.47, b: 0.53 } }];
@@ -2258,14 +2748,14 @@ function createDetailedShadowRow(title, description, data, parent) {
         info.fills = [];
 
         const t1 = figma.createText();
-        t1.fontName = { family: "Roboto", style: "Medium" };
+        t1.fontName = { family: "Poppins", style: "Medium" };
         t1.fontSize = 14;
         t1.characters = key;
         t1.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
         info.appendChild(t1);
 
         const t2 = figma.createText();
-        t2.fontName = { family: "Roboto", style: "Regular" };
+        t2.fontName = { family: "Poppins", style: "Regular" };
         t2.fontSize = 11;
         t2.characters = val;
         t2.textAutoResize = 'HEIGHT';
@@ -2383,6 +2873,7 @@ async function createTypographySystem(typography) {
 
         const mobileSize = Math.round(style.size * 0.85);
 
+        // 1. TEXT SIZE VARIABLE
         const sizeVarName = `typography/${key}/size`;
         let sizeVar = existingFloatVars.find(v => v.name === sizeVarName && v.variableCollectionId === typographyCollection.id);
         if (!sizeVar) {
@@ -2391,16 +2882,53 @@ async function createTypographySystem(typography) {
         sizeVar.setValueForMode(desktopModeId, style.size);
         sizeVar.setValueForMode(mobileModeId, mobileSize);
 
+        // 2. TEXT LINE HEIGHT VARIABLE (Stored as decimal multiplier e.g. 1.5)
+        const lineHeightVarName = `typography/${key}/lineHeight`;
+        let lineHeightVar = existingFloatVars.find(v => v.name === lineHeightVarName && v.variableCollectionId === typographyCollection.id);
+        if (!lineHeightVar) {
+            lineHeightVar = figma.variables.createVariable(lineHeightVarName, typographyCollection, 'FLOAT');
+        }
+        const lhValue = style.lineHeight || 1.5;
+        lineHeightVar.setValueForMode(desktopModeId, lhValue);
+        lineHeightVar.setValueForMode(mobileModeId, lhValue);
+
+        // 3. LETTER SPACING VARIABLE
         const letterSpacingVarName = `typography/${key}/letterSpacing`;
         let letterSpacingVar = existingFloatVars.find(v => v.name === letterSpacingVarName && v.variableCollectionId === typographyCollection.id);
         if (!letterSpacingVar) {
             letterSpacingVar = figma.variables.createVariable(letterSpacingVarName, typographyCollection, 'FLOAT');
         }
-        const letterSpacing = style.letterSpacing || 0;
-        letterSpacingVar.setValueForMode(desktopModeId, letterSpacing);
-        letterSpacingVar.setValueForMode(mobileModeId, letterSpacing);
+        const letterSpacingValue = style.letterSpacing || 0;
+        letterSpacingVar.setValueForMode(desktopModeId, letterSpacingValue);
+        letterSpacingVar.setValueForMode(mobileModeId, letterSpacingValue);
 
-        typographyVariables[key] = { size: sizeVar, letterSpacing: letterSpacingVar, lineHeight: style.lineHeight || 1.5 };
+        typographyVariables[key] = { size: sizeVar, letterSpacing: letterSpacingVar, lineHeight: lineHeightVar };
+    }
+
+    // 4. FONT WEIGHTS VARIABLES
+    let weightCollection = collections.find(c => c.name === 'Typography/Font Weights');
+    if (!weightCollection) {
+        weightCollection = figma.variables.createVariableCollection('Typography/Font Weights');
+    }
+    const weightVars = {};
+    const weightList = [
+        { name: 'Regular', value: 400 },
+        { name: 'Medium', value: 500 },
+        { name: 'Semibold', value: 600 },
+        { name: 'Bold', value: 700 }
+    ];
+
+    const currentWeightVars = await figma.variables.getLocalVariablesAsync('FLOAT');
+    for (const w of weightList) {
+        const wVarName = `weight/${w.name.toLowerCase()}`;
+        let wVar = currentWeightVars.find(v => v.name === wVarName && v.variableCollectionId === weightCollection.id);
+        if (!wVar) {
+            wVar = figma.variables.createVariable(wVarName, weightCollection, 'FLOAT');
+        }
+        if (wVar && weightCollection.modes.length > 0) {
+            wVar.setValueForMode(weightCollection.modes[0].modeId, w.value);
+            weightVars[w.name] = wVar;
+        }
     }
 
     // Find best matching font
@@ -2453,12 +2981,15 @@ async function createTypographySystem(typography) {
             continue;
         }
 
-        for (const weight of weights) {
+        for (const weight of weightList) {
             try {
                 const fontName = findBestFont(typography.primaryFont, weight.value);
                 await figma.loadFontAsync(fontName);
 
-                const styleName = `Primary/${key.toUpperCase()}/${weight.name}`;
+                // Update Naming logic: h1 -> H1-48px, b1 -> B1-18px
+                const baseKey = key.toUpperCase().replace('BODY', 'B');
+                const styleName = `Primary/${baseKey}-${style.size}px/${weight.name}`;
+
                 const existingStyles = await figma.getLocalTextStylesAsync();
                 let textStyle = existingStyles.find(s => s.name === styleName);
 
@@ -2469,6 +3000,7 @@ async function createTypographySystem(typography) {
 
                 textStyle.fontName = fontName;
                 textStyle.fontSize = style.size;
+                // Set lineHeight as PERCENT (e.g. 150%) value for the style visually
                 textStyle.lineHeight = { value: (style.lineHeight || 1.5) * 100, unit: 'PERCENT' };
                 textStyle.letterSpacing = { value: style.letterSpacing || 0, unit: 'PIXELS' };
 
@@ -2476,9 +3008,18 @@ async function createTypographySystem(typography) {
                     try {
                         textStyle.setBoundVariable('fontSize', typographyVariables[key].size);
                         textStyle.setBoundVariable('letterSpacing', typographyVariables[key].letterSpacing);
+                        textStyle.setBoundVariable('lineHeight', typographyVariables[key].lineHeight);
                     } catch (e) {
                         console.warn(`Could not bind variables for ${styleName}:`, e);
                     }
+                }
+
+                // Bind Font Family and Font Weight variables
+                try {
+                    if (typeof primaryFontVar !== 'undefined' && primaryFontVar) textStyle.setBoundVariable('fontFamily', primaryFontVar);
+                    if (weightVars[weight.name]) textStyle.setBoundVariable('fontWeight', weightVars[weight.name]);
+                } catch (e) {
+                    console.warn(`Could not bind font family/weight for ${styleName}:`, e);
                 }
 
                 createdStylesCount++;
@@ -2496,12 +3037,14 @@ async function createTypographySystem(typography) {
                 continue;
             }
 
-            for (const weight of weights) {
+            for (const weight of weightList) {
                 try {
                     const fontName = findBestFont(typography.secondaryFont, weight.value);
                     await figma.loadFontAsync(fontName);
 
-                    const styleName = `Secondary/${key.toUpperCase()}/${weight.name}`;
+                    const baseKey = key.toUpperCase().replace('BODY', 'B');
+                    const styleName = `Secondary/${baseKey}-${style.size}px/${weight.name}`;
+
                     const existingStyles = await figma.getLocalTextStylesAsync();
                     let textStyle = existingStyles.find(s => s.name === styleName);
 
@@ -2519,9 +3062,18 @@ async function createTypographySystem(typography) {
                         try {
                             textStyle.setBoundVariable('fontSize', typographyVariables[key].size);
                             textStyle.setBoundVariable('letterSpacing', typographyVariables[key].letterSpacing);
+                            textStyle.setBoundVariable('lineHeight', typographyVariables[key].lineHeight);
                         } catch (e) {
                             console.warn(`Could not bind variables for ${styleName}:`, e);
                         }
+                    }
+
+                    // Bind Font Family and Font Weight variables
+                    try {
+                        if (secondaryFontVar) textStyle.setBoundVariable('fontFamily', secondaryFontVar);
+                        if (weightVars[weight.name]) textStyle.setBoundVariable('fontWeight', weightVars[weight.name]);
+                    } catch (e) {
+                        console.warn(`Could not bind font family/weight for ${styleName}:`, e);
                     }
 
                     createdStylesCount++;
@@ -2545,17 +3097,17 @@ async function createTypographySystem(typography) {
 
 async function createTypographyDocumentation(typography, findBestFont) {
     // Get a safe fallback font for documentation
-    let docFont = { family: "Inter", style: "Regular" };
+    let docFont = { family: "Poppins", style: "Regular" };
     try {
-        await figma.loadFontAsync({ family: "Inter", style: "Bold" });
-        await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-        await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
-        docFont = { family: "Inter", style: "Regular" };
+        await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
+        await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
+        await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
+        docFont = { family: "Poppins", style: "Regular" };
     } catch (e) {
         try {
-            await figma.loadFontAsync({ family: "Roboto", style: "Bold" });
-            await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
-            docFont = { family: "Roboto", style: "Regular" };
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            docFont = { family: "Inter", style: "Regular" };
         } catch (e2) {
             await figma.loadFontAsync({ family: "Arial", style: "Bold" });
             await figma.loadFontAsync({ family: "Arial", style: "Regular" });
@@ -2569,38 +3121,118 @@ async function createTypographyDocumentation(typography, findBestFont) {
     container.layoutMode = 'VERTICAL';
     container.primaryAxisSizingMode = 'AUTO';
     container.counterAxisSizingMode = 'AUTO';
-    container.paddingLeft = 48;
-    container.paddingRight = 48;
-    container.paddingTop = 40;
-    container.paddingBottom = 40;
-    container.itemSpacing = 32;
-    container.cornerRadius = 16;
+    container.paddingBottom = 0;
 
-    // Header
-    const header = figma.createFrame();
-    header.name = "Header";
-    header.fills = [];
-    header.layoutMode = 'VERTICAL';
-    header.primaryAxisSizingMode = 'AUTO';
-    header.counterAxisSizingMode = 'AUTO';
-    header.itemSpacing = 8;
+    // --- PREMIUM CENTERED HEADER ---
+    const headerFrame = figma.createFrame();
+    headerFrame.name = "Header";
+    headerFrame.layoutMode = 'VERTICAL';
+    headerFrame.layoutAlign = 'STRETCH';
+    headerFrame.primaryAxisSizingMode = 'AUTO';
+    headerFrame.paddingLeft = 80; headerFrame.paddingRight = 80; headerFrame.paddingTop = 80; headerFrame.paddingBottom = 100;
+    headerFrame.itemSpacing = 40;
+    headerFrame.counterAxisAlignItems = 'CENTER'; // Center content
+    headerFrame.fills = [{
+        type: 'GRADIENT_LINEAR',
+        gradientStops: [
+            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
+            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
+        ],
+        gradientTransform: [[1, 0, 0], [0, 1, 0]]
+    }];
 
-    const titleText = figma.createText();
-    titleText.fontName = { family: docFont.family, style: "Bold" };
-    safeSetCharacters(titleText, "Typography System");
-    titleText.fontSize = 32;
-    titleText.fills = [{ type: 'SOLID', color: { r: 0.08, g: 0.08, b: 0.08 } }];
-    header.appendChild(titleText);
+    // Logo & Title Group
+    const headerMain = figma.createFrame();
+    headerMain.layoutMode = 'VERTICAL';
+    headerMain.primaryAxisSizingMode = 'AUTO';
+    headerMain.counterAxisSizingMode = 'AUTO';
+    headerMain.counterAxisAlignItems = 'CENTER';
+    headerMain.itemSpacing = 24;
+    headerMain.fills = [];
+    headerFrame.appendChild(headerMain);
+
+    const title = figma.createText();
+    title.fontName = { family: "Poppins", style: "Bold" };
+    title.characters = "Typography System";
+    title.fontSize = 56;
+    title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
+    title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    headerMain.appendChild(title);
 
     const categories = Object.keys(typography.styles);
-    const subtitleText = figma.createText();
-    subtitleText.fontName = docFont;
-    safeSetCharacters(subtitleText, `${typography.primaryFont} • ${categories.length} Styles • Responsive Design`);
-    subtitleText.fontSize = 15;
-    subtitleText.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.45, b: 0.45 } }];
-    header.appendChild(subtitleText);
+    const desc = figma.createText();
+    desc.fontName = { family: "Poppins", style: "Regular" };
+    desc.characters = `The ${typography.primaryFont} font family with ${categories.length} responsive styles for consistent typography across all platforms.`;
+    desc.fontSize = 18;
+    desc.opacity = 0.6;
+    desc.textAlignHorizontal = 'CENTER';
+    desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    headerMain.appendChild(desc);
 
-    container.appendChild(header);
+    // STATS ROW (Glassmorphism)
+    const statsRow = figma.createFrame();
+    statsRow.layoutMode = 'HORIZONTAL';
+    statsRow.primaryAxisSizingMode = 'AUTO';
+    statsRow.counterAxisSizingMode = 'AUTO';
+    statsRow.itemSpacing = 16;
+    statsRow.fills = [];
+
+    // Helper function for glassmorphism badges
+    function createStatBadge(label, value) {
+        const badge = figma.createFrame();
+        badge.layoutMode = 'HORIZONTAL';
+        badge.primaryAxisSizingMode = 'AUTO';
+        badge.counterAxisSizingMode = 'AUTO';
+        badge.paddingLeft = 20;
+        badge.paddingRight = 20;
+        badge.paddingTop = 10;
+        badge.paddingBottom = 10;
+        badge.cornerRadius = 100;
+        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
+        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
+        badge.strokeWeight = 1;
+        badge.itemSpacing = 10;
+        badge.counterAxisAlignItems = 'CENTER';
+        badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
+
+        const tLabel = figma.createText();
+        tLabel.fontName = { family: "Poppins", style: "Medium" };
+        safeSetCharacters(tLabel, label);
+        tLabel.fontSize = 13;
+        tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
+        badge.appendChild(tLabel);
+
+        const tValue = figma.createText();
+        tValue.fontName = { family: "Poppins", style: "Bold" };
+        safeSetCharacters(tValue, value);
+        tValue.fontSize = 13;
+        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+        badge.appendChild(tValue);
+
+        return badge;
+    }
+
+    statsRow.appendChild(createStatBadge("Font", typography.primaryFont));
+    statsRow.appendChild(createStatBadge("Styles", categories.length.toString()));
+    const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    statsRow.appendChild(createStatBadge("Last Updated", dateText));
+
+    headerFrame.appendChild(statsRow);
+
+    container.appendChild(headerFrame);
+
+    // CONTENT WRAPPER FRAME
+    const contentWrapper = figma.createFrame();
+    contentWrapper.name = "Content";
+    contentWrapper.layoutMode = 'VERTICAL';
+    contentWrapper.primaryAxisSizingMode = 'AUTO';
+    contentWrapper.counterAxisSizingMode = 'AUTO';
+    contentWrapper.layoutAlign = 'STRETCH';
+    contentWrapper.paddingLeft = 48;
+    contentWrapper.paddingRight = 48;
+    contentWrapper.paddingTop = 48;
+    contentWrapper.paddingBottom = 48;
+    contentWrapper.fills = [];
 
     // Typography cards
     const grid = figma.createFrame();
@@ -2666,7 +3298,8 @@ async function createTypographyDocumentation(typography, findBestFont) {
         grid.appendChild(card);
     }
 
-    container.appendChild(grid);
+    contentWrapper.appendChild(grid);
+    container.appendChild(contentWrapper);
     figma.currentPage.appendChild(container);
     figma.viewport.scrollAndZoomIntoView([container]);
 }

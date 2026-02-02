@@ -98,6 +98,270 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
     const textRgb = hexToRgb(textColor);
     const destructiveRgb = { r: 0.937, g: 0.267, b: 0.267 }; // #EF4444
 
+    // ============================================
+    // CREATE BUTTON VARIABLES - START
+    // ============================================
+
+    // Get or create variable collection for Button spacing
+    const collections = await figma.variables.getLocalVariableCollectionsAsync();
+    let buttonSpacingCollection = collections.find(c => c.name === 'Button/Spacing');
+
+    if (!buttonSpacingCollection) {
+        buttonSpacingCollection = figma.variables.createVariableCollection('Button/Spacing');
+    }
+
+    const modeId = buttonSpacingCollection.modes[0].modeId;
+    const existingVars = await figma.variables.getLocalVariablesAsync('FLOAT');
+
+    // Button size configurations with padding and gap
+    const buttonSizeConfigs = [
+        { size: 'SM', paddingX: 12, paddingY: 8, gap: 6, fontSize: 12 },
+        { size: 'MD', paddingX: 16, paddingY: 10, gap: 8, fontSize: 14 },
+        { size: 'LG', paddingX: 20, paddingY: 12, gap: 10, fontSize: 16 }
+    ];
+
+    const buttonVariables = {};
+
+    // Create variables for each size
+    for (const config of buttonSizeConfigs) {
+        const sizeKey = config.size.toLowerCase();
+
+        // Padding Left-Right variable
+        const paddingXVarName = `button/${sizeKey}/padding-x`;
+        let paddingXVar = existingVars.find(v => v.name === paddingXVarName && v.variableCollectionId === buttonSpacingCollection.id);
+        if (!paddingXVar) {
+            paddingXVar = figma.variables.createVariable(paddingXVarName, buttonSpacingCollection, 'FLOAT');
+        }
+        paddingXVar.setValueForMode(modeId, config.paddingX);
+
+        // Padding Top-Bottom variable
+        const paddingYVarName = `button/${sizeKey}/padding-y`;
+        let paddingYVar = existingVars.find(v => v.name === paddingYVarName && v.variableCollectionId === buttonSpacingCollection.id);
+        if (!paddingYVar) {
+            paddingYVar = figma.variables.createVariable(paddingYVarName, buttonSpacingCollection, 'FLOAT');
+        }
+        paddingYVar.setValueForMode(modeId, config.paddingY);
+
+        // Gap variable
+        const gapVarName = `button/${sizeKey}/gap`;
+        let gapVar = existingVars.find(v => v.name === gapVarName && v.variableCollectionId === buttonSpacingCollection.id);
+        if (!gapVar) {
+            gapVar = figma.variables.createVariable(gapVarName, buttonSpacingCollection, 'FLOAT');
+        }
+        gapVar.setValueForMode(modeId, config.gap);
+
+        // Font size variable
+        const fontSizeVarName = `button/${sizeKey}/font-size`;
+        let fontSizeVar = existingVars.find(v => v.name === fontSizeVarName && v.variableCollectionId === buttonSpacingCollection.id);
+        if (!fontSizeVar) {
+            fontSizeVar = figma.variables.createVariable(fontSizeVarName, buttonSpacingCollection, 'FLOAT');
+        }
+        fontSizeVar.setValueForMode(modeId, config.fontSize);
+
+        buttonVariables[sizeKey] = {
+            paddingX: paddingXVar,
+            paddingY: paddingYVar,
+            gap: gapVar,
+            fontSize: fontSizeVar
+        };
+    }
+
+    // ============================================
+    // CREATE BUTTON TEXT STYLES - START
+    // ============================================
+
+    const existingTextStyles = await figma.getLocalTextStylesAsync();
+    const buttonTextStyles = {};
+
+    for (const config of buttonSizeConfigs) {
+        const sizeKey = config.size;
+        const styleName = `Button/${sizeKey}`;
+
+        let textStyle = existingTextStyles.find(s => s.name === styleName);
+
+        if (!textStyle) {
+            textStyle = figma.createTextStyle();
+            textStyle.name = styleName;
+        }
+
+        textStyle.fontName = { family: "Poppins", style: "Medium" };
+        textStyle.fontSize = config.fontSize;
+        textStyle.lineHeight = { value: 150, unit: 'PERCENT' };
+        textStyle.letterSpacing = { value: 0, unit: 'PIXELS' };
+
+        // Bind font size variable to text style
+        try {
+            textStyle.setBoundVariable('fontSize', buttonVariables[sizeKey.toLowerCase()].fontSize);
+        } catch (e) {
+            console.warn(`Could not bind fontSize variable for ${styleName}:`, e);
+        }
+
+        buttonTextStyles[sizeKey] = textStyle;
+    }
+
+    // ============================================
+    // CREATE BUTTON COLOR & RADIUS VARIABLES - START
+    // ============================================
+
+    // Get or create variable collection for Button colors
+    let buttonColorCollection = collections.find(c => c.name === 'Button/Colors');
+
+    if (!buttonColorCollection) {
+        buttonColorCollection = figma.variables.createVariableCollection('Button/Colors');
+    }
+
+    const colorModeId = buttonColorCollection.modes[0].modeId;
+    const existingColorVars = await figma.variables.getLocalVariablesAsync('COLOR');
+
+    // Primary color variable
+    const primaryColorVarName = 'button/color/primary';
+    let primaryColorVar = existingColorVars.find(v => v.name === primaryColorVarName && v.variableCollectionId === buttonColorCollection.id);
+    if (!primaryColorVar) {
+        primaryColorVar = figma.variables.createVariable(primaryColorVarName, buttonColorCollection, 'COLOR');
+    }
+    primaryColorVar.setValueForMode(colorModeId, baseRgb);
+
+    // Destructive color variable
+    const destructiveColorVarName = 'button/color/destructive';
+    let destructiveColorVar = existingColorVars.find(v => v.name === destructiveColorVarName && v.variableCollectionId === buttonColorCollection.id);
+    if (!destructiveColorVar) {
+        destructiveColorVar = figma.variables.createVariable(destructiveColorVarName, buttonColorCollection, 'COLOR');
+    }
+    destructiveColorVar.setValueForMode(colorModeId, destructiveRgb);
+
+    // Text color variable
+    const textColorVarName = 'button/color/text';
+    let textColorVar = existingColorVars.find(v => v.name === textColorVarName && v.variableCollectionId === buttonColorCollection.id);
+    if (!textColorVar) {
+        textColorVar = figma.variables.createVariable(textColorVarName, buttonColorCollection, 'COLOR');
+    }
+    textColorVar.setValueForMode(colorModeId, textRgb);
+
+    // Helper function to create or update color variable
+    function createOrUpdateColorVar(name, color) {
+        let colorVar = existingColorVars.find(v => v.name === name && v.variableCollectionId === buttonColorCollection.id);
+        if (!colorVar) {
+            colorVar = figma.variables.createVariable(name, buttonColorCollection, 'COLOR');
+            existingColorVars.push(colorVar);
+        }
+        colorVar.setValueForMode(colorModeId, color);
+        return colorVar;
+    }
+
+    // Base colors
+    const baseColors = {
+        primary: baseRgb,
+        destructive: destructiveRgb,
+        text: textRgb,
+        white: { r: 1, g: 1, b: 1 },
+        border: { r: 0.8, g: 0.8, b: 0.85 },
+        disabled: { r: 0.85, g: 0.85, b: 0.85 },
+        disabledText: { r: 0.6, g: 0.6, b: 0.6 }
+    };
+
+    // PRIMARY BUTTON - Background Colors
+    const primaryNormalVar = createOrUpdateColorVar('button/primary/bg/normal', baseColors.primary);
+    const primaryHoverVar = createOrUpdateColorVar('button/primary/bg/hover', darkenColor(baseColors.primary, 0.1));
+    const primaryClickVar = createOrUpdateColorVar('button/primary/bg/click', darkenColor(baseColors.primary, 0.2));
+    const primaryDisabledVar = createOrUpdateColorVar('button/primary/bg/disabled', baseColors.disabled);
+
+    // PRIMARY BUTTON - Text Colors
+    const primaryTextNormalVar = createOrUpdateColorVar('button/primary/text/normal', baseColors.white);
+    const primaryTextHoverVar = createOrUpdateColorVar('button/primary/text/hover', baseColors.white);
+    const primaryTextClickVar = createOrUpdateColorVar('button/primary/text/click', baseColors.white);
+    const primaryTextDisabledVar = createOrUpdateColorVar('button/primary/text/disabled', baseColors.disabledText);
+
+    // DESTRUCTIVE BUTTON - Background Colors
+    const destructiveNormalVar = createOrUpdateColorVar('button/destructive/bg/normal', baseColors.destructive);
+    const destructiveHoverVar = createOrUpdateColorVar('button/destructive/bg/hover', darkenColor(baseColors.destructive, 0.1));
+    const destructiveClickVar = createOrUpdateColorVar('button/destructive/bg/click', darkenColor(baseColors.destructive, 0.2));
+    const destructiveDisabledVar = createOrUpdateColorVar('button/destructive/bg/disabled', baseColors.disabled);
+
+    // DESTRUCTIVE BUTTON - Text Colors
+    const destructiveTextNormalVar = createOrUpdateColorVar('button/destructive/text/normal', baseColors.white);
+    const destructiveTextHoverVar = createOrUpdateColorVar('button/destructive/text/hover', baseColors.white);
+    const destructiveTextClickVar = createOrUpdateColorVar('button/destructive/text/click', baseColors.white);
+    const destructiveTextDisabledVar = createOrUpdateColorVar('button/destructive/text/disabled', baseColors.disabledText);
+
+    // LINE BUTTON - Background Colors
+    const lineNormalVar = createOrUpdateColorVar('button/line/bg/normal', { r: 1, g: 1, b: 1, a: 0 });
+    const lineHoverVar = createOrUpdateColorVar('button/line/bg/hover', lightenColor(baseColors.primary, 0.95));
+    const lineClickVar = createOrUpdateColorVar('button/line/bg/click', lightenColor(baseColors.primary, 0.9));
+    const lineDisabledVar = createOrUpdateColorVar('button/line/bg/disabled', { r: 0.98, g: 0.98, b: 0.98, a: 0.5 });
+
+    // LINE BUTTON - Border Colors
+    const lineBorderNormalVar = createOrUpdateColorVar('button/line/border/normal', baseColors.border);
+    const lineBorderHoverVar = createOrUpdateColorVar('button/line/border/hover', baseColors.primary);
+    const lineBorderClickVar = createOrUpdateColorVar('button/line/border/click', baseColors.primary);
+    const lineBorderDisabledVar = createOrUpdateColorVar('button/line/border/disabled', { r: 0.9, g: 0.9, b: 0.9 });
+
+    // LINE BUTTON - Text Colors
+    const lineTextNormalVar = createOrUpdateColorVar('button/line/text/normal', baseColors.primary);
+    const lineTextHoverVar = createOrUpdateColorVar('button/line/text/hover', baseColors.primary);
+    const lineTextClickVar = createOrUpdateColorVar('button/line/text/click', baseColors.primary);
+    const lineTextDisabledVar = createOrUpdateColorVar('button/line/text/disabled', { r: 0.8, g: 0.8, b: 0.8 });
+
+    // GHOST BUTTON - Background Colors
+    const ghostNormalVar = createOrUpdateColorVar('button/ghost/bg/normal', { r: 1, g: 1, b: 1, a: 0 });
+    const ghostHoverVar = createOrUpdateColorVar('button/ghost/bg/hover', lightenColor(baseColors.primary, 0.95));
+    const ghostClickVar = createOrUpdateColorVar('button/ghost/bg/click', lightenColor(baseColors.primary, 0.9));
+    const ghostDisabledVar = createOrUpdateColorVar('button/ghost/bg/disabled', { r: 1, g: 1, b: 1, a: 0 });
+
+    // GHOST BUTTON - Text Colors
+    const ghostTextNormalVar = createOrUpdateColorVar('button/ghost/text/normal', baseColors.primary);
+    const ghostTextHoverVar = createOrUpdateColorVar('button/ghost/text/hover', baseColors.primary);
+    const ghostTextClickVar = createOrUpdateColorVar('button/ghost/text/click', baseColors.primary);
+    const ghostTextDisabledVar = createOrUpdateColorVar('button/ghost/text/disabled', { r: 0.8, g: 0.8, b: 0.8 });
+
+    // LINK BUTTON - Background Colors (all transparent)
+    const linkNormalVar = createOrUpdateColorVar('button/link/bg/normal', { r: 1, g: 1, b: 1, a: 0 });
+    const linkHoverVar = createOrUpdateColorVar('button/link/bg/hover', { r: 1, g: 1, b: 1, a: 0 });
+    const linkClickVar = createOrUpdateColorVar('button/link/bg/click', { r: 1, g: 1, b: 1, a: 0 });
+    const linkDisabledVar = createOrUpdateColorVar('button/link/bg/disabled', { r: 1, g: 1, b: 1, a: 0 });
+
+    // LINK BUTTON - Text Colors
+    const linkTextNormalVar = createOrUpdateColorVar('button/link/text/normal', baseColors.primary);
+    const linkTextHoverVar = createOrUpdateColorVar('button/link/text/hover', darkenColor(baseColors.primary, 0.2));
+    const linkTextClickVar = createOrUpdateColorVar('button/link/text/click', darkenColor(baseColors.primary, 0.3));
+    const linkTextDisabledVar = createOrUpdateColorVar('button/link/text/disabled', { r: 0.8, g: 0.8, b: 0.8 });
+
+    // Radius variable
+    const radiusVarName = 'button/radius';
+    let radiusVar = existingVars.find(v => v.name === radiusVarName && v.variableCollectionId === buttonSpacingCollection.id);
+    if (!radiusVar) {
+        radiusVar = figma.variables.createVariable(radiusVarName, buttonSpacingCollection, 'FLOAT');
+    }
+    radiusVar.setValueForMode(modeId, radius);
+
+    // Organize color variables by type and state
+    const buttonColorVariables = {
+        primary: {
+            bg: { normal: primaryNormalVar, hover: primaryHoverVar, click: primaryClickVar, disabled: primaryDisabledVar },
+            text: { normal: primaryTextNormalVar, hover: primaryTextHoverVar, click: primaryTextClickVar, disabled: primaryTextDisabledVar }
+        },
+        destructive: {
+            bg: { normal: destructiveNormalVar, hover: destructiveHoverVar, click: destructiveClickVar, disabled: destructiveDisabledVar },
+            text: { normal: destructiveTextNormalVar, hover: destructiveTextHoverVar, click: destructiveTextClickVar, disabled: destructiveTextDisabledVar }
+        },
+        line: {
+            bg: { normal: lineNormalVar, hover: lineHoverVar, click: lineClickVar, disabled: lineDisabledVar },
+            border: { normal: lineBorderNormalVar, hover: lineBorderHoverVar, click: lineBorderClickVar, disabled: lineBorderDisabledVar },
+            text: { normal: lineTextNormalVar, hover: lineTextHoverVar, click: lineTextClickVar, disabled: lineTextDisabledVar }
+        },
+        ghost: {
+            bg: { normal: ghostNormalVar, hover: ghostHoverVar, click: ghostClickVar, disabled: ghostDisabledVar },
+            text: { normal: ghostTextNormalVar, hover: ghostTextHoverVar, click: ghostTextClickVar, disabled: ghostTextDisabledVar }
+        },
+        link: {
+            bg: { normal: linkNormalVar, hover: linkHoverVar, click: linkClickVar, disabled: linkDisabledVar },
+            text: { normal: linkTextNormalVar, hover: linkTextHoverVar, click: linkTextClickVar, disabled: linkTextDisabledVar }
+        }
+    };
+
+    // ============================================
+    // CREATE BUTTON VARIABLES & TEXT STYLES - END
+    // ============================================
+
     // Arrow icons SVG
     const arrowLeftSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
@@ -276,6 +540,12 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
                 text.characters = buttonText;
                 text.fills = [{ type: 'SOLID', color: currentTextColor }];
                 if (type === 'Link') text.textDecoration = 'UNDERLINE';
+
+                // Apply button text style
+                if (buttonTextStyles[size.name]) {
+                    await text.setTextStyleIdAsync(buttonTextStyles[size.name].id);
+                }
+
                 button.appendChild(text);
 
                 // Right Icon
@@ -284,6 +554,95 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
                 rightIcon.resize(size.iconSize, size.iconSize);
                 applyColorToNode(rightIcon, currentTextColor);
                 button.appendChild(rightIcon);
+
+                // Bind spacing variables to button
+                const sizeKey = size.name.toLowerCase();
+                if (buttonVariables[sizeKey]) {
+                    try {
+                        button.setBoundVariable('paddingLeft', buttonVariables[sizeKey].paddingX);
+                        button.setBoundVariable('paddingRight', buttonVariables[sizeKey].paddingX);
+                        button.setBoundVariable('paddingTop', buttonVariables[sizeKey].paddingY);
+                        button.setBoundVariable('paddingBottom', buttonVariables[sizeKey].paddingY);
+                        button.setBoundVariable('itemSpacing', buttonVariables[sizeKey].gap);
+                    } catch (e) {
+                        console.warn(`Could not bind spacing variables for ${button.name}:`, e);
+                    }
+                }
+
+                // Bind radius variable to button
+                try {
+                    button.setBoundVariable('topLeftRadius', radiusVar);
+                    button.setBoundVariable('topRightRadius', radiusVar);
+                    button.setBoundVariable('bottomLeftRadius', radiusVar);
+                    button.setBoundVariable('bottomRightRadius', radiusVar);
+                } catch (e) {
+                    console.warn(`Could not bind radius variable for ${button.name}:`, e);
+                }
+
+                // Bind color variables to button based on type and state
+                const typeKey = type.toLowerCase();
+                const stateKey = state.toLowerCase();
+
+                try {
+                    if (buttonColorVariables[typeKey]) {
+                        // Bind background color
+                        if (buttonColorVariables[typeKey].bg && buttonColorVariables[typeKey].bg[stateKey]) {
+                            const bgVar = buttonColorVariables[typeKey].bg[stateKey];
+                            if (button.fills.length > 0 && button.fills[0].type === 'SOLID') {
+                                const newFills = [{
+                                    type: 'SOLID',
+                                    color: { r: 0, g: 0, b: 0 },
+                                    boundVariables: {
+                                        color: {
+                                            type: 'VARIABLE_ALIAS',
+                                            id: bgVar.id
+                                        }
+                                    }
+                                }];
+                                button.fills = newFills;
+                            }
+                        }
+
+                        // Bind border color (for Line buttons)
+                        if (typeKey === 'line' && buttonColorVariables[typeKey].border && buttonColorVariables[typeKey].border[stateKey]) {
+                            const borderVar = buttonColorVariables[typeKey].border[stateKey];
+                            if (button.strokes.length > 0 && button.strokes[0].type === 'SOLID') {
+                                const newStrokes = [{
+                                    type: 'SOLID',
+                                    color: { r: 0, g: 0, b: 0 },
+                                    boundVariables: {
+                                        color: {
+                                            type: 'VARIABLE_ALIAS',
+                                            id: borderVar.id
+                                        }
+                                    }
+                                }];
+                                button.strokes = newStrokes;
+                            }
+                        }
+
+                        // Bind text color to text element
+                        if (buttonColorVariables[typeKey].text && buttonColorVariables[typeKey].text[stateKey]) {
+                            const textVar = buttonColorVariables[typeKey].text[stateKey];
+                            if (text.fills.length > 0 && text.fills[0].type === 'SOLID') {
+                                const newTextFills = [{
+                                    type: 'SOLID',
+                                    color: { r: 0, g: 0, b: 0 },
+                                    boundVariables: {
+                                        color: {
+                                            type: 'VARIABLE_ALIAS',
+                                            id: textVar.id
+                                        }
+                                    }
+                                }];
+                                text.fills = newTextFills;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`Could not bind color variables for ${button.name}:`, e);
+                }
+
 
                 components.push(button);
             }
@@ -471,7 +830,7 @@ async function createButtonComponentSet(buttonText, bgColor, textColor, radius) 
 
     // Cleanup and zoom
     figma.viewport.scrollAndZoomIntoView([containerFrame]);
-    figma.notify(`✅ Premium Button System with ${components.length} variants created!`);
+    figma.notify(`✅ Button System created with ${components.length} variants, state-based color variables, spacing variables, and text styles!`);
 }
 
 // ============================================

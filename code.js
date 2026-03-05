@@ -1,6758 +1,5503 @@
-/**
- * ============================================
- * SLATE.DESIGN - FIGMA PLUGIN
- * ============================================
- * A comprehensive design system generator for Figma
- * 
- * Features:
- * - Button Components
- * - Input Components  
- * - Design Tokens (Colors, Spacing, Radius, etc.)
- * - Typography System
- * - Icon Library
- * ============================================
- */
-
-// ============================================
-// PLUGIN INITIALIZATION
-// ============================================
-figma.showUI(__html__, { width: 424, height: 700, themeColors: true });
-
-// Center the plugin window immediately after showing
-setTimeout(() => {
-    try {
-        const bounds = figma.viewport.bounds;
-        const centerX = bounds.x + (bounds.width - 424) / 2.4;
-        const centerY = bounds.y + (bounds.height - 700) / 9;
-        figma.ui.reposition(centerX, centerY);
-    } catch (error) {
-        console.log('Could not center UI:', error);
-    }
-}, 100);
-
-figma.on('close', () => {
-    figma.notify('👋 Bye Bye Thanks for using Slate.Design', { timeout: 3000 });
-});
-
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
-
-function hexToRgb(hex) {
-    if (!hex) return { r: 0, g: 0, b: 0 };
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-        r: parseInt(result[1], 16) / 255,
-        g: parseInt(result[2], 16) / 255,
-        b: parseInt(result[3], 16) / 255
-    } : { r: 0, g: 0, b: 0 };
-}
-
-function rgbToHex(r, g, b) {
-    const toHex = (n) => {
-        const hex = Math.round(n).toString(16);
-        return hex.length === 1 ? '0' + hex : hex;
-    };
-    return '#' + toHex(r) + toHex(g) + toHex(b);
-}
-
-function darkenColor(rgb, amount) {
-    return {
-        r: Math.max(0, rgb.r - amount),
-        g: Math.max(0, rgb.g - amount),
-        b: Math.max(0, rgb.b - amount)
-    };
-}
-
-function lightenColor(rgb, amount) {
-    return {
-        r: Math.min(1, rgb.r + amount),
-        g: Math.min(1, rgb.g + amount),
-        b: Math.min(1, rgb.b + amount)
-    };
-}
-
-function safeSetCharacters(textNode, value) {
-    const stringValue = String(value || '');
-    textNode.characters = stringValue.trim() === '' ? ' ' : stringValue;
-}
-
-function applyColorToNode(node, color) {
-    if (node.type === 'VECTOR') {
-        if (node.fills && node.fills !== figma.mixed && node.fills.length > 0) {
-            node.fills = [{ type: 'SOLID', color: color }];
-        }
-        if (node.strokes && node.strokes !== figma.mixed && node.strokes.length > 0) {
-            node.strokes = [{ type: 'SOLID', color: color }];
-        }
-    }
-    if ('children' in node) {
-        node.children.forEach(child => applyColorToNode(child, color));
-    }
-}
-
-// ============================================
-// BUTTON COMPONENT - START
-// ============================================
-
-async function createButtonComponentSet(buttonText, bgColor, textColor, radius) {
-    await Promise.all([
-        figma.loadFontAsync({ family: "Poppins", style: "Medium" }),
-        figma.loadFontAsync({ family: "Poppins", style: "Bold" }),
-        figma.loadFontAsync({ family: "Poppins", style: "Regular" })
-    ]);
-
-    const baseRgb = hexToRgb(bgColor);
-    const textRgb = hexToRgb(textColor);
-    const destructiveRgb = { r: 0.937, g: 0.267, b: 0.267 }; // #EF4444
-
-    // ============================================
-    // CREATE BUTTON VARIABLES - START
-    // ============================================
-
-    // Get or create variable collection for Button spacing
-    const collections = await figma.variables.getLocalVariableCollectionsAsync();
-    let buttonSpacingCollection = collections.find(c => c.name === 'Button/Spacing');
-
-    if (!buttonSpacingCollection) {
-        buttonSpacingCollection = figma.variables.createVariableCollection('Button/Spacing');
-    }
-
-    const modeId = buttonSpacingCollection.modes[0].modeId;
-    const existingVars = await figma.variables.getLocalVariablesAsync('FLOAT');
-
-    // Button size configurations with padding and gap
-    const buttonSizeConfigs = [
-        { size: 'SM', paddingX: 12, paddingY: 8, gap: 6, fontSize: 12 },
-        { size: 'MD', paddingX: 16, paddingY: 10, gap: 8, fontSize: 14 },
-        { size: 'LG', paddingX: 20, paddingY: 12, gap: 10, fontSize: 16 }
-    ];
-
-    const buttonVariables = {};
-
-    // Create variables for each size
-    for (const config of buttonSizeConfigs) {
-        const sizeKey = config.size.toLowerCase();
-
-        // Padding Left-Right variable
-        const paddingXVarName = `button/${sizeKey}/padding-x`;
-        let paddingXVar = existingVars.find(v => v.name === paddingXVarName && v.variableCollectionId === buttonSpacingCollection.id);
-        if (!paddingXVar) {
-            paddingXVar = figma.variables.createVariable(paddingXVarName, buttonSpacingCollection, 'FLOAT');
-        }
-        paddingXVar.setValueForMode(modeId, config.paddingX);
-
-        // Padding Top-Bottom variable
-        const paddingYVarName = `button/${sizeKey}/padding-y`;
-        let paddingYVar = existingVars.find(v => v.name === paddingYVarName && v.variableCollectionId === buttonSpacingCollection.id);
-        if (!paddingYVar) {
-            paddingYVar = figma.variables.createVariable(paddingYVarName, buttonSpacingCollection, 'FLOAT');
-        }
-        paddingYVar.setValueForMode(modeId, config.paddingY);
-
-        // Gap variable
-        const gapVarName = `button/${sizeKey}/gap`;
-        let gapVar = existingVars.find(v => v.name === gapVarName && v.variableCollectionId === buttonSpacingCollection.id);
-        if (!gapVar) {
-            gapVar = figma.variables.createVariable(gapVarName, buttonSpacingCollection, 'FLOAT');
-        }
-        gapVar.setValueForMode(modeId, config.gap);
-
-        // Font size variable
-        const fontSizeVarName = `button/${sizeKey}/font-size`;
-        let fontSizeVar = existingVars.find(v => v.name === fontSizeVarName && v.variableCollectionId === buttonSpacingCollection.id);
-        if (!fontSizeVar) {
-            fontSizeVar = figma.variables.createVariable(fontSizeVarName, buttonSpacingCollection, 'FLOAT');
-        }
-        fontSizeVar.setValueForMode(modeId, config.fontSize);
-
-        buttonVariables[sizeKey] = {
-            paddingX: paddingXVar,
-            paddingY: paddingYVar,
-            gap: gapVar,
-            fontSize: fontSizeVar
-        };
-    }
-
-    // ============================================
-    // CREATE BUTTON TEXT STYLES - START
-    // ============================================
-
-    const existingTextStyles = await figma.getLocalTextStylesAsync();
-    const buttonTextStyles = {};
-
-    for (const config of buttonSizeConfigs) {
-        const sizeKey = config.size;
-        const styleName = `Button/${sizeKey}`;
-
-        let textStyle = existingTextStyles.find(s => s.name === styleName);
-
-        if (!textStyle) {
-            textStyle = figma.createTextStyle();
-            textStyle.name = styleName;
-        }
-
-        textStyle.fontName = { family: "Poppins", style: "Medium" };
-        textStyle.fontSize = config.fontSize;
-        textStyle.lineHeight = { value: 150, unit: 'PERCENT' };
-        textStyle.letterSpacing = { value: 0, unit: 'PIXELS' };
-
-        // Bind font size variable to text style
-        try {
-            textStyle.setBoundVariable('fontSize', buttonVariables[sizeKey.toLowerCase()].fontSize);
-        } catch (e) {
-            console.warn(`Could not bind fontSize variable for ${styleName}:`, e);
-        }
-
-        buttonTextStyles[sizeKey] = textStyle;
-    }
-
-    // ============================================
-    // CREATE BUTTON COLOR & RADIUS VARIABLES - START
-    // ============================================
-
-    // Get the Colors collection to reference primary shades
-    const allCollections = await figma.variables.getLocalVariableCollectionsAsync();
-    const colorsCollection = allCollections.find(c => c.name === '1. Colors' || c.name === 'Colors');
-
-    // Get all color variables to find primary shades
-    const allColorVars = await figma.variables.getLocalVariablesAsync('COLOR');
-
-    // Find primary shade variables
-    const primary500Var = allColorVars.find(v => v.name === 'primary/500');
-    const primary600Var = allColorVars.find(v => v.name === 'primary/600');
-    const primary700Var = allColorVars.find(v => v.name === 'primary/700');
-
-    // Get or create variable collection for Button colors
-    let buttonColorCollection = collections.find(c => c.name === 'Button/Colors');
-
-    if (!buttonColorCollection) {
-        buttonColorCollection = figma.variables.createVariableCollection('Button/Colors');
-    }
-
-    const colorModeId = buttonColorCollection.modes[0].modeId;
-    const existingColorVars = await figma.variables.getLocalVariablesAsync('COLOR');
-
-    // Helper function to create or update color variable with alias support
-    function createOrUpdateColorVar(name, color, aliasVar = null) {
-        let colorVar = existingColorVars.find(v => v.name === name && v.variableCollectionId === buttonColorCollection.id);
-        if (!colorVar) {
-            colorVar = figma.variables.createVariable(name, buttonColorCollection, 'COLOR');
-            existingColorVars.push(colorVar);
-        }
-
-        // If we have an alias variable, use it; otherwise use the color directly
-        if (aliasVar) {
-            try {
-                colorVar.setValueForMode(colorModeId, {
-                    type: 'VARIABLE_ALIAS',
-                    id: aliasVar.id
-                });
-            } catch (e) {
-                // Fallback to direct color if alias fails
-                colorVar.setValueForMode(colorModeId, color);
-            }
-        } else {
-            colorVar.setValueForMode(colorModeId, color);
-        }
-        return colorVar;
-    }
-
-    // Base colors
-    const baseColors = {
-        primary: baseRgb,
-        destructive: { r: 0.937, g: 0.267, b: 0.267 },
-        text: textRgb,
-        white: { r: 1, g: 1, b: 1 },
-        border: { r: 0.8, g: 0.8, b: 0.85 },
-        disabled: { r: 0.85, g: 0.85, b: 0.85 },
-        disabledText: { r: 0.6, g: 0.6, b: 0.6 }
-    };
-
-    // PRIMARY BUTTON - Background Colors (using primary shade aliases)
-    const primaryNormalVar = createOrUpdateColorVar('button/primary/bg/normal', baseColors.primary, primary500Var);
-    const primaryHoverVar = createOrUpdateColorVar('button/primary/bg/hover', darkenColor(baseColors.primary, 0.1), primary600Var);
-    const primaryClickVar = createOrUpdateColorVar('button/primary/bg/click', darkenColor(baseColors.primary, 0.2), primary700Var);
-    const primaryDisabledVar = createOrUpdateColorVar('button/primary/bg/disabled', baseColors.disabled);
-
-    // PRIMARY BUTTON - Text Colors
-    const primaryTextNormalVar = createOrUpdateColorVar('button/primary/text/normal', baseColors.white);
-    const primaryTextHoverVar = createOrUpdateColorVar('button/primary/text/hover', baseColors.white);
-    const primaryTextClickVar = createOrUpdateColorVar('button/primary/text/click', baseColors.white);
-    const primaryTextDisabledVar = createOrUpdateColorVar('button/primary/text/disabled', baseColors.disabledText);
-
-    // DESTRUCTIVE BUTTON - Background Colors
-    const destructiveNormalVar = createOrUpdateColorVar('button/destructive/bg/normal', baseColors.destructive);
-    const destructiveHoverVar = createOrUpdateColorVar('button/destructive/bg/hover', darkenColor(baseColors.destructive, 0.1));
-    const destructiveClickVar = createOrUpdateColorVar('button/destructive/bg/click', darkenColor(baseColors.destructive, 0.2));
-    const destructiveDisabledVar = createOrUpdateColorVar('button/destructive/bg/disabled', baseColors.disabled);
-
-    // DESTRUCTIVE BUTTON - Text Colors
-    const destructiveTextNormalVar = createOrUpdateColorVar('button/destructive/text/normal', baseColors.white);
-    const destructiveTextHoverVar = createOrUpdateColorVar('button/destructive/text/hover', baseColors.white);
-    const destructiveTextClickVar = createOrUpdateColorVar('button/destructive/text/click', baseColors.white);
-    const destructiveTextDisabledVar = createOrUpdateColorVar('button/destructive/text/disabled', baseColors.disabledText);
-
-    // LINE BUTTON - Background Colors
-    const lineNormalVar = createOrUpdateColorVar('button/line/bg/normal', { r: 1, g: 1, b: 1, a: 0 });
-    const lineHoverVar = createOrUpdateColorVar('button/line/bg/hover', lightenColor(baseColors.primary, 0.95));
-    const lineClickVar = createOrUpdateColorVar('button/line/bg/click', lightenColor(baseColors.primary, 0.9));
-    const lineDisabledVar = createOrUpdateColorVar('button/line/bg/disabled', { r: 0.98, g: 0.98, b: 0.98, a: 0.5 });
-
-    // LINE BUTTON - Border Colors
-    const lineBorderNormalVar = createOrUpdateColorVar('button/line/border/normal', baseColors.border);
-    const lineBorderHoverVar = createOrUpdateColorVar('button/line/border/hover', baseColors.primary);
-    const lineBorderClickVar = createOrUpdateColorVar('button/line/border/click', baseColors.primary);
-    const lineBorderDisabledVar = createOrUpdateColorVar('button/line/border/disabled', { r: 0.9, g: 0.9, b: 0.9 });
-
-    // LINE BUTTON - Text Colors
-    const lineTextNormalVar = createOrUpdateColorVar('button/line/text/normal', baseColors.primary);
-    const lineTextHoverVar = createOrUpdateColorVar('button/line/text/hover', baseColors.primary);
-    const lineTextClickVar = createOrUpdateColorVar('button/line/text/click', baseColors.primary);
-    const lineTextDisabledVar = createOrUpdateColorVar('button/line/text/disabled', { r: 0.8, g: 0.8, b: 0.8 });
-
-    // GHOST BUTTON - Background Colors
-    const ghostNormalVar = createOrUpdateColorVar('button/ghost/bg/normal', { r: 1, g: 1, b: 1, a: 0 });
-    const ghostHoverVar = createOrUpdateColorVar('button/ghost/bg/hover', lightenColor(baseColors.primary, 0.95));
-    const ghostClickVar = createOrUpdateColorVar('button/ghost/bg/click', lightenColor(baseColors.primary, 0.9));
-    const ghostDisabledVar = createOrUpdateColorVar('button/ghost/bg/disabled', { r: 1, g: 1, b: 1, a: 0 });
-
-    // GHOST BUTTON - Text Colors
-    const ghostTextNormalVar = createOrUpdateColorVar('button/ghost/text/normal', baseColors.primary);
-    const ghostTextHoverVar = createOrUpdateColorVar('button/ghost/text/hover', baseColors.primary);
-    const ghostTextClickVar = createOrUpdateColorVar('button/ghost/text/click', baseColors.primary);
-    const ghostTextDisabledVar = createOrUpdateColorVar('button/ghost/text/disabled', { r: 0.8, g: 0.8, b: 0.8 });
-
-    // LINK BUTTON - Background Colors (all transparent)
-    const linkNormalVar = createOrUpdateColorVar('button/link/bg/normal', { r: 1, g: 1, b: 1, a: 0 });
-    const linkHoverVar = createOrUpdateColorVar('button/link/bg/hover', { r: 1, g: 1, b: 1, a: 0 });
-    const linkClickVar = createOrUpdateColorVar('button/link/bg/click', { r: 1, g: 1, b: 1, a: 0 });
-    const linkDisabledVar = createOrUpdateColorVar('button/link/bg/disabled', { r: 1, g: 1, b: 1, a: 0 });
-
-    // LINK BUTTON - Text Colors
-    const linkTextNormalVar = createOrUpdateColorVar('button/link/text/normal', baseColors.primary);
-    const linkTextHoverVar = createOrUpdateColorVar('button/link/text/hover', darkenColor(baseColors.primary, 0.2));
-    const linkTextClickVar = createOrUpdateColorVar('button/link/text/click', darkenColor(baseColors.primary, 0.3));
-    const linkTextDisabledVar = createOrUpdateColorVar('button/link/text/disabled', { r: 0.8, g: 0.8, b: 0.8 });
-
-    // Radius variable
-    const radiusVarName = 'button/radius';
-    let radiusVar = existingVars.find(v => v.name === radiusVarName && v.variableCollectionId === buttonSpacingCollection.id);
-    if (!radiusVar) {
-        radiusVar = figma.variables.createVariable(radiusVarName, buttonSpacingCollection, 'FLOAT');
-    }
-    radiusVar.setValueForMode(modeId, radius);
-
-    // Organize color variables by type and state
-    const buttonColorVariables = {
-        primary: {
-            bg: { normal: primaryNormalVar, hover: primaryHoverVar, click: primaryClickVar, disabled: primaryDisabledVar },
-            text: { normal: primaryTextNormalVar, hover: primaryTextHoverVar, click: primaryTextClickVar, disabled: primaryTextDisabledVar }
-        },
-        destructive: {
-            bg: { normal: destructiveNormalVar, hover: destructiveHoverVar, click: destructiveClickVar, disabled: destructiveDisabledVar },
-            text: { normal: destructiveTextNormalVar, hover: destructiveTextHoverVar, click: destructiveTextClickVar, disabled: destructiveTextDisabledVar }
-        },
-        line: {
-            bg: { normal: lineNormalVar, hover: lineHoverVar, click: lineClickVar, disabled: lineDisabledVar },
-            border: { normal: lineBorderNormalVar, hover: lineBorderHoverVar, click: lineBorderClickVar, disabled: lineBorderDisabledVar },
-            text: { normal: lineTextNormalVar, hover: lineTextHoverVar, click: lineTextClickVar, disabled: lineTextDisabledVar }
-        },
-        ghost: {
-            bg: { normal: ghostNormalVar, hover: ghostHoverVar, click: ghostClickVar, disabled: ghostDisabledVar },
-            text: { normal: ghostTextNormalVar, hover: ghostTextHoverVar, click: ghostTextClickVar, disabled: ghostTextDisabledVar }
-        },
-        link: {
-            bg: { normal: linkNormalVar, hover: linkHoverVar, click: linkClickVar, disabled: linkDisabledVar },
-            text: { normal: linkTextNormalVar, hover: linkTextHoverVar, click: linkTextClickVar, disabled: linkTextDisabledVar }
-        }
-    };
-
-    // ============================================
-    // CREATE BUTTON VARIABLES & TEXT STYLES - END
-    // ============================================
-
-    // Arrow icons SVG
-    const arrowLeftSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M20.5 12H3.67" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`;
-
-    const arrowRightSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M14.43 5.93L20.5 12L14.43 18.07" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M3.5 12H20.33" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`;
-
-    // Create icon components for property swap
-    function createIconComponent(svgString, name, color, size = 16) {
-        const iconComponent = figma.createComponent();
-        iconComponent.name = name;
-        iconComponent.resize(size, size);
-        iconComponent.fills = [];
-
-        const svgNode = figma.createNodeFromSvg(svgString);
-        const scale = Math.min(size / svgNode.width, size / svgNode.height);
-        svgNode.resize(svgNode.width * scale, svgNode.height * scale);
-        svgNode.x = (size - svgNode.width) / 2;
-        svgNode.y = (size - svgNode.height) / 2;
-
-        applyColorToNode(svgNode, color);
-
-        if (svgNode.type === 'FRAME' || svgNode.type === 'GROUP') {
-            [...svgNode.children].forEach(child => {
-                child.x += svgNode.x;
-                child.y += svgNode.y;
-                iconComponent.appendChild(child);
-            });
-            svgNode.remove();
-        } else {
-            iconComponent.appendChild(svgNode);
-        }
-        return iconComponent;
-    }
-
-    // Create black icon components (no wrapper frame)
-    const blackColor = { r: 0, g: 0, b: 0 };
-    const leftIconComp = createIconComponent(arrowLeftSVG, "Icon/arrow-left", blackColor, 20);
-    const rightIconComp = createIconComponent(arrowRightSVG, "Icon/arrow-right-1", blackColor, 20);
-
-    // Button configurations
-    const sizes = [
-        { name: 'SM', height: 32, paddingX: 12, fontSize: 12, iconSize: 14, gap: 6 },
-        { name: 'MD', height: 40, paddingX: 16, fontSize: 14, iconSize: 16, gap: 8 },
-        { name: 'LG', height: 48, paddingX: 20, fontSize: 16, iconSize: 18, gap: 10 }
-    ];
-
-    const types = [
-        { name: 'Primary', color: baseRgb },
-        { name: 'Destructive', color: destructiveRgb },
-        { name: 'Line', color: baseRgb },
-        { name: 'Ghost', color: baseRgb },
-        { name: 'Link', color: baseRgb }
-    ];
-    const states = ['Normal', 'Hover', 'Click', 'Disabled'];
-
-    const components = [];
-    const blockWidth = 600; // Total width for a block of 4 buttons + spacing
-    const blockHeight = 250; // Total height for a block of 3 sizes + spacing
-    const groupGapX = 120;
-    const groupGapY = 100;
-
-    for (let tIndex = 0; tIndex < types.length; tIndex++) {
-        const typeObj = types[tIndex];
-        const type = typeObj.name;
-        const typeColor = typeObj.color;
-
-        // Calculate block base position (2 columns)
-        const col = tIndex % 2;
-        const row = Math.floor(tIndex / 2);
-        const blockBaseX = col * (blockWidth + groupGapX);
-        const blockBaseY = row * (blockHeight + groupGapY);
-
-        for (let sIndex = 0; sIndex < sizes.length; sIndex++) {
-            const size = sizes[sIndex];
-            for (let stIndex = 0; stIndex < states.length; stIndex++) {
-                const state = states[stIndex];
-
-                const button = figma.createComponent();
-                button.name = `Type=${type}, Size=${size.name}, State=${state}`;
-                button.resize(120, size.height);
-
-                button.x = blockBaseX + (stIndex * 140);
-                button.y = blockBaseY + (sIndex * 60);
-
-                button.layoutMode = 'HORIZONTAL';
-                button.primaryAxisAlignItems = 'CENTER';
-                button.counterAxisAlignItems = 'CENTER';
-                button.primaryAxisSizingMode = 'AUTO';
-                button.paddingLeft = size.paddingX;
-                button.paddingRight = size.paddingX;
-                button.itemSpacing = size.gap;
-                button.cornerRadius = radius;
-
-                // Define colors based on type and state
-                let fill = null;
-                let stroke = null;
-                let strokeW = 0;
-                let currentTextColor = textRgb;
-
-                if (type === 'Primary' || type === 'Destructive') {
-                    const mainColor = type === 'Primary' ? baseRgb : destructiveRgb;
-                    currentTextColor = { r: 1, g: 1, b: 1 }; // Default for solid buttons
-
-                    if (state === 'Normal') fill = mainColor;
-                    else if (state === 'Hover') fill = darkenColor(mainColor, 0.1);
-                    else if (state === 'Click') fill = darkenColor(mainColor, 0.2);
-                    else {
-                        fill = { r: 0.85, g: 0.85, b: 0.85 };
-                        currentTextColor = { r: 0.6, g: 0.6, b: 0.6 };
-                    }
-                } else if (type === 'Line') {
-                    currentTextColor = typeColor;
-                    stroke = { r: 0.8, g: 0.8, b: 0.85 };
-                    strokeW = 1;
-                    if (state === 'Normal') fill = { r: 1, g: 1, b: 1, a: 0 };
-                    else if (state === 'Hover') {
-                        fill = lightenColor(typeColor, 0.95);
-                        stroke = typeColor;
-                    }
-                    else if (state === 'Click') {
-                        fill = lightenColor(typeColor, 0.9);
-                        stroke = typeColor;
-                    }
-                    else {
-                        fill = { r: 0.98, g: 0.98, b: 0.98, a: 0.5 };
-                        stroke = { r: 0.9, g: 0.9, b: 0.9 };
-                        currentTextColor = { r: 0.8, g: 0.8, b: 0.8 };
-                    }
-                } else if (type === 'Ghost') {
-                    currentTextColor = typeColor;
-                    if (state === 'Normal') fill = { r: 1, g: 1, b: 1, a: 0 };
-                    else if (state === 'Hover') fill = lightenColor(typeColor, 0.95);
-                    else if (state === 'Click') fill = lightenColor(typeColor, 0.9);
-                    else {
-                        fill = { r: 1, g: 1, b: 1, a: 0 };
-                        currentTextColor = { r: 0.8, g: 0.8, b: 0.8 };
-                    }
-                } else if (type === 'Link') {
-                    currentTextColor = typeColor;
-                    fill = { r: 1, g: 1, b: 1, a: 0 };
-                    if (state === 'Hover') currentTextColor = darkenColor(typeColor, 0.2);
-                    else if (state === 'Click') currentTextColor = darkenColor(typeColor, 0.3);
-                    else if (state === 'Disabled') currentTextColor = { r: 0.8, g: 0.8, b: 0.8 };
-                }
-
-                if (fill && fill.a !== 0) {
-                    const colorVal = { r: fill.r, g: fill.g, b: fill.b };
-                    const opacityVal = fill.a !== undefined ? fill.a : 1;
-                    button.fills = [{ type: 'SOLID', color: colorVal, opacity: opacityVal }];
-                } else {
-                    button.fills = [];
-                }
-
-                if (stroke) {
-                    button.strokes = [{ type: 'SOLID', color: stroke }];
-                    button.strokeWeight = strokeW;
-                }
-
-                // Left Icon
-                const leftIcon = leftIconComp.createInstance();
-                leftIcon.name = "LeftIcon";
-                leftIcon.resize(size.iconSize, size.iconSize);
-                applyColorToNode(leftIcon, currentTextColor);
-                button.appendChild(leftIcon);
-
-                // Text
-                const text = figma.createText();
-                text.name = "ButtonText";
-                text.fontName = { family: "Poppins", style: "Medium" };
-                text.fontSize = size.fontSize;
-                text.characters = buttonText;
-                text.fills = [{ type: 'SOLID', color: currentTextColor }];
-                if (type === 'Link') text.textDecoration = 'UNDERLINE';
-
-                // Apply button text style
-                if (buttonTextStyles[size.name]) {
-                    await text.setTextStyleIdAsync(buttonTextStyles[size.name].id);
-                }
-
-                button.appendChild(text);
-
-                // Right Icon
-                const rightIcon = rightIconComp.createInstance();
-                rightIcon.name = "RightIcon";
-                rightIcon.resize(size.iconSize, size.iconSize);
-                applyColorToNode(rightIcon, currentTextColor);
-                button.appendChild(rightIcon);
-
-                // Helper function to bind color variable to icon (vector nodes only)
-                function bindColorVariableToIcon(iconNode, colorVar) {
-                    try {
-                        const vectorTypes = ['VECTOR', 'LINE', 'ELLIPSE', 'RECTANGLE', 'POLYGON', 'STAR', 'BOOLEAN_OPERATION'];
-                        const containerTypes = ['FRAME', 'GROUP', 'COMPONENT', 'INSTANCE'];
-
-                        const bindFills = (node) => {
-                            // Only apply fills/strokes to vector-type nodes, not frames
-                            if (vectorTypes.includes(node.type)) {
-                                if (node.fills && Array.isArray(node.fills) && node.fills.length > 0) {
-                                    const newFills = [{
-                                        type: 'SOLID',
-                                        color: { r: 0, g: 0, b: 0 },
-                                        boundVariables: {
-                                            color: { type: 'VARIABLE_ALIAS', id: colorVar.id }
-                                        }
-                                    }];
-                                    node.fills = newFills;
-                                }
-                                if (node.strokes && Array.isArray(node.strokes) && node.strokes.length > 0) {
-                                    const newStrokes = [{
-                                        type: 'SOLID',
-                                        color: { r: 0, g: 0, b: 0 },
-                                        boundVariables: {
-                                            color: { type: 'VARIABLE_ALIAS', id: colorVar.id }
-                                        }
-                                    }];
-                                    node.strokes = newStrokes;
-                                }
-                            }
-
-                            // For container types, ensure they have no fills and recurse into children
-                            if (containerTypes.includes(node.type)) {
-                                // Remove any fills from container frames
-                                if (node.fills && Array.isArray(node.fills) && node.fills.length > 0) {
-                                    node.fills = [];
-                                }
-                            }
-
-                            // Recurse into children
-                            if ('children' in node) {
-                                node.children.forEach(child => bindFills(child));
-                            }
-                        };
-                        bindFills(iconNode);
-                    } catch (e) {
-                        console.warn('Could not bind color variable to icon:', e);
-                    }
-                }
-
-                // Bind spacing variables to button
-                const sizeKey = size.name.toLowerCase();
-                if (buttonVariables[sizeKey]) {
-                    try {
-                        button.setBoundVariable('paddingLeft', buttonVariables[sizeKey].paddingX);
-                        button.setBoundVariable('paddingRight', buttonVariables[sizeKey].paddingX);
-                        button.setBoundVariable('paddingTop', buttonVariables[sizeKey].paddingY);
-                        button.setBoundVariable('paddingBottom', buttonVariables[sizeKey].paddingY);
-                        button.setBoundVariable('itemSpacing', buttonVariables[sizeKey].gap);
-                    } catch (e) {
-                        console.warn(`Could not bind spacing variables for ${button.name}:`, e);
-                    }
-                }
-
-                // Bind radius variable to button
-                try {
-                    button.setBoundVariable('topLeftRadius', radiusVar);
-                    button.setBoundVariable('topRightRadius', radiusVar);
-                    button.setBoundVariable('bottomLeftRadius', radiusVar);
-                    button.setBoundVariable('bottomRightRadius', radiusVar);
-                } catch (e) {
-                    console.warn(`Could not bind radius variable for ${button.name}:`, e);
-                }
-
-                // Bind color variables to button based on type and state
-                const typeKey = type.toLowerCase();
-                const stateKey = state.toLowerCase();
-
-                try {
-                    if (buttonColorVariables[typeKey]) {
-                        // Bind background color
-                        if (buttonColorVariables[typeKey].bg && buttonColorVariables[typeKey].bg[stateKey]) {
-                            const bgVar = buttonColorVariables[typeKey].bg[stateKey];
-                            if (button.fills.length > 0 && button.fills[0].type === 'SOLID') {
-                                const newFills = [{
-                                    type: 'SOLID',
-                                    color: { r: 0, g: 0, b: 0 },
-                                    boundVariables: {
-                                        color: {
-                                            type: 'VARIABLE_ALIAS',
-                                            id: bgVar.id
-                                        }
-                                    }
-                                }];
-                                button.fills = newFills;
-                            }
-                        }
-
-                        // Bind border color (for Line buttons)
-                        if (typeKey === 'line' && buttonColorVariables[typeKey].border && buttonColorVariables[typeKey].border[stateKey]) {
-                            const borderVar = buttonColorVariables[typeKey].border[stateKey];
-                            if (button.strokes.length > 0 && button.strokes[0].type === 'SOLID') {
-                                const newStrokes = [{
-                                    type: 'SOLID',
-                                    color: { r: 0, g: 0, b: 0 },
-                                    boundVariables: {
-                                        color: {
-                                            type: 'VARIABLE_ALIAS',
-                                            id: borderVar.id
-                                        }
-                                    }
-                                }];
-                                button.strokes = newStrokes;
-                            }
-                        }
-
-                        // Bind text color to text element
-                        if (buttonColorVariables[typeKey].text && buttonColorVariables[typeKey].text[stateKey]) {
-                            const textVar = buttonColorVariables[typeKey].text[stateKey];
-                            if (text.fills.length > 0 && text.fills[0].type === 'SOLID') {
-                                const newTextFills = [{
-                                    type: 'SOLID',
-                                    color: { r: 0, g: 0, b: 0 },
-                                    boundVariables: {
-                                        color: {
-                                            type: 'VARIABLE_ALIAS',
-                                            id: textVar.id
-                                        }
-                                    }
-                                }];
-                                text.fills = newTextFills;
-                            }
-
-                            // Bind the same text color variable to icons
-                            bindColorVariableToIcon(leftIcon, textVar);
-                            bindColorVariableToIcon(rightIcon, textVar);
-                        }
-                    }
-                } catch (e) {
-                    console.warn(`Could not bind color variables for ${button.name}:`, e);
-                }
-
-
-                components.push(button);
-            }
-        }
-    }
-
-    // Create component set
-    const componentSet = figma.combineAsVariants(components, figma.currentPage);
-    componentSet.name = "Button";
-
-    // Add Component Properties
-    const textProp = componentSet.addComponentProperty("Button Text", "TEXT", buttonText);
-    const showLeftIconProp = componentSet.addComponentProperty("Show Left Icon", "BOOLEAN", false);
-    const leftIconProp = componentSet.addComponentProperty("Left Icon", "INSTANCE_SWAP", leftIconComp.id);
-    const showRightIconProp = componentSet.addComponentProperty("Show Right Icon", "BOOLEAN", false);
-    const rightIconProp = componentSet.addComponentProperty("Right Icon", "INSTANCE_SWAP", rightIconComp.id);
-    const showTextProp = componentSet.addComponentProperty("Text", "BOOLEAN", true);
-
-    // Apply properties to instances
-    componentSet.children.forEach(variant => {
-        const textLayer = variant.findOne(n => n.name === "ButtonText");
-        const leftIconLayer = variant.findOne(n => n.name === "LeftIcon");
-        const rightIconLayer = variant.findOne(n => n.name === "RightIcon");
-
-        if (textLayer) {
-            textLayer.componentPropertyReferences = {
-                characters: textProp,
-                visible: showTextProp
-            };
-        }
-        if (leftIconLayer) {
-            leftIconLayer.componentPropertyReferences = {
-                visible: showLeftIconProp,
-                mainComponent: leftIconProp
-            };
-        }
-        if (rightIconLayer) {
-            rightIconLayer.componentPropertyReferences = {
-                visible: showRightIconProp,
-                mainComponent: rightIconProp
-            };
-        }
+figma.showUI(__html__, { width: 400, height: 700 });
+
+function notifyUI(actionType, success, message, errorDetails = null) {
+    const finalMessage = success ? message : (errorDetails ? `${message}: ${errorDetails}` : message);
+    figma.ui.postMessage({
+        type: 'action-complete',
+        actionType,
+        success,
+        message: finalMessage
     });
-
-    // Container frame for documentation
-    const containerFrame = figma.createFrame();
-    containerFrame.name = "Button Component System";
-    containerFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-    containerFrame.layoutMode = 'VERTICAL';
-    containerFrame.primaryAxisSizingMode = 'AUTO';
-    containerFrame.counterAxisSizingMode = 'AUTO';
-    containerFrame.paddingBottom = 48;
-
-    // --- PREMIUM CENTERED HEADER ---
-    const headerFrame = figma.createFrame();
-    headerFrame.name = "Header";
-    headerFrame.layoutMode = 'VERTICAL';
-    headerFrame.layoutAlign = 'STRETCH';
-    headerFrame.primaryAxisSizingMode = 'AUTO';
-    headerFrame.paddingLeft = 80; headerFrame.paddingRight = 80; headerFrame.paddingTop = 80; headerFrame.paddingBottom = 100;
-    headerFrame.itemSpacing = 40;
-    headerFrame.counterAxisAlignItems = 'CENTER'; // Left align content
-    headerFrame.fills = [{
-        type: 'GRADIENT_LINEAR',
-        gradientStops: [
-            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
-            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
-        ],
-        gradientTransform: [[1, 0, 0], [0, 1, 0]]
-    }];
-
-    // Logo & Title Container
-    const headerMain = figma.createFrame();
-    headerMain.layoutMode = 'VERTICAL';
-    headerMain.primaryAxisSizingMode = 'AUTO';
-    headerMain.counterAxisSizingMode = 'AUTO';
-    headerMain.counterAxisAlignItems = 'CENTER';
-    headerMain.itemSpacing = 24;
-    headerMain.fills = [];
-    headerFrame.appendChild(headerMain);
-
-    const title = figma.createText();
-    title.fontName = { family: "Poppins", style: "Bold" };
-    title.characters = "Button Component System";
-    title.fontSize = 56;
-    title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
-    title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    headerMain.appendChild(title);
-
-    const desc = figma.createText();
-    desc.fontName = { family: "Poppins", style: "Regular" };
-    desc.characters = `A comprehensive button system with ${components.length} variants, including Primary, Line, Ghost, Link, and Destructive styles.`;
-    desc.fontSize = 18;
-    desc.opacity = 0.6;
-    desc.textAlignHorizontal = 'CENTER';
-    desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    desc.resize(800, desc.height);
-    headerMain.appendChild(desc);
-
-    // STATS ROW (Glassmorphism)
-    const statsRow = figma.createFrame();
-    statsRow.layoutMode = 'HORIZONTAL';
-    statsRow.primaryAxisSizingMode = 'AUTO';
-    statsRow.counterAxisSizingMode = 'AUTO';
-    statsRow.itemSpacing = 16;
-    statsRow.fills = [];
-    statsRow.itemSpacing = 16; // Maintain spacing
-
-    // Ensure stats are centered in the header
-    headerFrame.primaryAxisAlignItems = 'CENTER';
-    headerFrame.counterAxisAlignItems = 'CENTER';
-
-    function createStatBadge(label, value) {
-        const badge = figma.createFrame();
-        badge.layoutMode = 'HORIZONTAL';
-        badge.primaryAxisSizingMode = 'AUTO';
-        badge.counterAxisSizingMode = 'AUTO';
-        badge.paddingLeft = 20;
-        badge.paddingRight = 20;
-        badge.paddingTop = 10;
-        badge.paddingBottom = 10;
-        badge.cornerRadius = 100;
-        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
-        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
-        badge.strokeWeight = 1;
-        badge.itemSpacing = 10;
-        badge.counterAxisAlignItems = 'CENTER';
-        badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
-
-        const tLabel = figma.createText();
-        tLabel.fontName = { family: "Poppins", style: "Medium" };
-        tLabel.fontSize = 13;
-        tLabel.characters = label;
-        tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
-        badge.appendChild(tLabel);
-
-        const tValue = figma.createText();
-        tValue.fontName = { family: "Poppins", style: "Bold" };
-        tValue.fontSize = 13;
-        tValue.characters = value;
-        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        badge.appendChild(tValue);
-
-        return badge;
-    }
-
-    statsRow.appendChild(createStatBadge("Variants", String(components.length)));
-    statsRow.appendChild(createStatBadge("Types", String(types.length)));
-    statsRow.appendChild(createStatBadge("Sizes", String(sizes.length)));
-    const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-    statsRow.appendChild(createStatBadge("Last Updated", dateText));
-
-    headerFrame.appendChild(statsRow);
-    containerFrame.appendChild(headerFrame);
-
-    const contentWrapper = figma.createFrame();
-    contentWrapper.name = "Content";
-    contentWrapper.layoutMode = 'VERTICAL';
-    contentWrapper.primaryAxisSizingMode = 'AUTO';
-    contentWrapper.counterAxisSizingMode = 'AUTO';
-    contentWrapper.layoutAlign = 'STRETCH';
-    contentWrapper.paddingLeft = 48;
-    contentWrapper.paddingRight = 48;
-    contentWrapper.paddingTop = 48;
-    contentWrapper.paddingBottom = 48;
-    contentWrapper.itemSpacing = 32;
-    contentWrapper.fills = [];
-
-    // Add icon components directly (no frame wrapper)
-    const iconsRow = figma.createFrame();
-    iconsRow.name = "🎯 Button Icons";
-    iconsRow.layoutMode = 'HORIZONTAL';
-    iconsRow.primaryAxisSizingMode = 'AUTO';
-    iconsRow.counterAxisSizingMode = 'AUTO';
-    iconsRow.itemSpacing = 24;
-    iconsRow.fills = [];
-    iconsRow.appendChild(leftIconComp);
-    iconsRow.appendChild(rightIconComp);
-
-    contentWrapper.appendChild(iconsRow);
-    contentWrapper.appendChild(componentSet);
-    containerFrame.appendChild(contentWrapper);
-
-    figma.currentPage.appendChild(containerFrame);
-
-    // Cleanup and zoom
-    figma.viewport.scrollAndZoomIntoView([containerFrame]);
-    figma.notify(`✅ Button System created with ${components.length} variants, state-based color variables, spacing variables, and text styles!`);
+    figma.notify(finalMessage);
 }
-
-// ============================================
-// BUTTON COMPONENT - END
-// ============================================
-
-
-// ============================================
-// INPUT COMPONENT - START
-// ============================================
-
-async function createInputComponentSet(placeholder, borderColor, primaryColor, textColor, radius) {
-    await Promise.all([
-        figma.loadFontAsync({ family: "Poppins", style: "Regular" }),
-        figma.loadFontAsync({ family: "Poppins", style: "Medium" }),
-        figma.loadFontAsync({ family: "Poppins", style: "Bold" }),
-        figma.loadFontAsync({ family: "Inter", style: "Regular" })
-    ]);
-
-    const borderRgb = hexToRgb('#E5E7EB');
-    const textRgb = hexToRgb('#1F2937');
-    const mutedRgb = hexToRgb('#9CA3AF');
-    const primaryRgb = hexToRgb(primaryColor);
-    const errorRgb = hexToRgb('#EF4444');
-    const warningRgb = hexToRgb('#EF4444'); // Back to red for Asterisk as requested
-    const successRgb = hexToRgb('#10B981');
-
-    // ============================================
-    // CREATE INPUT SPACING VARIABLES - START
-    // ============================================
-
-    const collections = await figma.variables.getLocalVariableCollectionsAsync();
-    let inputSpacingCollection = collections.find(c => c.name === 'Input/Spacing');
-
-    if (!inputSpacingCollection) {
-        inputSpacingCollection = figma.variables.createVariableCollection('Input/Spacing');
-    }
-
-    const spacingModeId = inputSpacingCollection.modes[0].modeId;
-    const existingFloatVars = await figma.variables.getLocalVariablesAsync('FLOAT');
-
-    // Helper function to create or update float variable
-    function createOrUpdateFloatVar(name, value) {
-        let floatVar = existingFloatVars.find(v => v.name === name && v.variableCollectionId === inputSpacingCollection.id);
-        if (!floatVar) {
-            floatVar = figma.variables.createVariable(name, inputSpacingCollection, 'FLOAT');
-            existingFloatVars.push(floatVar);
-        }
-        floatVar.setValueForMode(spacingModeId, value);
-        return floatVar;
-    }
-
-    // Input spacing variables
-    const inputPaddingXVar = createOrUpdateFloatVar('input/padding-x', 14);
-    const inputPaddingYVar = createOrUpdateFloatVar('input/padding-y', 10);
-    const inputPaddingYRichVar = createOrUpdateFloatVar('input/padding-y-rich', 12);
-    const inputItemSpacingVar = createOrUpdateFloatVar('input/item-spacing', 10);
-    const inputLabelGapVar = createOrUpdateFloatVar('input/label-gap', 8);
-    const inputHintGapVar = createOrUpdateFloatVar('input/hint-gap', 8);
-    const inputRadiusVar = createOrUpdateFloatVar('input/radius', radius);
-    const inputOtpGapVar = createOrUpdateFloatVar('input/otp-gap', 12);
-    const inputOtpBoxSizeVar = createOrUpdateFloatVar('input/otp-box-size', 48);
-
-    // Input font size variables
-    const inputLabelFontSizeVar = createOrUpdateFloatVar('input/font-size/label', 13);
-    const inputPlaceholderFontSizeVar = createOrUpdateFloatVar('input/font-size/placeholder', 14);
-    const inputHintFontSizeVar = createOrUpdateFloatVar('input/font-size/hint', 12);
-    const inputOtpFontSizeVar = createOrUpdateFloatVar('input/font-size/otp', 18);
-
-    const inputSpacingVariables = {
-        paddingX: inputPaddingXVar,
-        paddingY: inputPaddingYVar,
-        paddingYRich: inputPaddingYRichVar,
-        itemSpacing: inputItemSpacingVar,
-        labelGap: inputLabelGapVar,
-        hintGap: inputHintGapVar,
-        radius: inputRadiusVar,
-        otpGap: inputOtpGapVar,
-        otpBoxSize: inputOtpBoxSizeVar,
-        labelFontSize: inputLabelFontSizeVar,
-        placeholderFontSize: inputPlaceholderFontSizeVar,
-        hintFontSize: inputHintFontSizeVar,
-        otpFontSize: inputOtpFontSizeVar
-    };
-
-    // ============================================
-    // CREATE INPUT SPACING VARIABLES - END
-    // ============================================
-
-    // ============================================
-    // CREATE INPUT COLOR VARIABLES - START
-    // ============================================
-
-    let inputColorCollection = collections.find(c => c.name === 'Input/Colors');
-
-    if (!inputColorCollection) {
-        inputColorCollection = figma.variables.createVariableCollection('Input/Colors');
-    }
-
-    const colorModeId = inputColorCollection.modes[0].modeId;
-    const existingColorVars = await figma.variables.getLocalVariablesAsync('COLOR');
-
-    // Helper function to create or update color variable
-    function createOrUpdateColorVar(name, color) {
-        let colorVar = existingColorVars.find(v => v.name === name && v.variableCollectionId === inputColorCollection.id);
-        if (!colorVar) {
-            colorVar = figma.variables.createVariable(name, inputColorCollection, 'COLOR');
-            existingColorVars.push(colorVar);
-        }
-        colorVar.setValueForMode(colorModeId, color);
-        return colorVar;
-    }
-
-    // Background colors
-    const inputBgNormalVar = createOrUpdateColorVar('input/bg/normal', { r: 1, g: 1, b: 1 });
-    const inputBgDisabledVar = createOrUpdateColorVar('input/bg/disabled', { r: 0.95, g: 0.95, b: 0.95 });
-
-    // Border colors by state
-    const inputBorderNormalVar = createOrUpdateColorVar('input/border/normal', borderRgb);
-    const inputBorderHoverVar = createOrUpdateColorVar('input/border/hover', { r: 0.4, g: 0.4, b: 0.4 });
-    const inputBorderClickVar = createOrUpdateColorVar('input/border/click', primaryRgb);
-    const inputBorderErrorVar = createOrUpdateColorVar('input/border/error', errorRgb);
-    const inputBorderDisabledVar = createOrUpdateColorVar('input/border/disabled', borderRgb);
-
-    // Text colors
-    const inputTextVar = createOrUpdateColorVar('input/text/primary', textRgb);
-    const inputPlaceholderVar = createOrUpdateColorVar('input/text/placeholder', mutedRgb);
-    const inputLabelVar = createOrUpdateColorVar('input/text/label', { r: 0.22, g: 0.25, b: 0.32 });
-    const inputHintNormalVar = createOrUpdateColorVar('input/text/hint/normal', mutedRgb);
-    const inputHintErrorVar = createOrUpdateColorVar('input/text/hint/error', errorRgb);
-
-    // Icon colors by state
-    const inputIconNormalVar = createOrUpdateColorVar('input/icon/normal', mutedRgb);
-    const inputIconHoverVar = createOrUpdateColorVar('input/icon/hover', textRgb);
-    const inputIconClickVar = createOrUpdateColorVar('input/icon/click', textRgb);
-    const inputIconErrorVar = createOrUpdateColorVar('input/icon/error', errorRgb);
-    const inputIconDisabledVar = createOrUpdateColorVar('input/icon/disabled', mutedRgb);
-
-    // Special colors
-    const inputRequiredVar = createOrUpdateColorVar('input/required', warningRgb);
-    const inputPrimaryVar = createOrUpdateColorVar('input/primary', primaryRgb);
-    const inputErrorVar = createOrUpdateColorVar('input/error', errorRgb);
-    const inputSuccessVar = createOrUpdateColorVar('input/success', successRgb);
-
-    const inputColorVariables = {
-        bg: {
-            normal: inputBgNormalVar,
-            disabled: inputBgDisabledVar
-        },
-        border: {
-            normal: inputBorderNormalVar,
-            hover: inputBorderHoverVar,
-            click: inputBorderClickVar,
-            error: inputBorderErrorVar,
-            disabled: inputBorderDisabledVar
-        },
-        text: {
-            primary: inputTextVar,
-            placeholder: inputPlaceholderVar,
-            label: inputLabelVar,
-            hintNormal: inputHintNormalVar,
-            hintError: inputHintErrorVar
-        },
-        icon: {
-            normal: inputIconNormalVar,
-            hover: inputIconHoverVar,
-            click: inputIconClickVar,
-            error: inputIconErrorVar,
-            disabled: inputIconDisabledVar
-        },
-        required: inputRequiredVar,
-        primary: inputPrimaryVar,
-        error: inputErrorVar,
-        success: inputSuccessVar
-    };
-
-    // Helper function to bind color variable to icon (vector nodes only)
-    function bindColorVariableToIcon(iconNode, colorVar) {
-        try {
-            const vectorTypes = ['VECTOR', 'LINE', 'ELLIPSE', 'RECTANGLE', 'POLYGON', 'STAR', 'BOOLEAN_OPERATION'];
-            const containerTypes = ['FRAME', 'GROUP', 'COMPONENT', 'INSTANCE'];
-
-            const bindFills = (node) => {
-                // Only apply fills/strokes to vector-type nodes, not frames
-                if (vectorTypes.includes(node.type)) {
-                    if (node.fills && Array.isArray(node.fills) && node.fills.length > 0) {
-                        const newFills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: {
-                                color: { type: 'VARIABLE_ALIAS', id: colorVar.id }
-                            }
-                        }];
-                        node.fills = newFills;
-                    }
-                    if (node.strokes && Array.isArray(node.strokes) && node.strokes.length > 0) {
-                        const newStrokes = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: {
-                                color: { type: 'VARIABLE_ALIAS', id: colorVar.id }
-                            }
-                        }];
-                        node.strokes = newStrokes;
-                    }
-                }
-
-                // For container types, ensure they have no fills and recurse into children
-                if (containerTypes.includes(node.type)) {
-                    // Remove any fills from container frames
-                    if (node.fills && Array.isArray(node.fills) && node.fills.length > 0) {
-                        node.fills = [];
-                    }
-                }
-
-                // Recurse into children
-                if ('children' in node) {
-                    node.children.forEach(child => bindFills(child));
-                }
-            };
-            bindFills(iconNode);
-        } catch (e) {
-            console.warn('Could not bind color variable to icon:', e);
-        }
-    }
-
-    // ============================================
-    // CREATE INPUT COLOR VARIABLES - END
-    // ============================================
-
-    // ============================================
-    // CREATE INPUT TEXT STYLES - START
-    // ============================================
-
-    const existingTextStyles = await figma.getLocalTextStylesAsync();
-    const inputTextStyles = {};
-
-    // Label text style
-    let labelTextStyle = existingTextStyles.find(s => s.name === 'Input/Label');
-    if (!labelTextStyle) {
-        labelTextStyle = figma.createTextStyle();
-        labelTextStyle.name = 'Input/Label';
-    }
-    labelTextStyle.fontName = { family: "Poppins", style: "Medium" };
-    labelTextStyle.fontSize = 13;
-    labelTextStyle.lineHeight = { value: 150, unit: 'PERCENT' };
-    labelTextStyle.letterSpacing = { value: 0, unit: 'PIXELS' };
-    try {
-        labelTextStyle.setBoundVariable('fontSize', inputSpacingVariables.labelFontSize);
-    } catch (e) {
-        console.warn('Could not bind fontSize variable for Input/Label:', e);
-    }
-    inputTextStyles.label = labelTextStyle;
-
-    // Placeholder text style
-    let placeholderTextStyle = existingTextStyles.find(s => s.name === 'Input/Placeholder');
-    if (!placeholderTextStyle) {
-        placeholderTextStyle = figma.createTextStyle();
-        placeholderTextStyle.name = 'Input/Placeholder';
-    }
-    placeholderTextStyle.fontName = { family: "Poppins", style: "Regular" };
-    placeholderTextStyle.fontSize = 14;
-    placeholderTextStyle.lineHeight = { value: 150, unit: 'PERCENT' };
-    placeholderTextStyle.letterSpacing = { value: 0, unit: 'PIXELS' };
-    try {
-        placeholderTextStyle.setBoundVariable('fontSize', inputSpacingVariables.placeholderFontSize);
-    } catch (e) {
-        console.warn('Could not bind fontSize variable for Input/Placeholder:', e);
-    }
-    inputTextStyles.placeholder = placeholderTextStyle;
-
-    // Hint text style
-    let hintTextStyle = existingTextStyles.find(s => s.name === 'Input/Hint');
-    if (!hintTextStyle) {
-        hintTextStyle = figma.createTextStyle();
-        hintTextStyle.name = 'Input/Hint';
-    }
-    hintTextStyle.fontName = { family: "Poppins", style: "Regular" };
-    hintTextStyle.fontSize = 12;
-    hintTextStyle.lineHeight = { value: 150, unit: 'PERCENT' };
-    hintTextStyle.letterSpacing = { value: 0, unit: 'PIXELS' };
-    try {
-        hintTextStyle.setBoundVariable('fontSize', inputSpacingVariables.hintFontSize);
-    } catch (e) {
-        console.warn('Could not bind fontSize variable for Input/Hint:', e);
-    }
-    inputTextStyles.hint = hintTextStyle;
-
-    // OTP text style
-    let otpTextStyle = existingTextStyles.find(s => s.name === 'Input/OTP');
-    if (!otpTextStyle) {
-        otpTextStyle = figma.createTextStyle();
-        otpTextStyle.name = 'Input/OTP';
-    }
-    otpTextStyle.fontName = { family: "Poppins", style: "Medium" };
-    otpTextStyle.fontSize = 18;
-    otpTextStyle.lineHeight = { value: 150, unit: 'PERCENT' };
-    otpTextStyle.letterSpacing = { value: 0, unit: 'PIXELS' };
-    try {
-        otpTextStyle.setBoundVariable('fontSize', inputSpacingVariables.otpFontSize);
-    } catch (e) {
-        console.warn('Could not bind fontSize variable for Input/OTP:', e);
-    }
-    inputTextStyles.otp = otpTextStyle;
-
-    // ============================================
-    // CREATE INPUT TEXT STYLES - END
-    // ============================================
-
-    // Icon SVGs
-    const iconSVGs = {
-        search: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M11.5 21C16.7467 21 21 16.7467 21 11.5C21 6.25329 16.7467 2 11.5 2C6.25329 2 2 6.25329 2 11.5C2 16.7467 6.25329 21 11.5 21Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 22L20 20" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-        left: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="currentColor" stroke-width="1" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.5 12H3.67" stroke="currentColor" stroke-width="1" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-        right: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14.43 5.93L20.5 12L14.43 18.07" stroke="currentColor" stroke-width="1" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 12H20.33" stroke="currentColor" stroke-width="1" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-        info: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8V13" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.9945 16H12.0035" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-        chevron: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M19.92 8.95L13.4 15.47C12.63 16.24 11.37 16.24 10.6 15.47L4.08 8.95" stroke="currentColor" stroke-width="1" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-        close: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-    };
-
-    function createIconComponent(svgString, name, color, size = 16) {
-        const iconComponent = figma.createComponent();
-        iconComponent.name = name;
-        iconComponent.resize(size, size);
-        iconComponent.fills = [];
-        const svgNode = figma.createNodeFromSvg(svgString);
-
-        // Proportional scaling
-        const scale = Math.min(size / svgNode.width, size / svgNode.height);
-        svgNode.resize(svgNode.width * scale, svgNode.height * scale);
-        svgNode.x = (size - svgNode.width) / 2;
-        svgNode.y = (size - svgNode.height) / 2;
-
-        applyColorToNode(svgNode, color);
-        iconComponent.appendChild(svgNode);
-        return iconComponent;
-    }
-
-    const iconSection = figma.createFrame();
-    iconSection.name = "🎯 Icons Library";
-    iconSection.layoutMode = 'HORIZONTAL';
-    iconSection.primaryAxisSizingMode = 'AUTO';
-    iconSection.counterAxisSizingMode = 'AUTO';
-    iconSection.itemSpacing = 16;
-    iconSection.paddingLeft = 24; iconSection.paddingRight = 24; iconSection.paddingTop = 24; iconSection.paddingBottom = 24;
-    iconSection.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.8 }];
-    iconSection.cornerRadius = 16;
-    iconSection.strokes = [{ type: 'SOLID', color: { r: 0.9, g: 0.9, b: 0.9 } }];
-
-    const searchIconComp = createIconComponent(iconSVGs.search, "Icon/search", mutedRgb, 20);
-    const leftIconComp = createIconComponent(iconSVGs.left, "Icon/arrow-left", mutedRgb, 20);
-    const rightIconComp = createIconComponent(iconSVGs.right, "Icon/arrow-right-1", mutedRgb, 20);
-    const closeIconComp = createIconComponent(iconSVGs.close, "Icon/close", mutedRgb, 20);
-    const infoIconComp = createIconComponent(iconSVGs.info, "Icon/info-circle", mutedRgb, 16);
-    const chevronIconComp = createIconComponent(iconSVGs.chevron, "Icon/chevron-down", mutedRgb, 14);
-
-    [searchIconComp, leftIconComp, rightIconComp, closeIconComp, infoIconComp, chevronIconComp].forEach(c => iconSection.appendChild(c));
-
-    const types = [
-        { name: 'Search field', isSearch: true },
-        { name: 'OTP Shared', isOTP: true },
-        { name: 'Input field', isStandard: true },
-        { name: 'Phone number', isPhone: true },
-        { name: 'Rich Text Box', isRichText: true }
-    ];
-    const states = ['Normal', 'Hover', 'Click', 'Error', 'Disabled'];
-
-    const components = [];
-    // Grid Arrangement: Types (Columns), States (Rows)
-    let currentX = 0;
-    for (let tIndex = 0; tIndex < types.length; tIndex++) {
-        const type = types[tIndex];
-        const xOffset = currentX;
-        let currentY = 0;
-
-        for (let sIndex = 0; sIndex < states.length; sIndex++) {
-            const state = states[sIndex];
-            const yOffset = currentY;
-            const wrapper = figma.createComponent();
-            wrapper.name = `Type=${type.name}, State=${state}`;
-            wrapper.layoutMode = 'VERTICAL';
-            wrapper.primaryAxisSizingMode = 'AUTO';
-            wrapper.counterAxisSizingMode = 'AUTO';
-            wrapper.itemSpacing = 8;
-            wrapper.fills = [];
-
-            // Bind wrapper item spacing variable
-            try {
-                wrapper.setBoundVariable('itemSpacing', inputSpacingVariables.labelGap);
-            } catch (e) {
-                console.warn('Could not bind wrapper item spacing variable:', e);
-            }
-
-            // Label Row (Hidden for Search field)
-            if (!type.isSearch) {
-                const labelRow = figma.createFrame();
-                labelRow.name = "LabelRow";
-                labelRow.layoutMode = 'HORIZONTAL';
-                labelRow.primaryAxisSizingMode = 'AUTO';
-                labelRow.counterAxisSizingMode = 'AUTO';
-                labelRow.itemSpacing = 4;
-                labelRow.fills = [];
-                labelRow.counterAxisAlignItems = 'CENTER';
-
-                const labelText = figma.createText();
-                labelText.name = "LabelText";
-                labelText.characters = "Label";
-                labelText.fontName = { family: "Poppins", style: "Medium" };
-                labelText.fontSize = 13;
-                labelText.fills = [{ type: 'SOLID', color: { r: 0.22, g: 0.25, b: 0.32 } }]; // #374151
-
-                // Apply label text style
-                if (inputTextStyles.label) {
-                    await labelText.setTextStyleIdAsync(inputTextStyles.label.id);
-                }
-
-                // Bind label color variable
-                try {
-                    const labelFills = [{
-                        type: 'SOLID',
-                        color: { r: 0, g: 0, b: 0 },
-                        boundVariables: {
-                            color: { type: 'VARIABLE_ALIAS', id: inputColorVariables.text.label.id }
-                        }
-                    }];
-                    labelText.fills = labelFills;
-                } catch (e) {
-                    console.warn('Could not bind label color variable:', e);
-                }
-
-                labelRow.appendChild(labelText);
-
-                const requiredDot = figma.createText();
-                requiredDot.name = "RequiredDot";
-                requiredDot.fontName = { family: "Poppins", style: "Regular" };
-                requiredDot.characters = "*";
-                requiredDot.fills = [{ type: 'SOLID', color: warningRgb }];
-
-                // Bind required dot color variable
-                try {
-                    const requiredFills = [{
-                        type: 'SOLID',
-                        color: { r: 0, g: 0, b: 0 },
-                        boundVariables: {
-                            color: { type: 'VARIABLE_ALIAS', id: inputColorVariables.required.id }
-                        }
-                    }];
-                    requiredDot.fills = requiredFills;
-                } catch (e) {
-                    console.warn('Could not bind required color variable:', e);
-                }
-
-                labelRow.appendChild(requiredDot);
-
-                const labelInfoIcon = infoIconComp.createInstance();
-                labelInfoIcon.name = "LabelInfoIcon";
-                labelInfoIcon.resize(16, 16);
-
-                // Bind label info icon color variable
-                try {
-                    bindColorVariableToIcon(labelInfoIcon, inputColorVariables.icon.normal);
-                } catch (e) {
-                    console.warn('Could not bind label info icon color variable:', e);
-                }
-
-                labelRow.appendChild(labelInfoIcon);
-
-                wrapper.appendChild(labelRow);
-            }
-
-            // Input Body
-            let body;
-            const bodyColor = (state === 'Disabled') ? { r: 0.95, g: 0.95, b: 0.95 } : { r: 1, g: 1, b: 1 };
-
-            let strokeColor = borderRgb;
-            if (state === 'Hover') strokeColor = { r: 0.4, g: 0.4, b: 0.4 }; // Darker border on hover
-            if (state === 'Click') strokeColor = primaryRgb;
-            if (state === 'Error') strokeColor = errorRgb;
-
-            const strokeWidth = 1; // All borders 1px as requested for Click and others
-
-            const contentColor = (state === 'Hover' || state === 'Click') ? textRgb : mutedRgb; // Darker text/icons on hover/click
-
-            if (type.isOTP) {
-                body = figma.createFrame();
-                body.name = "OTPContainer";
-                body.layoutMode = 'HORIZONTAL';
-                body.primaryAxisSizingMode = 'AUTO';
-                body.counterAxisSizingMode = 'AUTO';
-                body.itemSpacing = 12;
-                body.fills = [];
-
-                // Bind OTP container gap variable
-                try {
-                    body.setBoundVariable('itemSpacing', inputSpacingVariables.otpGap);
-                } catch (e) {
-                    console.warn('Could not bind OTP gap variable:', e);
-                }
-
-                // Determine state key for color variable binding
-                const stateKey = state.toLowerCase();
-
-                for (let i = 0; i < 6; i++) {
-                    const box = figma.createFrame();
-                    box.name = `Digit${i + 1}`;
-                    box.resize(48, 48);
-                    box.primaryAxisSizingMode = 'FIXED';
-                    box.counterAxisSizingMode = 'FIXED';
-                    box.cornerRadius = radius;
-                    box.fills = [{ type: 'SOLID', color: bodyColor }];
-                    box.strokes = [{ type: 'SOLID', color: strokeColor }];
-                    box.strokeWeight = strokeWidth;
-                    box.layoutMode = 'HORIZONTAL';
-                    box.primaryAxisAlignItems = 'CENTER';
-                    box.counterAxisAlignItems = 'CENTER';
-
-                    // Bind OTP box radius variable
-                    try {
-                        box.setBoundVariable('topLeftRadius', inputSpacingVariables.radius);
-                        box.setBoundVariable('topRightRadius', inputSpacingVariables.radius);
-                        box.setBoundVariable('bottomLeftRadius', inputSpacingVariables.radius);
-                        box.setBoundVariable('bottomRightRadius', inputSpacingVariables.radius);
-                    } catch (e) {
-                        console.warn('Could not bind OTP box radius variable:', e);
-                    }
-
-                    // Bind OTP box background color variable
-                    try {
-                        const bgColorVar = state === 'Disabled' ? inputColorVariables.bg.disabled : inputColorVariables.bg.normal;
-                        const bgFills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: {
-                                color: { type: 'VARIABLE_ALIAS', id: bgColorVar.id }
-                            }
-                        }];
-                        box.fills = bgFills;
-                    } catch (e) {
-                        console.warn('Could not bind OTP box background variable:', e);
-                    }
-
-                    // Bind OTP box border color variable
-                    try {
-                        const borderColorVar = inputColorVariables.border[stateKey] || inputColorVariables.border.normal;
-                        const borderStrokes = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: {
-                                color: { type: 'VARIABLE_ALIAS', id: borderColorVar.id }
-                            }
-                        }];
-                        box.strokes = borderStrokes;
-                    } catch (e) {
-                        console.warn('Could not bind OTP box border variable:', e);
-                    }
-
-                    const dText = figma.createText();
-                    dText.fontName = { family: "Poppins", style: "Medium" };
-                    dText.characters = "0";
-                    dText.fontSize = 18;
-                    dText.fills = [{ type: 'SOLID', color: contentColor }];
-
-                    // Apply OTP text style
-                    if (inputTextStyles.otp) {
-                        await dText.setTextStyleIdAsync(inputTextStyles.otp.id);
-                    }
-
-                    // Bind OTP text color variable
-                    try {
-                        const textColorVar = (state === 'Hover' || state === 'Click') ? inputColorVariables.text.primary : inputColorVariables.text.placeholder;
-                        const textFills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: {
-                                color: { type: 'VARIABLE_ALIAS', id: textColorVar.id }
-                            }
-                        }];
-                        dText.fills = textFills;
-                    } catch (e) {
-                        console.warn('Could not bind OTP text color variable:', e);
-                    }
-
-                    box.appendChild(dText);
-                    body.appendChild(box);
-                }
-            } else {
-                body = figma.createFrame();
-                body.name = "InputBody";
-                body.layoutMode = 'HORIZONTAL';
-                body.counterAxisAlignItems = 'CENTER';
-                body.paddingLeft = 14;
-                body.paddingRight = 14;
-                body.paddingTop = type.isRichText ? 12 : 10;
-                body.paddingBottom = type.isRichText ? 12 : 10;
-                body.itemSpacing = 10;
-                body.cornerRadius = radius;
-                body.fills = [{ type: 'SOLID', color: bodyColor }];
-                body.strokes = [{ type: 'SOLID', color: strokeColor }];
-                body.strokeWeight = strokeWidth;
-
-                // Determine state key for color variable binding
-                const stateKey = state.toLowerCase();
-
-                // Bind spacing variables to input body
-                try {
-                    body.setBoundVariable('paddingLeft', inputSpacingVariables.paddingX);
-                    body.setBoundVariable('paddingRight', inputSpacingVariables.paddingX);
-                    const paddingYVar = type.isRichText ? inputSpacingVariables.paddingYRich : inputSpacingVariables.paddingY;
-                    body.setBoundVariable('paddingTop', paddingYVar);
-                    body.setBoundVariable('paddingBottom', paddingYVar);
-                    body.setBoundVariable('itemSpacing', inputSpacingVariables.itemSpacing);
-                } catch (e) {
-                    console.warn('Could not bind input body spacing variables:', e);
-                }
-
-                // Bind radius variable to input body
-                try {
-                    body.setBoundVariable('topLeftRadius', inputSpacingVariables.radius);
-                    body.setBoundVariable('topRightRadius', inputSpacingVariables.radius);
-                    body.setBoundVariable('bottomLeftRadius', inputSpacingVariables.radius);
-                    body.setBoundVariable('bottomRightRadius', inputSpacingVariables.radius);
-                } catch (e) {
-                    console.warn('Could not bind input body radius variable:', e);
-                }
-
-                // Bind background color variable to input body
-                try {
-                    const bgColorVar = state === 'Disabled' ? inputColorVariables.bg.disabled : inputColorVariables.bg.normal;
-                    const bgFills = [{
-                        type: 'SOLID',
-                        color: { r: 0, g: 0, b: 0 },
-                        boundVariables: {
-                            color: { type: 'VARIABLE_ALIAS', id: bgColorVar.id }
-                        }
-                    }];
-                    body.fills = bgFills;
-                } catch (e) {
-                    console.warn('Could not bind input body background variable:', e);
-                }
-
-                // Bind border color variable to input body
-                try {
-                    const borderColorVar = inputColorVariables.border[stateKey] || inputColorVariables.border.normal;
-                    const borderStrokes = [{
-                        type: 'SOLID',
-                        color: { r: 0, g: 0, b: 0 },
-                        boundVariables: {
-                            color: { type: 'VARIABLE_ALIAS', id: borderColorVar.id }
-                        }
-                    }];
-                    body.strokes = borderStrokes;
-                } catch (e) {
-                    console.warn('Could not bind input body border variable:', e);
-                }
-
-                // Set Width to 324px (FIXED) and Height logic
-                if (type.isRichText) {
-                    body.resize(324, 114); // Fixed height 114px for rich text
-                    body.primaryAxisSizingMode = 'FIXED';
-                    body.counterAxisSizingMode = 'FIXED';
-                    body.counterAxisAlignItems = 'MIN'; // Top align content
-                } else {
-                    body.resize(324, body.height);
-                    body.primaryAxisSizingMode = 'FIXED';
-                    body.counterAxisSizingMode = 'AUTO'; // Hug content for others
-                }
-
-                if (type.isPhone) {
-                    const country = figma.createFrame();
-                    country.name = "CountrySelect";
-                    country.layoutMode = 'HORIZONTAL';
-                    country.itemSpacing = 4;
-                    country.primaryAxisSizingMode = 'AUTO';
-                    country.counterAxisSizingMode = 'AUTO'; // Hug content height
-                    country.counterAxisAlignItems = 'CENTER';
-                    country.fills = [];
-                    const cText = figma.createText();
-                    cText.fontName = { family: "Poppins", style: "Regular" };
-                    cText.characters = "+91";
-                    cText.fontSize = 14;
-                    cText.fills = [{ type: 'SOLID', color: (state === 'Hover' || state === 'Click') ? textRgb : { r: 0.2, g: 0.2, b: 0.2 } }];
-
-                    // Apply placeholder text style to country code
-                    if (inputTextStyles.placeholder) {
-                        await cText.setTextStyleIdAsync(inputTextStyles.placeholder.id);
-                    }
-
-                    // Bind country code text color variable
-                    try {
-                        const cTextColorVar = (state === 'Hover' || state === 'Click') ? inputColorVariables.text.primary : inputColorVariables.text.primary;
-                        const cTextFills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: {
-                                color: { type: 'VARIABLE_ALIAS', id: cTextColorVar.id }
-                            }
-                        }];
-                        cText.fills = cTextFills;
-                    } catch (e) {
-                        console.warn('Could not bind country code text color variable:', e);
-                    }
-
-                    country.appendChild(cText);
-                    const chev = chevronIconComp.createInstance();
-                    chev.resize(14, 14);
-                    applyColorToNode(chev, contentColor);
-
-                    // Bind chevron icon color variable
-                    try {
-                        const chevIconColorVar = inputColorVariables.icon[stateKey] || inputColorVariables.icon.normal;
-                        bindColorVariableToIcon(chev, chevIconColorVar);
-                    } catch (e) {
-                        console.warn('Could not bind chevron icon color variable:', e);
-                    }
-
-                    country.appendChild(chev);
-                    body.appendChild(country);
-                    const divider = figma.createFrame();
-                    divider.resize(1, 20);
-                    divider.fills = [{ type: 'SOLID', color: borderRgb }];
-
-                    // Bind divider color variable
-                    try {
-                        const dividerFills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: {
-                                color: { type: 'VARIABLE_ALIAS', id: inputColorVariables.border.normal.id }
-                            }
-                        }];
-                        divider.fills = dividerFills;
-                    } catch (e) {
-                        console.warn('Could not bind divider color variable:', e);
-                    }
-
-                    body.appendChild(divider);
-                }
-
-                const leftInstance = (type.isSearch ? searchIconComp : leftIconComp).createInstance();
-                leftInstance.name = "LeftIcon";
-                applyColorToNode(leftInstance, contentColor);
-
-                // Bind left icon color variable
-                try {
-                    let leftIconColorVar;
-                    if (state === 'Error') {
-                        leftIconColorVar = inputColorVariables.icon.error;
-                    } else if (state === 'Disabled') {
-                        leftIconColorVar = inputColorVariables.icon.disabled;
-                    } else if (state === 'Hover' || state === 'Click') {
-                        leftIconColorVar = inputColorVariables.icon[stateKey] || inputColorVariables.icon.hover;
-                    } else {
-                        leftIconColorVar = inputColorVariables.icon.normal;
-                    }
-                    bindColorVariableToIcon(leftInstance, leftIconColorVar);
-                } catch (e) {
-                    console.warn('Could not bind left icon color variable:', e);
-                }
-
-                body.appendChild(leftInstance);
-
-                const mainText = figma.createText();
-                mainText.name = "PlaceholderText";
-                mainText.fontName = { family: "Poppins", style: "Regular" };
-                mainText.characters = type.isPhone ? "1234567890" : placeholder;
-                mainText.layoutGrow = 1;
-                mainText.fontSize = 14;
-                mainText.fills = [{ type: 'SOLID', color: (state === 'Error') ? errorRgb : contentColor }];
-                if (type.isRichText) mainText.textAlignVertical = 'TOP';
-
-                // Apply placeholder text style
-                if (inputTextStyles.placeholder) {
-                    await mainText.setTextStyleIdAsync(inputTextStyles.placeholder.id);
-                }
-
-                // Bind placeholder text color variable
-                try {
-                    let textColorVar;
-                    if (state === 'Error') {
-                        textColorVar = inputColorVariables.error;
-                    } else if (state === 'Hover' || state === 'Click') {
-                        textColorVar = inputColorVariables.text.primary;
-                    } else {
-                        textColorVar = inputColorVariables.text.placeholder;
-                    }
-                    const textFills = [{
-                        type: 'SOLID',
-                        color: { r: 0, g: 0, b: 0 },
-                        boundVariables: {
-                            color: { type: 'VARIABLE_ALIAS', id: textColorVar.id }
-                        }
-                    }];
-                    mainText.fills = textFills;
-                } catch (e) {
-                    console.warn('Could not bind placeholder text color variable:', e);
-                }
-
-                body.appendChild(mainText);
-
-                const rightInstance = (type.isSearch ? closeIconComp : rightIconComp).createInstance();
-                rightInstance.name = "RightIcon";
-                applyColorToNode(rightInstance, contentColor);
-
-                // Bind right icon color variable
-                try {
-                    let rightIconColorVar;
-                    if (state === 'Error') {
-                        rightIconColorVar = inputColorVariables.icon.error;
-                    } else if (state === 'Disabled') {
-                        rightIconColorVar = inputColorVariables.icon.disabled;
-                    } else if (state === 'Hover' || state === 'Click') {
-                        rightIconColorVar = inputColorVariables.icon[stateKey] || inputColorVariables.icon.hover;
-                    } else {
-                        rightIconColorVar = inputColorVariables.icon.normal;
-                    }
-                    bindColorVariableToIcon(rightInstance, rightIconColorVar);
-                } catch (e) {
-                    console.warn('Could not bind right icon color variable:', e);
-                }
-
-                body.appendChild(rightInstance);
-            }
-            wrapper.appendChild(body);
-
-            // Hint Row
-            const hintRow = figma.createFrame();
-            hintRow.name = "HintRow";
-            hintRow.layoutMode = 'HORIZONTAL';
-            hintRow.primaryAxisSizingMode = 'AUTO';
-            hintRow.counterAxisSizingMode = 'AUTO';
-            hintRow.itemSpacing = 6;
-            hintRow.counterAxisAlignItems = 'CENTER';
-            hintRow.fills = [];
-
-            const hintIcon = infoIconComp.createInstance();
-            hintIcon.name = "HintIcon";
-            hintIcon.resize(16, 16);
-
-            // Bind hint icon color variable
-            try {
-                const hintIconColorVar = (state === 'Error') ? inputColorVariables.text.hintError : inputColorVariables.text.hintNormal;
-                bindColorVariableToIcon(hintIcon, hintIconColorVar);
-            } catch (e) {
-                console.warn('Could not bind hint icon color variable:', e);
-            }
-
-            hintRow.appendChild(hintIcon);
-
-            const hintText = figma.createText();
-            hintText.name = "HintText";
-            hintText.fontName = { family: "Poppins", style: "Regular" };
-            hintText.characters = "Hint text to help users";
-            hintText.fontSize = 12;
-            hintText.fills = [{ type: 'SOLID', color: (state === 'Error') ? errorRgb : mutedRgb }];
-
-            // Apply hint text style
-            if (inputTextStyles.hint) {
-                await hintText.setTextStyleIdAsync(inputTextStyles.hint.id);
-            }
-
-            // Bind hint text color variable
-            try {
-                const hintColorVar = (state === 'Error') ? inputColorVariables.text.hintError : inputColorVariables.text.hintNormal;
-                const hintFills = [{
-                    type: 'SOLID',
-                    color: { r: 0, g: 0, b: 0 },
-                    boundVariables: {
-                        color: { type: 'VARIABLE_ALIAS', id: hintColorVar.id }
-                    }
-                }];
-                hintText.fills = hintFills;
-            } catch (e) {
-                console.warn('Could not bind hint text color variable:', e);
-            }
-
-            hintRow.appendChild(hintText);
-            wrapper.appendChild(hintRow);
-
-            wrapper.x = xOffset;
-            wrapper.y = yOffset;
-            components.push(wrapper);
-
-            // Row spacing: component height + 34px
-            currentY += wrapper.height + 34;
-        }
-
-        // Column spacing: component width + 84px
-        // Get width of last created wrapper (or max width in column)
-        const lastWrapper = components[components.length - 1];
-        currentX += (type.isOTP ? 348 : 324) + 84;
-    }
-
-    const componentSet = figma.combineAsVariants(components, figma.currentPage);
-    componentSet.name = "Input";
-
-    // Properties (Type and State are automatically created by combineAsVariants)
-    const labelVisibleProp = componentSet.addComponentProperty("Label", "BOOLEAN", true);
-    const labelTextProp = componentSet.addComponentProperty("Label Text", "TEXT", "label");
-    const requiredProp = componentSet.addComponentProperty("Required filed", "BOOLEAN", false);
-    const labelInfoProp = componentSet.addComponentProperty("Label - Info", "BOOLEAN", false);
-    const labelInfoIconProp = componentSet.addComponentProperty("Label Info Icon", "INSTANCE_SWAP", infoIconComp.id);
-    const placeholderProp = componentSet.addComponentProperty("Placeholder", "TEXT", placeholder);
-    const showLeftIconProp = componentSet.addComponentProperty("Show Left Icon", "BOOLEAN", false);
-    const leftIconProp = componentSet.addComponentProperty("Left Icon", "INSTANCE_SWAP", (types.find(t => t.isSearch) ? searchIconComp : leftIconComp).id);
-    const showRightIconProp = componentSet.addComponentProperty("Show Right Icon", "BOOLEAN", false);
-    const rightIconProp = componentSet.addComponentProperty("Right Icon", "INSTANCE_SWAP", rightIconComp.id);
-    const hintVisibleProp = componentSet.addComponentProperty("Hint", "BOOLEAN", false);
-    const hintIconProp = componentSet.addComponentProperty("Hint Icon", "INSTANCE_SWAP", infoIconComp.id);
-    const hintTextProp = componentSet.addComponentProperty("Hint Text", "TEXT", "Hint text to help users");
-    const sixDigitProp = componentSet.addComponentProperty("6 Digit", "BOOLEAN", false);
-
-    componentSet.children.forEach(variant => {
-        // Extract properties from variant name
-        const variantProps = variant.name.split(', ').reduce((acc, p) => {
-            const [k, v] = p.split('=');
-            acc[k] = v;
-            return acc;
-        }, {});
-
-        const isSearchField = variantProps['Type'] === 'Search field';
-        const isNumberField = variantProps['Type'] === 'Phone number';
-        const isRichTextBox = variantProps['Type'] === 'Rich Text Box';
-
-        const lr = variant.findOne(n => n.name === "LabelRow");
-        const lt = variant.findOne(n => n.name === "LabelText");
-        const rd = variant.findOne(n => n.name === "RequiredDot");
-        const li = variant.findOne(n => n.name === "LabelInfoIcon");
-        const pt = variant.findOne(n => n.name === "PlaceholderText");
-        const lic = variant.findOne(n => n.name === "LeftIcon");
-        const ric = variant.findOne(n => n.name === "RightIcon");
-        const hr = variant.findOne(n => n.name === "HintRow");
-        const hi = variant.findOne(n => n.name === "HintIcon");
-        const ht = variant.findOne(n => n.name === "HintText");
-        const d5 = variant.findOne(n => n.name === "Digit5");
-        const d6 = variant.findOne(n => n.name === "Digit6");
-
-        if (lr) lr.componentPropertyReferences = { visible: labelVisibleProp };
-        if (lt) lt.componentPropertyReferences = { characters: labelTextProp };
-        if (rd) rd.componentPropertyReferences = { visible: requiredProp };
-        if (li) li.componentPropertyReferences = { visible: labelInfoProp, mainComponent: labelInfoIconProp };
-        if (pt) pt.componentPropertyReferences = { characters: placeholderProp };
-
-        if (lic) {
-            if (isSearchField) {
-                lic.visible = true; // Always show search icon for search field
-                lic.componentPropertyReferences = { mainComponent: leftIconProp };
-            } else if (isNumberField || isRichTextBox) {
-                // Remove icon properties for Phone and Rich Text as requested
-                lic.visible = false;
-            } else {
-                lic.componentPropertyReferences = {
-                    visible: showLeftIconProp,
-                    mainComponent: leftIconProp
-                };
-            }
-        }
-
-        if (ric) {
-            if (isNumberField || isRichTextBox) {
-                // Remove icon properties for Phone and Rich Text as requested
-                ric.visible = false;
-            } else {
-                ric.componentPropertyReferences = { visible: showRightIconProp, mainComponent: rightIconProp };
-            }
-        }
-        if (hr) hr.componentPropertyReferences = { visible: hintVisibleProp };
-        if (hi) hi.componentPropertyReferences = { mainComponent: hintIconProp };
-        if (ht) ht.componentPropertyReferences = { characters: hintTextProp };
-
-        if (d5 && d6) {
-            d5.componentPropertyReferences = { visible: sixDigitProp };
-            d6.componentPropertyReferences = { visible: sixDigitProp };
-        }
-    });
-
-    // Create Premium Documentation
-    const containerFrame = figma.createFrame();
-    containerFrame.name = "Input Component System";
-    containerFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-    containerFrame.layoutMode = 'VERTICAL';
-    containerFrame.primaryAxisSizingMode = 'AUTO';
-    containerFrame.counterAxisSizingMode = 'AUTO';
-
-    // 1. PREMIUM HEADER SECTION
-    const header = figma.createFrame();
-    header.name = "Header";
-    header.layoutMode = 'VERTICAL';
-    header.layoutAlign = 'STRETCH';
-    header.primaryAxisSizingMode = 'AUTO';
-    header.paddingLeft = 80; header.paddingRight = 80; header.paddingTop = 80; header.paddingBottom = 100;
-    header.itemSpacing = 40;
-    header.counterAxisAlignItems = 'CENTER'; // Left align content
-    header.fills = [{
-        type: 'GRADIENT_LINEAR',
-        gradientStops: [
-            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
-            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
-        ],
-        gradientTransform: [[1, 0, 0], [0, 1, 0]]
-    }];
-
-    // Logo & Title Container
-    const headerMain = figma.createFrame();
-    headerMain.layoutMode = 'VERTICAL';
-    headerMain.primaryAxisSizingMode = 'AUTO';
-    headerMain.counterAxisSizingMode = 'AUTO';
-    headerMain.counterAxisAlignItems = 'CENTER';
-    headerMain.itemSpacing = 24;
-    headerMain.fills = [];
-    header.appendChild(headerMain);
-
-    const title = figma.createText();
-    title.fontName = { family: "Poppins", style: "Bold" };
-    title.characters = "Input Component System";
-    title.fontSize = 56;
-    title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    headerMain.appendChild(title);
-
-    const desc = figma.createText();
-    desc.fontName = { family: "Poppins", style: "Regular" };
-    desc.characters = "A comprehensive collection of input fields, including Search, OTP, Phone Number, and Rich Text with multiple states.";
-    desc.fontSize = 18;
-    desc.opacity = 0.6;
-    desc.textAlignHorizontal = 'CENTER';
-    desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    desc.resize(800, desc.height);
-    headerMain.appendChild(desc);
-
-    // STATS ROW (Glassmorphism)
-    const statsRow = figma.createFrame();
-    statsRow.layoutMode = 'HORIZONTAL';
-    statsRow.primaryAxisSizingMode = 'AUTO';
-    statsRow.counterAxisSizingMode = 'AUTO';
-    statsRow.itemSpacing = 16;
-    statsRow.fills = [];
-
-    function createStatBadge(label, value) {
-        const badge = figma.createFrame();
-        badge.layoutMode = 'HORIZONTAL';
-        badge.primaryAxisSizingMode = 'AUTO';
-        badge.counterAxisSizingMode = 'AUTO';
-        badge.paddingLeft = 20; badge.paddingRight = 20; badge.paddingTop = 10; badge.paddingBottom = 10;
-        badge.cornerRadius = 100;
-        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
-        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
-        badge.strokeWeight = 1;
-        badge.itemSpacing = 10;
-        badge.counterAxisAlignItems = 'CENTER';
-        badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
-
-        const tLabel = figma.createText();
-        tLabel.fontName = { family: "Poppins", style: "Medium" };
-        tLabel.fontSize = 13;
-        tLabel.characters = label;
-        tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
-        badge.appendChild(tLabel);
-
-        const tValue = figma.createText();
-        tValue.fontName = { family: "Poppins", style: "Bold" };
-        tValue.fontSize = 13;
-        tValue.characters = value;
-        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        badge.appendChild(tValue);
-
-        return badge;
-    }
-
-    statsRow.appendChild(createStatBadge("Variants", String(components.length)));
-    statsRow.appendChild(createStatBadge("Types", String(types.length)));
-    statsRow.appendChild(createStatBadge("States", String(states.length)));
-    const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-    statsRow.appendChild(createStatBadge("Last Updated", dateText));
-
-    header.appendChild(statsRow);
-
-    containerFrame.appendChild(header);
-
-    // 2. ICONS REPOSITORY SECTION
-    const iconSectionWrapper = figma.createFrame();
-    iconSectionWrapper.name = "Icon Library Section";
-    iconSectionWrapper.layoutMode = 'VERTICAL';
-    iconSectionWrapper.layoutAlign = 'STRETCH';
-    iconSectionWrapper.paddingLeft = 80; iconSectionWrapper.paddingRight = 80; iconSectionWrapper.paddingTop = 80; iconSectionWrapper.paddingBottom = 40;
-    iconSectionWrapper.itemSpacing = 24;
-    iconSectionWrapper.fills = [];
-
-    const iconTitle = figma.createText();
-    iconTitle.fontName = { family: "Poppins", style: "Bold" };
-    iconTitle.characters = "System Icons";
-    iconTitle.fontSize = 24;
-    iconTitle.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
-    iconSectionWrapper.appendChild(iconTitle);
-
-    iconSectionWrapper.appendChild(iconSection);
-    containerFrame.appendChild(iconSectionWrapper);
-
-    // 3. MAIN COMPONENT SET SECTION
-    const content = figma.createFrame();
-    content.name = "Component Variants";
-    content.layoutMode = 'VERTICAL';
-    content.primaryAxisSizingMode = 'AUTO';
-    content.counterAxisSizingMode = 'AUTO';
-    content.paddingLeft = 80; content.paddingRight = 80; content.paddingTop = 80; content.paddingBottom = 80;
-    content.itemSpacing = 34;
-    content.fills = [];
-
-    const variantTitle = figma.createText();
-    variantTitle.fontName = { family: "Poppins", style: "Bold" };
-    variantTitle.characters = "Variants & States";
-    variantTitle.fontSize = 24;
-    variantTitle.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
-    content.appendChild(variantTitle);
-
-    content.appendChild(componentSet);
-    containerFrame.appendChild(content);
-
-    figma.currentPage.appendChild(containerFrame);
-    figma.viewport.scrollAndZoomIntoView([containerFrame]);
-    figma.notify("✅ Input System created with spacing variables, color variables, and text styles!");
-}
-
-// ============================================
-// INPUT COMPONENT - END
-// ============================================
-
-
-// ============================================
-// ICON LIBRARY FUNCTIONS - START
-// ============================================
-
-async function fetchSVG(url) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
-        return await response.text();
-    } catch (error) {
-        console.error(`Error fetching SVG from ${url}:`, error);
-        return null;
-    }
-}
-
-function cleanSVG(svgText) {
-    return svgText.replace(/\s*width="[^"]*"/gi, '').replace(/\s*height="[^"]*"/gi, '');
-}
-
-function createIconComponentFromSVG(svgText, iconName, size = 24) {
-    const cleaned = cleanSVG(svgText);
-    const svgNode = figma.createNodeFromSvg(cleaned);
-
-    const component = figma.createComponent();
-    component.name = iconName;
-    component.resize(size, size);
-    component.fills = [];
-
-    const scale = Math.min(size / svgNode.width, size / svgNode.height);
-    svgNode.resize(svgNode.width * scale, svgNode.height * scale);
-    svgNode.x = (size - svgNode.width) / 2;
-    svgNode.y = (size - svgNode.height) / 2;
-
-    if (svgNode.type === 'FRAME' || svgNode.type === 'GROUP') {
-        [...svgNode.children].forEach(child => {
-            child.x += svgNode.x;
-            child.y += svgNode.y;
-            component.appendChild(child);
-        });
-        svgNode.remove();
-    } else {
-        component.appendChild(svgNode);
-    }
-
-    return component;
-}
-
-function getOrCreateIconLibraryPage() {
-    let page = figma.root.children.find(p => p.name === 'Icon Library');
-    if (!page) {
-        page = figma.createPage();
-        page.name = 'Icon Library';
-    }
-    return page;
-}
-
-function createCategoryFrame(categoryName, x = 0, y = 0) {
-    const frame = figma.createFrame();
-    frame.name = categoryName;
-    frame.x = x;
-    frame.y = y;
-    frame.fills = [];
-    frame.layoutMode = 'HORIZONTAL';
-    frame.primaryAxisSizingMode = 'AUTO';
-    frame.counterAxisSizingMode = 'AUTO';
-    frame.itemSpacing = 16;
-    frame.paddingLeft = 16;
-    frame.paddingRight = 16;
-    frame.paddingTop = 16;
-    frame.paddingBottom = 16;
-    frame.layoutWrap = 'WRAP';
-    return frame;
-}
-
-const ICON_LIBRARIES = {
-    'box-icons': {
-        name: 'Box Icons',
-        categories: {
-            'logos': { name: 'Logos', baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/logos' },
-            'regular': { name: 'Regular', baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/regular' },
-            'solid': { name: 'Solid', baseUrl: 'https://raw.githubusercontent.com/harsh2277/Box-Icon/192522ef45d183c510a068c65fbbb208ddca0813/svg/solid' }
-        }
-    },
-    'vuesax-icons': {
-        name: 'Vuesax Icons',
-        categories: {
-            'outline': { name: 'Outline', baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/outline' },
-            'bulk': { name: 'Bulk', baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bulk' },
-            'bold': { name: 'Bold', baseUrl: 'https://raw.githubusercontent.com/harsh2277/Vuesax-Icon/1fc373df0cef028768f13d29571b0f6e163d7d68/bold' }
-        }
-    },
-    'unicons': {
-        name: 'Unicons',
-        categories: {
-            'line': { name: 'Line', baseUrl: 'https://raw.githubusercontent.com/harsh2277/unicons/41643545a256b97c0c4cd646817cf352da4ce866/line' },
-            'monochrome': { name: 'Monochrome', baseUrl: 'https://raw.githubusercontent.com/harsh2277/unicons/41643545a256b97c0c4cd646817cf352da4ce866/monochrome' },
-            'solid': { name: 'Solid', baseUrl: 'https://raw.githubusercontent.com/harsh2277/unicons/41643545a256b97c0c4cd646817cf352da4ce866/solid' },
-            'thinline': { name: 'Thinline', baseUrl: 'https://raw.githubusercontent.com/harsh2277/unicons/41643545a256b97c0c4cd646817cf352da4ce866/thinline' }
-        }
-    }
-};
-
-async function generateIconLibrary(libraryId, categoryId, iconList) {
-    const page = getOrCreateIconLibraryPage();
-    const originalPage = figma.currentPage;
-    await figma.setCurrentPageAsync(page);
-
-    try {
-        const library = ICON_LIBRARIES[libraryId];
-        if (!library) throw new Error(`Library ${libraryId} not found`);
-
-        const category = library.categories[categoryId];
-        if (!category) throw new Error(`Category ${categoryId} not found`);
-
-        const components = [];
-        let successCount = 0;
-        let failCount = 0;
-        const BATCH_SIZE = 20;
-
-        for (let i = 0; i < iconList.length; i += BATCH_SIZE) {
-            const batch = iconList.slice(i, i + BATCH_SIZE);
-            const results = await Promise.all(
-                batch.map(iconName => fetchSVG(`${category.baseUrl}/${iconName}`).then(svgText => ({ iconName, svgText })))
-            );
-
-            for (const { iconName, svgText } of results) {
-                if (svgText) {
-                    try {
-                        const component = createIconComponentFromSVG(svgText, iconName.replace('.svg', ''), 24);
-                        page.appendChild(component);
-                        components.push(component);
-                        successCount++;
-                    } catch (error) {
-                        console.error(`Error creating component for ${iconName}:`, error);
-                        failCount++;
-                    }
-                } else {
-                    failCount++;
-                }
-            }
-        }
-
-        if (components.length > 0) {
-            await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
-            await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
-            await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
-
-            const containerFrame = figma.createFrame();
-            containerFrame.name = `${library.name} / ${category.name}`;
-            containerFrame.layoutMode = 'VERTICAL';
-            containerFrame.primaryAxisSizingMode = 'AUTO';
-            containerFrame.counterAxisSizingMode = 'AUTO';
-            containerFrame.paddingLeft = 0;
-            containerFrame.paddingRight = 0;
-            containerFrame.paddingTop = 0;
-            containerFrame.paddingBottom = 0;
-            containerFrame.itemSpacing = 0;
-            containerFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-            containerFrame.cornerRadius = 0;
-
-            // --- PREMIUM CENTERED HEADER ---
-            const headerFrame = figma.createFrame();
-            headerFrame.name = "Header";
-            headerFrame.layoutMode = 'VERTICAL';
-            headerFrame.layoutAlign = 'STRETCH';
-            headerFrame.primaryAxisSizingMode = 'AUTO';
-            headerFrame.paddingLeft = 80; headerFrame.paddingRight = 80; headerFrame.paddingTop = 46; headerFrame.paddingBottom = 46;
-            headerFrame.itemSpacing = 40;
-            headerFrame.counterAxisAlignItems = 'CENTER'; // Center content
-            headerFrame.fills = [{
-                type: 'GRADIENT_LINEAR',
-                gradientStops: [
-                    { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
-                    { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
-                ],
-                gradientTransform: [[1, 0, 0], [0, 1, 0]]
-            }];
-
-            // Logo & Title Group
-            const headerMain = figma.createFrame();
-            headerMain.layoutMode = 'VERTICAL';
-            headerMain.primaryAxisSizingMode = 'AUTO';
-            headerMain.counterAxisSizingMode = 'AUTO';
-            headerMain.counterAxisAlignItems = 'CENTER';
-            headerMain.itemSpacing = 24;
-            headerMain.fills = [];
-            headerFrame.appendChild(headerMain);
-
-            const title = figma.createText();
-            title.fontName = { family: "Poppins", style: "Bold" };
-            title.characters = `${library.name} / ${category.name}`;
-            title.fontSize = 34;
-            title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
-            title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-            headerMain.appendChild(title);
-
-            const desc = figma.createText();
-            desc.fontName = { family: "Poppins", style: "Regular" };
-            desc.characters = `A collection of ${successCount} high-fidelity icons for professional consistency.`;
-            desc.fontSize = 18;
-            desc.opacity = 0.6;
-            desc.textAlignHorizontal = 'CENTER';
-            desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-            headerMain.appendChild(desc);
-
-            // STATS ROW (Glassmorphism)
-            const statsRow = figma.createFrame();
-            statsRow.layoutMode = 'HORIZONTAL';
-            statsRow.primaryAxisSizingMode = 'AUTO';
-            statsRow.counterAxisSizingMode = 'AUTO';
-            statsRow.itemSpacing = 16;
-            statsRow.fills = [];
-
-            // Helper function for glassmorphism badges
-            function createStatBadge(label, value) {
-                const badge = figma.createFrame();
-                badge.layoutMode = 'HORIZONTAL';
-                badge.primaryAxisSizingMode = 'AUTO';
-                badge.counterAxisSizingMode = 'AUTO';
-                badge.paddingLeft = 20;
-                badge.paddingRight = 20;
-                badge.paddingTop = 12;
-                badge.paddingBottom = 12;
-                badge.cornerRadius = 100;
-                badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
-                badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
-                badge.strokeWeight = 1;
-                badge.itemSpacing = 10;
-                badge.counterAxisAlignItems = 'CENTER';
-                badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
-
-                const tLabel = figma.createText();
-                tLabel.fontName = { family: "Poppins", style: "Medium" };
-                tLabel.fontSize = 13;
-                tLabel.characters = label;
-                tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
-                badge.appendChild(tLabel);
-
-                const tValue = figma.createText();
-                tValue.fontName = { family: "Poppins", style: "Bold" };
-                tValue.fontSize = 13;
-                tValue.characters = value;
-                tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-                badge.appendChild(tValue);
-
-                return badge;
-            }
-
-            statsRow.appendChild(createStatBadge("Icons", successCount.toString()));
-            statsRow.appendChild(createStatBadge("Category", category.name));
-            const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-            statsRow.appendChild(createStatBadge("Last Updated", dateText));
-
-            headerFrame.appendChild(statsRow);
-
-            const iconsFrame = figma.createFrame();
-            iconsFrame.name = "Icons";
-            iconsFrame.layoutMode = 'HORIZONTAL';
-            iconsFrame.primaryAxisSizingMode = 'AUTO';
-            iconsFrame.counterAxisSizingMode = 'AUTO';
-            iconsFrame.itemSpacing = 16;
-            iconsFrame.counterAxisSpacing = 16;
-            iconsFrame.paddingLeft = 16;
-            iconsFrame.paddingRight = 16;
-            iconsFrame.paddingTop = 16;
-            iconsFrame.paddingBottom = 16;
-            iconsFrame.layoutWrap = 'WRAP';
-            iconsFrame.fills = [];
-            iconsFrame.resize((24 + 16) * 20 - 16 + 32, iconsFrame.height);
-
-            components.forEach(component => iconsFrame.appendChild(component));
-
-            // CONTENT WRAPPER FRAME
-            const contentWrapper = figma.createFrame();
-            contentWrapper.name = "Content";
-            contentWrapper.layoutMode = 'VERTICAL';
-            contentWrapper.primaryAxisSizingMode = 'AUTO';
-            contentWrapper.counterAxisSizingMode = 'AUTO';
-            contentWrapper.layoutAlign = 'STRETCH';
-            contentWrapper.paddingLeft = 16;
-            contentWrapper.paddingRight = 16;
-            contentWrapper.paddingTop = 16;
-            contentWrapper.paddingBottom = 16;
-            contentWrapper.fills = [];
-
-            contentWrapper.appendChild(iconsFrame);
-
-            page.appendChild(containerFrame);
-            containerFrame.appendChild(headerFrame);
-            containerFrame.appendChild(contentWrapper);
-
-            figma.viewport.scrollAndZoomIntoView([containerFrame]);
-        }
-
-        await figma.setCurrentPageAsync(originalPage);
-        return { success: true, successCount, failCount, total: iconList.length };
-    } catch (error) {
-        await figma.setCurrentPageAsync(originalPage);
-        throw error;
-    }
-}
-
-async function generateAllLibraryIcons(libraryId, categories) {
-    const page = getOrCreateIconLibraryPage();
-    const originalPage = figma.currentPage;
-    await figma.setCurrentPageAsync(page);
-
-    try {
-        const library = ICON_LIBRARIES[libraryId];
-        if (!library) throw new Error(`Library ${libraryId} not found`);
-
-        let totalSuccess = 0;
-        let totalFailed = 0;
-        let categoriesCreated = 0;
-        const allContainerFrames = [];
-        let yOffset = 0;
-        const BATCH_SIZE = 20;
-
-        await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
-        await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
-        await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
-
-        for (const categoryData of categories) {
-            const { categoryId, categoryName, iconList } = categoryData;
-            const category = library.categories[categoryId];
-            if (!category) continue;
-
-            const components = [];
-            let successCount = 0;
-            let failCount = 0;
-
-            for (let i = 0; i < iconList.length; i += BATCH_SIZE) {
-                const batch = iconList.slice(i, i + BATCH_SIZE);
-                const results = await Promise.all(
-                    batch.map(iconName => fetchSVG(`${category.baseUrl}/${iconName}`).then(svgText => ({ iconName, svgText })))
-                );
-
-                for (const { iconName, svgText } of results) {
-                    if (svgText) {
-                        try {
-                            const component = createIconComponentFromSVG(svgText, iconName.replace('.svg', ''), 24);
-                            page.appendChild(component);
-                            components.push(component);
-                            successCount++;
-                        } catch (error) {
-                            failCount++;
-                        }
-                    } else {
-                        failCount++;
-                    }
-                }
-            }
-
-            if (components.length > 0) {
-                const containerFrame = figma.createFrame();
-                containerFrame.name = `${library.name} / ${categoryName}`;
-                containerFrame.layoutMode = 'VERTICAL';
-                containerFrame.primaryAxisSizingMode = 'AUTO';
-                containerFrame.counterAxisSizingMode = 'AUTO';
-                containerFrame.itemSpacing = 0;
-                containerFrame.paddingLeft = 0;
-                containerFrame.paddingRight = 0;
-                containerFrame.paddingTop = 0;
-                containerFrame.paddingBottom = 0;
-                containerFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-                containerFrame.cornerRadius = 0;
-                containerFrame.y = yOffset;
-
-                // --- PREMIUM CENTERED HEADER ---
-                const headerFrame = figma.createFrame();
-                headerFrame.name = "Header";
-                headerFrame.layoutMode = 'VERTICAL';
-                headerFrame.layoutAlign = 'STRETCH';
-                headerFrame.primaryAxisSizingMode = 'AUTO';
-                headerFrame.paddingLeft = 80; headerFrame.paddingRight = 80; headerFrame.paddingTop = 80; headerFrame.paddingBottom = 100;
-                headerFrame.itemSpacing = 40;
-                headerFrame.counterAxisAlignItems = 'CENTER'; // Center content
-                headerFrame.fills = [{
-                    type: 'GRADIENT_LINEAR',
-                    gradientStops: [
-                        { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
-                        { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
-                    ],
-                    gradientTransform: [[1, 0, 0], [0, 1, 0]]
-                }];
-
-                // Logo & Title Group
-                const headerMain = figma.createFrame();
-                headerMain.layoutMode = 'VERTICAL';
-                headerMain.primaryAxisSizingMode = 'AUTO';
-                headerMain.counterAxisSizingMode = 'AUTO';
-                headerMain.counterAxisAlignItems = 'CENTER';
-                headerMain.itemSpacing = 24;
-                headerMain.fills = [];
-                headerFrame.appendChild(headerMain);
-
-                const title = figma.createText();
-                title.fontName = { family: "Poppins", style: "Bold" };
-                title.characters = `${library.name} / ${categoryName}`;
-                title.fontSize = 34;
-                title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
-                title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-                headerMain.appendChild(title);
-
-                const desc = figma.createText();
-                desc.fontName = { family: "Poppins", style: "Regular" };
-                desc.characters = "Collection of premium icon assets.";
-                desc.fontSize = 18;
-                desc.opacity = 0.6;
-                desc.textAlignHorizontal = 'CENTER';
-                desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-                headerMain.appendChild(desc);
-
-                // STATS ROW (Glassmorphism)
-                const statsRow = figma.createFrame();
-                statsRow.layoutMode = 'HORIZONTAL';
-                statsRow.primaryAxisSizingMode = 'AUTO';
-                statsRow.counterAxisSizingMode = 'AUTO';
-                statsRow.itemSpacing = 16;
-                statsRow.fills = [];
-
-                // Helper function for glassmorphism badges
-                function createStatBadge(label, value) {
-                    const badge = figma.createFrame();
-                    badge.layoutMode = 'HORIZONTAL';
-                    badge.primaryAxisSizingMode = 'AUTO';
-                    badge.counterAxisSizingMode = 'AUTO';
-                    badge.paddingLeft = 20;
-                    badge.paddingRight = 20;
-                    badge.paddingTop = 12;
-                    badge.paddingBottom = 12;
-                    badge.cornerRadius = 100;
-                    badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
-                    badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
-                    badge.strokeWeight = 1;
-                    badge.itemSpacing = 10;
-                    badge.counterAxisAlignItems = 'CENTER';
-                    badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
-
-                    const tLabel = figma.createText();
-                    tLabel.fontName = { family: "Poppins", style: "Medium" };
-                    tLabel.fontSize = 13;
-                    tLabel.characters = label;
-                    tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
-                    badge.appendChild(tLabel);
-
-                    const tValue = figma.createText();
-                    tValue.fontName = { family: "Poppins", style: "Bold" };
-                    tValue.fontSize = 13;
-                    tValue.characters = String(value);
-                    tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-                    badge.appendChild(tValue);
-
-                    return badge;
-                }
-
-                statsRow.appendChild(createStatBadge("Icons", successCount.toString()));
-                statsRow.appendChild(createStatBadge("Category", categoryName));
-                const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-                statsRow.appendChild(createStatBadge("Last Updated", dateText));
-
-                headerFrame.appendChild(statsRow);
-
-                const iconsFrame = figma.createFrame();
-                iconsFrame.name = "Icons";
-                iconsFrame.layoutMode = 'HORIZONTAL';
-                iconsFrame.primaryAxisSizingMode = 'AUTO';
-                iconsFrame.counterAxisSizingMode = 'AUTO';
-                iconsFrame.itemSpacing = 16;
-                iconsFrame.counterAxisSpacing = 16;
-                iconsFrame.paddingLeft = 16;
-                iconsFrame.paddingRight = 16;
-                iconsFrame.paddingTop = 16;
-                iconsFrame.paddingBottom = 16;
-                iconsFrame.layoutWrap = 'WRAP';
-                iconsFrame.fills = [];
-                iconsFrame.resize((24 + 16) * 20 - 16 + 32, iconsFrame.height);
-
-                components.forEach(component => iconsFrame.appendChild(component));
-
-                // CONTENT WRAPPER FRAME
-                const contentWrapper = figma.createFrame();
-                contentWrapper.name = "Content";
-                contentWrapper.layoutMode = 'VERTICAL';
-                contentWrapper.primaryAxisSizingMode = 'AUTO';
-                contentWrapper.counterAxisSizingMode = 'AUTO';
-                contentWrapper.layoutAlign = 'STRETCH';
-                contentWrapper.paddingLeft = 48;
-                contentWrapper.paddingRight = 48;
-                contentWrapper.paddingTop = 48;
-                contentWrapper.paddingBottom = 48;
-                contentWrapper.fills = [];
-
-                contentWrapper.appendChild(iconsFrame);
-
-                page.appendChild(containerFrame);
-                containerFrame.appendChild(headerFrame);
-                containerFrame.appendChild(contentWrapper);
-
-                allContainerFrames.push(containerFrame);
-                yOffset += containerFrame.height + 100;
-            }
-
-            totalSuccess += successCount;
-            totalFailed += failCount;
-            categoriesCreated++;
-        }
-
-        if (allContainerFrames.length > 0) {
-            figma.viewport.scrollAndZoomIntoView(allContainerFrames);
-        }
-
-        await figma.setCurrentPageAsync(originalPage);
-        return { success: true, totalSuccess, totalFailed, categoriesCreated };
-    } catch (error) {
-        await figma.setCurrentPageAsync(originalPage);
-        throw error;
-    }
-}
-
-// ============================================
-// ICON LIBRARY FUNCTIONS - END
-// ============================================
-
-
-// ============================================
-// RADIO COMPONENT - START
-// ============================================
-
-async function createRadioComponentSet(primaryColor, textColor, radius) {
-    await Promise.all([
-        figma.loadFontAsync({ family: "Poppins", style: "Regular" }),
-        figma.loadFontAsync({ family: "Poppins", style: "Medium" }),
-        figma.loadFontAsync({ family: "Poppins", style: "Bold" })
-    ]);
-
-    const primaryRgb = hexToRgb(primaryColor);
-    const textRgb = hexToRgb(textColor);
-    const mutedRgb = hexToRgb('#6B7280');
-    const disabledRgb = hexToRgb('#D1D5DB');
-    const borderRgb = hexToRgb('#E5E7EB');
-
-    // ============================================
-    // CREATE RADIO SPACING VARIABLES - START
-    // ============================================
-
-    const collections = await figma.variables.getLocalVariableCollectionsAsync();
-    let radioSpacingCollection = collections.find(c => c.name === 'Radio/Spacing');
-
-    if (!radioSpacingCollection) {
-        radioSpacingCollection = figma.variables.createVariableCollection('Radio/Spacing');
-    }
-
-    const spacingModeId = radioSpacingCollection.modes[0].modeId;
-    const existingFloatVars = await figma.variables.getLocalVariablesAsync('FLOAT');
-
-    function createOrUpdateFloatVar(name, value) {
-        let floatVar = existingFloatVars.find(v => v.name === name && v.variableCollectionId === radioSpacingCollection.id);
-        if (!floatVar) {
-            floatVar = figma.variables.createVariable(name, radioSpacingCollection, 'FLOAT');
-            existingFloatVars.push(floatVar);
-        }
-        floatVar.setValueForMode(spacingModeId, value);
-        return floatVar;
-    }
-
-    // Radio size configurations
-    const radioSizeConfigs = [
-        { size: 'SM', fontSize: 13, padding: 12, gap: 16, cardPadding: 12, hintFontSize: 12 },
-        { size: 'MD', fontSize: 14, padding: 16, gap: 18, cardPadding: 16, hintFontSize: 12 },
-        { size: 'LG', fontSize: 16, padding: 20, gap: 20, cardPadding: 20, hintFontSize: 12 }
-    ];
-
-    const radioSpacingVariables = {};
-
-    for (const config of radioSizeConfigs) {
-        const sizeKey = config.size.toLowerCase();
-        radioSpacingVariables[sizeKey] = {
-            fontSize: createOrUpdateFloatVar(`radio/${sizeKey}/font-size`, config.fontSize),
-            padding: createOrUpdateFloatVar(`radio/${sizeKey}/padding`, config.padding),
-            gap: createOrUpdateFloatVar(`radio/${sizeKey}/gap`, config.gap),
-            cardPadding: createOrUpdateFloatVar(`radio/${sizeKey}/card-padding`, config.cardPadding),
-            hintFontSize: createOrUpdateFloatVar(`radio/${sizeKey}/hint-font-size`, config.hintFontSize)
-        };
-    }
-
-    const radioRadiusVar = createOrUpdateFloatVar('radio/radius', radius);
-    const radioCircleSizeVar = createOrUpdateFloatVar('radio/circle-size', 24);
-    const radioInnerDotSizeVar = createOrUpdateFloatVar('radio/inner-dot-size', 12);
-
-    // ============================================
-    // CREATE RADIO SPACING VARIABLES - END
-    // ============================================
-
-    // ============================================
-    // CREATE RADIO COLOR VARIABLES - START
-    // ============================================
-
-    let radioColorCollection = collections.find(c => c.name === 'Radio/Colors');
-
-    if (!radioColorCollection) {
-        radioColorCollection = figma.variables.createVariableCollection('Radio/Colors');
-    }
-
-    const colorModeId = radioColorCollection.modes[0].modeId;
-    const existingColorVars = await figma.variables.getLocalVariablesAsync('COLOR');
-
-    function createOrUpdateColorVar(name, color) {
-        let colorVar = existingColorVars.find(v => v.name === name && v.variableCollectionId === radioColorCollection.id);
-        if (!colorVar) {
-            colorVar = figma.variables.createVariable(name, radioColorCollection, 'COLOR');
-            existingColorVars.push(colorVar);
-        }
-        colorVar.setValueForMode(colorModeId, color);
-        return colorVar;
-    }
-
-    // Radio colors
-    const radioColorVariables = {
-        primary: createOrUpdateColorVar('radio/primary', primaryRgb),
-        text: createOrUpdateColorVar('radio/text', textRgb),
-        muted: createOrUpdateColorVar('radio/muted', mutedRgb),
-        disabled: createOrUpdateColorVar('radio/disabled', disabledRgb),
-        border: createOrUpdateColorVar('radio/border', borderRgb),
-        white: createOrUpdateColorVar('radio/white', { r: 1, g: 1, b: 1 }),
-        cardBg: createOrUpdateColorVar('radio/card-bg', { r: 1, g: 1, b: 1 }),
-        radioFill: {
-            unchecked: createOrUpdateColorVar('radio/fill/unchecked', { r: 1, g: 1, b: 1 }),
-            checked: createOrUpdateColorVar('radio/fill/checked', { r: 1, g: 1, b: 1 }),
-            disabled: createOrUpdateColorVar('radio/fill/disabled', { r: 0.98, g: 0.98, b: 0.98 })
-        },
-        radioBorder: {
-            unchecked: createOrUpdateColorVar('radio/border/unchecked', borderRgb),
-            checked: createOrUpdateColorVar('radio/border/checked', primaryRgb),
-            disabled: createOrUpdateColorVar('radio/border/disabled', disabledRgb)
-        },
-        radioInner: {
-            checked: createOrUpdateColorVar('radio/inner/checked', primaryRgb),
-            disabled: createOrUpdateColorVar('radio/inner/disabled', disabledRgb)
-        },
-        label: {
-            normal: createOrUpdateColorVar('radio/label/normal', textRgb),
-            disabled: createOrUpdateColorVar('radio/label/disabled', disabledRgb)
-        },
-        hint: {
-            normal: createOrUpdateColorVar('radio/hint/normal', mutedRgb),
-            disabled: createOrUpdateColorVar('radio/hint/disabled', disabledRgb)
-        },
-        link: createOrUpdateColorVar('radio/link', primaryRgb),
-        cardBorder: {
-            unchecked: createOrUpdateColorVar('radio/card-border/unchecked', borderRgb),
-            checked: createOrUpdateColorVar('radio/card-border/checked', primaryRgb),
-            disabled: createOrUpdateColorVar('radio/card-border/disabled', borderRgb)
-        }
-    };
-
-    // ============================================
-    // CREATE RADIO COLOR VARIABLES - END
-    // ============================================
-
-    // ============================================
-    // CREATE RADIO TEXT STYLES - START
-    // ============================================
-
-    const existingTextStyles = await figma.getLocalTextStylesAsync();
-    const radioTextStyles = {};
-
-    for (const config of radioSizeConfigs) {
-        const sizeKey = config.size;
-
-        // Label text style
-        let labelStyle = existingTextStyles.find(s => s.name === `Radio/Label/${sizeKey}`);
-        if (!labelStyle) {
-            labelStyle = figma.createTextStyle();
-            labelStyle.name = `Radio/Label/${sizeKey}`;
-        }
-        labelStyle.fontName = { family: "Poppins", style: "Medium" };
-        labelStyle.fontSize = config.fontSize;
-        labelStyle.lineHeight = { value: 150, unit: 'PERCENT' };
-        try {
-            labelStyle.setBoundVariable('fontSize', radioSpacingVariables[sizeKey.toLowerCase()].fontSize);
-        } catch (e) {
-            console.warn(`Could not bind fontSize variable for Radio/Label/${sizeKey}:`, e);
-        }
-
-        // Hint text style
-        let hintStyle = existingTextStyles.find(s => s.name === `Radio/Hint/${sizeKey}`);
-        if (!hintStyle) {
-            hintStyle = figma.createTextStyle();
-            hintStyle.name = `Radio/Hint/${sizeKey}`;
-        }
-        hintStyle.fontName = { family: "Poppins", style: "Regular" };
-        hintStyle.fontSize = config.hintFontSize;
-        hintStyle.lineHeight = { value: 150, unit: 'PERCENT' };
-        try {
-            hintStyle.setBoundVariable('fontSize', radioSpacingVariables[sizeKey.toLowerCase()].hintFontSize);
-        } catch (e) {
-            console.warn(`Could not bind fontSize variable for Radio/Hint/${sizeKey}:`, e);
-        }
-
-        radioTextStyles[sizeKey] = {
-            label: labelStyle,
-            hint: hintStyle
-        };
-    }
-
-    // ============================================
-    // CREATE RADIO TEXT STYLES - END
-    // ============================================
-
-    // Helper function to bind color variable to vector nodes only
-    function bindColorVariableToNode(node, colorVar) {
-        try {
-            const vectorTypes = ['VECTOR', 'LINE', 'ELLIPSE', 'RECTANGLE', 'POLYGON', 'STAR', 'BOOLEAN_OPERATION'];
-            const containerTypes = ['FRAME', 'GROUP', 'COMPONENT', 'INSTANCE'];
-
-            const bindFills = (n) => {
-                if (vectorTypes.includes(n.type)) {
-                    if (n.fills && Array.isArray(n.fills) && n.fills.length > 0) {
-                        n.fills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: colorVar.id } }
-                        }];
-                    }
-                    if (n.strokes && Array.isArray(n.strokes) && n.strokes.length > 0) {
-                        n.strokes = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: colorVar.id } }
-                        }];
-                    }
-                }
-                if (containerTypes.includes(n.type) && n.fills && n.fills.length > 0) {
-                    n.fills = [];
-                }
-                if ('children' in n) {
-                    n.children.forEach(child => bindFills(child));
-                }
-            };
-            bindFills(node);
-        } catch (e) {
-            console.warn('Could not bind color variable to node:', e);
-        }
-    }
-
-    const types = [
-        { name: 'Radio Button', isButton: true },
-        { name: 'Radio Card', isCard: true }
-    ];
-
-    const states = ['Unchecked', 'Checked', 'Disabled'];
-    const sizes = [
-        { name: 'SM', radioSize: 24, fontSize: 13, padding: 12, gap: 16, cardPadding: 12, hintFontSize: 12 },
-        { name: 'MD', radioSize: 24, fontSize: 14, padding: 16, gap: 18, cardPadding: 16, hintFontSize: 12 },
-        { name: 'LG', radioSize: 24, fontSize: 16, padding: 20, gap: 20, cardPadding: 20, hintFontSize: 12 }
-    ];
-
-    const components = [];
-
-    // Layout: 3 columns (sizes) x 3 rows (states) for each type
-    // Radio Card on top, Radio Button on bottom
-    const columnWidth = 280;
-    const rowHeight = 100;
-    const columnGap = 10;
-    const rowGap = 10;
-    const typeGap = 10; // Gap between Radio Card section and Radio Button section
-
-    for (let tIndex = 0; tIndex < types.length; tIndex++) {
-        const type = types[tIndex];
-        const baseY = tIndex * (rowHeight * states.length + rowGap * (states.length - 1) + typeGap);
-
-        for (let sIndex = 0; sIndex < sizes.length; sIndex++) {
-            const size = sizes[sIndex];
-            const xPos = sIndex * (columnWidth + columnGap);
-
-            for (let stIndex = 0; stIndex < states.length; stIndex++) {
-                const state = states[stIndex];
-                const yPos = baseY + (stIndex * (rowHeight + rowGap));
-
-                const wrapper = figma.createComponent();
-                wrapper.name = `Type=${type.name}, Size=${size.name}, State=${state}`;
-                wrapper.layoutMode = 'VERTICAL';
-                wrapper.primaryAxisSizingMode = 'AUTO';
-                wrapper.counterAxisSizingMode = 'AUTO';
-                wrapper.itemSpacing = 8;
-                wrapper.fills = [];
-                wrapper.x = xPos;
-                wrapper.y = yPos;
-
-                // Determine colors based on state
-                let radioFill, radioBorder, radioInnerFill, labelColor, hintColor;
-                const isChecked = state === 'Checked';
-                const isDisabled = state === 'Disabled';
-                const stateKey = state.toLowerCase();
-                const sizeKey = size.name.toLowerCase();
-
-                if (isDisabled) {
-                    radioFill = { r: 0.98, g: 0.98, b: 0.98 };
-                    radioBorder = disabledRgb;
-                    radioInnerFill = disabledRgb;
-                    labelColor = disabledRgb;
-                    hintColor = disabledRgb;
-                } else if (isChecked) {
-                    radioFill = { r: 1, g: 1, b: 1 };
-                    radioBorder = primaryRgb;
-                    radioInnerFill = primaryRgb;
-                    labelColor = textRgb;
-                    hintColor = mutedRgb;
-                } else {
-                    radioFill = { r: 1, g: 1, b: 1 };
-                    radioBorder = borderRgb;
-                    radioInnerFill = { r: 1, g: 1, b: 1 };
-                    labelColor = textRgb;
-                    hintColor = mutedRgb;
-                }
-
-                // Create main container based on type
-                let mainContainer;
-
-                if (type.isCard) {
-                    // Radio Card - Full card with border
-                    mainContainer = figma.createFrame();
-                    mainContainer.name = "RadioCard";
-                    mainContainer.layoutMode = 'HORIZONTAL';
-                    mainContainer.primaryAxisSizingMode = 'AUTO';
-                    mainContainer.counterAxisSizingMode = 'AUTO';
-                    mainContainer.counterAxisAlignItems = 'CENTER';
-                    mainContainer.itemSpacing = size.gap;
-                    mainContainer.paddingLeft = size.cardPadding;
-                    mainContainer.paddingRight = size.cardPadding;
-                    mainContainer.paddingTop = size.cardPadding;
-                    mainContainer.paddingBottom = size.cardPadding;
-                    mainContainer.cornerRadius = radius;
-                    mainContainer.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-                    mainContainer.strokes = [{ type: 'SOLID', color: isChecked && !isDisabled ? primaryRgb : borderRgb }];
-                    mainContainer.strokeWeight = 1.5;
-
-                    // Bind card spacing variables
-                    try {
-                        mainContainer.setBoundVariable('paddingLeft', radioSpacingVariables[sizeKey].cardPadding);
-                        mainContainer.setBoundVariable('paddingRight', radioSpacingVariables[sizeKey].cardPadding);
-                        mainContainer.setBoundVariable('paddingTop', radioSpacingVariables[sizeKey].cardPadding);
-                        mainContainer.setBoundVariable('paddingBottom', radioSpacingVariables[sizeKey].cardPadding);
-                        mainContainer.setBoundVariable('itemSpacing', radioSpacingVariables[sizeKey].gap);
-                        mainContainer.setBoundVariable('topLeftRadius', radioRadiusVar);
-                        mainContainer.setBoundVariable('topRightRadius', radioRadiusVar);
-                        mainContainer.setBoundVariable('bottomLeftRadius', radioRadiusVar);
-                        mainContainer.setBoundVariable('bottomRightRadius', radioRadiusVar);
-                    } catch (e) {
-                        console.warn('Could not bind card spacing variables:', e);
-                    }
-
-                    // Bind card background color
-                    try {
-                        mainContainer.fills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: radioColorVariables.cardBg.id } }
-                        }];
-                    } catch (e) {
-                        console.warn('Could not bind card background variable:', e);
-                    }
-
-                    // Bind card border color
-                    try {
-                        const cardBorderVar = isDisabled ? radioColorVariables.cardBorder.disabled :
-                            (isChecked ? radioColorVariables.cardBorder.checked : radioColorVariables.cardBorder.unchecked);
-                        mainContainer.strokes = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: cardBorderVar.id } }
-                        }];
-                    } catch (e) {
-                        console.warn('Could not bind card border variable:', e);
-                    }
-                } else {
-                    // Radio Button - Simple horizontal layout
-                    mainContainer = figma.createFrame();
-                    mainContainer.name = "RadioButton";
-                    mainContainer.layoutMode = 'HORIZONTAL';
-                    mainContainer.primaryAxisSizingMode = 'AUTO';
-                    mainContainer.counterAxisSizingMode = 'AUTO';
-                    mainContainer.counterAxisAlignItems = 'CENTER';
-                    mainContainer.itemSpacing = size.gap;
-                    mainContainer.fills = [];
-
-                    // Bind button gap variable
-                    try {
-                        mainContainer.setBoundVariable('itemSpacing', radioSpacingVariables[sizeKey].gap);
-                    } catch (e) {
-                        console.warn('Could not bind button gap variable:', e);
-                    }
-                }
-
-                // Create radio circle (always 24px)
-                const radioCircle = figma.createFrame();
-                radioCircle.name = "RadioCircle";
-                radioCircle.resize(24, 24);
-                radioCircle.cornerRadius = 12;
-                radioCircle.fills = [{ type: 'SOLID', color: radioFill }];
-                radioCircle.strokes = [{ type: 'SOLID', color: radioBorder }];
-                radioCircle.strokeWeight = 2;
-                radioCircle.layoutMode = 'HORIZONTAL';
-                radioCircle.primaryAxisAlignItems = 'CENTER';
-                radioCircle.counterAxisAlignItems = 'CENTER';
-                radioCircle.primaryAxisSizingMode = 'FIXED';
-                radioCircle.counterAxisSizingMode = 'FIXED';
-
-                // Bind radio circle colors
-                try {
-                    const fillVar = isDisabled ? radioColorVariables.radioFill.disabled :
-                        (isChecked ? radioColorVariables.radioFill.checked : radioColorVariables.radioFill.unchecked);
-                    radioCircle.fills = [{
-                        type: 'SOLID',
-                        color: { r: 0, g: 0, b: 0 },
-                        boundVariables: { color: { type: 'VARIABLE_ALIAS', id: fillVar.id } }
-                    }];
-
-                    const borderVar = isDisabled ? radioColorVariables.radioBorder.disabled :
-                        (isChecked ? radioColorVariables.radioBorder.checked : radioColorVariables.radioBorder.unchecked);
-                    radioCircle.strokes = [{
-                        type: 'SOLID',
-                        color: { r: 0, g: 0, b: 0 },
-                        boundVariables: { color: { type: 'VARIABLE_ALIAS', id: borderVar.id } }
-                    }];
-                } catch (e) {
-                    console.warn('Could not bind radio circle color variables:', e);
-                }
-
-                // Inner dot (only visible when checked)
-                if (isChecked) {
-                    const innerDot = figma.createEllipse();
-                    innerDot.name = "InnerDot";
-                    innerDot.resize(12, 12);
-                    innerDot.fills = [{ type: 'SOLID', color: radioInnerFill }];
-
-                    // Bind inner dot color
-                    try {
-                        const innerVar = isDisabled ? radioColorVariables.radioInner.disabled : radioColorVariables.radioInner.checked;
-                        innerDot.fills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: innerVar.id } }
-                        }];
-                    } catch (e) {
-                        console.warn('Could not bind inner dot color variable:', e);
-                    }
-
-                    radioCircle.appendChild(innerDot);
-                }
-
-                mainContainer.appendChild(radioCircle);
-
-                // Create label section
-                const labelSection = figma.createFrame();
-                labelSection.name = "LabelSection";
-                labelSection.layoutMode = 'VERTICAL';
-                labelSection.primaryAxisSizingMode = 'AUTO';
-                labelSection.counterAxisSizingMode = 'AUTO';
-                labelSection.itemSpacing = 4;
-                labelSection.fills = [];
-
-                // Main label text (Heading for Radio Card)
-                const labelText = figma.createText();
-                labelText.name = type.isCard ? "HeadingText" : "LabelText";
-                labelText.fontName = { family: "Poppins", style: "Medium" };
-                labelText.fontSize = size.fontSize;
-                labelText.characters = type.isCard ? "Card Heading" : "Radio Label";
-                labelText.fills = [{ type: 'SOLID', color: labelColor }];
-
-                // Apply label text style
-                if (radioTextStyles[size.name] && radioTextStyles[size.name].label) {
-                    await labelText.setTextStyleIdAsync(radioTextStyles[size.name].label.id);
-                }
-
-                // Bind label color variable
-                try {
-                    const labelColorVar = isDisabled ? radioColorVariables.label.disabled : radioColorVariables.label.normal;
-                    labelText.fills = [{
-                        type: 'SOLID',
-                        color: { r: 0, g: 0, b: 0 },
-                        boundVariables: { color: { type: 'VARIABLE_ALIAS', id: labelColorVar.id } }
-                    }];
-                } catch (e) {
-                    console.warn('Could not bind label color variable:', e);
-                }
-
-                labelSection.appendChild(labelText);
-
-                // For Radio Card: Add description
-                if (type.isCard) {
-                    const descText = figma.createText();
-                    descText.name = "DescriptionText";
-                    descText.fontName = { family: "Poppins", style: "Regular" };
-                    descText.fontSize = size.hintFontSize;
-                    descText.characters = "Card description text";
-                    descText.fills = [{ type: 'SOLID', color: hintColor }];
-
-                    // Apply hint text style
-                    if (radioTextStyles[size.name] && radioTextStyles[size.name].hint) {
-                        await descText.setTextStyleIdAsync(radioTextStyles[size.name].hint.id);
-                    }
-
-                    // Bind description color variable
-                    try {
-                        const hintColorVar = isDisabled ? radioColorVariables.hint.disabled : radioColorVariables.hint.normal;
-                        descText.fills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: hintColorVar.id } }
-                        }];
-                    } catch (e) {
-                        console.warn('Could not bind description color variable:', e);
-                    }
-
-                    labelSection.appendChild(descText);
-                }
-
-                // For Radio Button: Hint and Link in one line
-                if (type.isButton) {
-                    const hintLinkRow = figma.createFrame();
-                    hintLinkRow.name = "HintLinkRow";
-                    hintLinkRow.layoutMode = 'HORIZONTAL';
-                    hintLinkRow.primaryAxisSizingMode = 'AUTO';
-                    hintLinkRow.counterAxisSizingMode = 'AUTO';
-                    hintLinkRow.itemSpacing = 6;
-                    hintLinkRow.fills = [];
-                    hintLinkRow.visible = false; // Hidden by default
-
-                    const hintText = figma.createText();
-                    hintText.name = "HintText";
-                    hintText.fontName = { family: "Poppins", style: "Regular" };
-                    hintText.fontSize = size.hintFontSize;
-                    hintText.characters = "Optional hint text";
-                    hintText.fills = [{ type: 'SOLID', color: hintColor }];
-
-                    // Apply hint text style
-                    if (radioTextStyles[size.name] && radioTextStyles[size.name].hint) {
-                        await hintText.setTextStyleIdAsync(radioTextStyles[size.name].hint.id);
-                    }
-
-                    // Bind hint color variable
-                    try {
-                        const hintColorVar = isDisabled ? radioColorVariables.hint.disabled : radioColorVariables.hint.normal;
-                        hintText.fills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: hintColorVar.id } }
-                        }];
-                    } catch (e) {
-                        console.warn('Could not bind hint color variable:', e);
-                    }
-
-                    hintLinkRow.appendChild(hintText);
-
-                    const linkText = figma.createText();
-                    linkText.name = "LinkText";
-                    linkText.fontName = { family: "Poppins", style: "Medium" };
-                    linkText.fontSize = size.hintFontSize;
-                    linkText.characters = "Learn more";
-                    linkText.fills = [{ type: 'SOLID', color: primaryRgb }];
-                    linkText.textDecoration = 'UNDERLINE';
-
-                    // Bind link color variable
-                    try {
-                        linkText.fills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: radioColorVariables.link.id } }
-                        }];
-                    } catch (e) {
-                        console.warn('Could not bind link color variable:', e);
-                    }
-
-                    hintLinkRow.appendChild(linkText);
-
-                    labelSection.appendChild(hintLinkRow);
-                }
-
-                mainContainer.appendChild(labelSection);
-                wrapper.appendChild(mainContainer);
-
-                components.push(wrapper);
-            }
-        }
-    }
-
-    // Create component set
-    const componentSet = figma.combineAsVariants(components, figma.currentPage);
-    componentSet.name = "Radio";
-
-    // Add component properties
-    const labelProp = componentSet.addComponentProperty("Label", "TEXT", "Radio Label");
-    const headingProp = componentSet.addComponentProperty("Heading", "TEXT", "Card Heading");
-    const descriptionProp = componentSet.addComponentProperty("Description", "TEXT", "Card description text");
-
-    // Properties for Radio Button type - Show HintLinkRow
-    const showHintLinkProp = componentSet.addComponentProperty("Show Hint & Link", "BOOLEAN", false);
-    const hintTextProp = componentSet.addComponentProperty("Hint Text", "TEXT", "Optional hint text");
-    const linkTextProp = componentSet.addComponentProperty("Link Text", "TEXT", "Learn more");
-
-    // Apply properties to variants
-    componentSet.children.forEach(variant => {
-        const labelTextNode = variant.findOne(n => n.name === "LabelText");
-        const headingTextNode = variant.findOne(n => n.name === "HeadingText");
-        const descriptionTextNode = variant.findOne(n => n.name === "DescriptionText");
-        const hintLinkRowNode = variant.findOne(n => n.name === "HintLinkRow");
-        const hintTextNode = variant.findOne(n => n.name === "HintText");
-        const linkTextNode = variant.findOne(n => n.name === "LinkText");
-
-        if (labelTextNode) {
-            labelTextNode.componentPropertyReferences = { characters: labelProp };
-        }
-
-        if (headingTextNode) {
-            headingTextNode.componentPropertyReferences = { characters: headingProp };
-        }
-
-        if (descriptionTextNode) {
-            descriptionTextNode.componentPropertyReferences = { characters: descriptionProp };
-        }
-
-        if (hintLinkRowNode) {
-            hintLinkRowNode.componentPropertyReferences = {
-                visible: showHintLinkProp
-            };
-        }
-
-        if (hintTextNode) {
-            hintTextNode.componentPropertyReferences = {
-                characters: hintTextProp
-            };
-        }
-
-        if (linkTextNode) {
-            linkTextNode.componentPropertyReferences = {
-                characters: linkTextProp
-            };
-        }
-    });
-
-    // Create documentation container
-    const containerFrame = figma.createFrame();
-    containerFrame.name = "Radio Component System";
-    containerFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-    containerFrame.layoutMode = 'VERTICAL';
-    containerFrame.primaryAxisSizingMode = 'AUTO';
-    containerFrame.counterAxisSizingMode = 'AUTO';
-    containerFrame.paddingBottom = 48;
-
-    // Header
-    const headerFrame = figma.createFrame();
-    headerFrame.name = "Header";
-    headerFrame.layoutMode = 'VERTICAL';
-    headerFrame.layoutAlign = 'STRETCH';
-    headerFrame.primaryAxisSizingMode = 'AUTO';
-    headerFrame.paddingLeft = 80;
-    headerFrame.paddingRight = 80;
-    headerFrame.paddingTop = 80;
-    headerFrame.paddingBottom = 100;
-    headerFrame.itemSpacing = 40;
-    headerFrame.counterAxisAlignItems = 'CENTER';
-    headerFrame.fills = [{
-        type: 'GRADIENT_LINEAR',
-        gradientStops: [
-            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
-            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
-        ],
-        gradientTransform: [[1, 0, 0], [0, 1, 0]]
-    }];
-
-    const headerMain = figma.createFrame();
-    headerMain.layoutMode = 'VERTICAL';
-    headerMain.primaryAxisSizingMode = 'AUTO';
-    headerMain.counterAxisSizingMode = 'AUTO';
-    headerMain.counterAxisAlignItems = 'CENTER';
-    headerMain.itemSpacing = 24;
-    headerMain.fills = [];
-    headerFrame.appendChild(headerMain);
-
-    const title = figma.createText();
-    title.fontName = { family: "Poppins", style: "Bold" };
-    title.characters = "Radio Component System";
-    title.fontSize = 56;
-    title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
-    title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    headerMain.appendChild(title);
-
-    const desc = figma.createText();
-    desc.fontName = { family: "Poppins", style: "Regular" };
-    desc.characters = `A comprehensive radio system with ${components.length} variants, including Radio Button and Radio Card styles with heading and description.`;
-    desc.fontSize = 18;
-    desc.opacity = 0.6;
-    desc.textAlignHorizontal = 'CENTER';
-    desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    desc.resize(800, desc.height);
-    headerMain.appendChild(desc);
-
-    // Stats row
-    const statsRow = figma.createFrame();
-    statsRow.layoutMode = 'HORIZONTAL';
-    statsRow.primaryAxisSizingMode = 'AUTO';
-    statsRow.counterAxisSizingMode = 'AUTO';
-    statsRow.itemSpacing = 16;
-    statsRow.fills = [];
-
-    function createStatBadge(label, value) {
-        const badge = figma.createFrame();
-        badge.layoutMode = 'HORIZONTAL';
-        badge.primaryAxisSizingMode = 'AUTO';
-        badge.counterAxisSizingMode = 'AUTO';
-        badge.paddingLeft = 20;
-        badge.paddingRight = 20;
-        badge.paddingTop = 10;
-        badge.paddingBottom = 10;
-        badge.cornerRadius = 100;
-        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
-        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
-        badge.strokeWeight = 1;
-        badge.itemSpacing = 10;
-        badge.counterAxisAlignItems = 'CENTER';
-        badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
-
-        const tLabel = figma.createText();
-        tLabel.fontName = { family: "Poppins", style: "Medium" };
-        tLabel.fontSize = 13;
-        tLabel.characters = label;
-        tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
-        badge.appendChild(tLabel);
-
-        const tValue = figma.createText();
-        tValue.fontName = { family: "Poppins", style: "Bold" };
-        tValue.fontSize = 13;
-        tValue.characters = value;
-        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        badge.appendChild(tValue);
-
-        return badge;
-    }
-
-    statsRow.appendChild(createStatBadge("Variants", String(components.length)));
-    statsRow.appendChild(createStatBadge("Types", String(types.length)));
-    statsRow.appendChild(createStatBadge("Sizes", String(sizes.length)));
-    const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-    statsRow.appendChild(createStatBadge("Last Updated", dateText));
-
-    headerFrame.appendChild(statsRow);
-    containerFrame.appendChild(headerFrame);
-
-    // Content wrapper
-    const contentWrapper = figma.createFrame();
-    contentWrapper.name = "Content";
-    contentWrapper.layoutMode = 'VERTICAL';
-    contentWrapper.primaryAxisSizingMode = 'AUTO';
-    contentWrapper.counterAxisSizingMode = 'AUTO';
-    contentWrapper.layoutAlign = 'STRETCH';
-    contentWrapper.paddingLeft = 48;
-    contentWrapper.paddingRight = 48;
-    contentWrapper.paddingTop = 48;
-    contentWrapper.paddingBottom = 48;
-    contentWrapper.fills = [];
-
-    contentWrapper.appendChild(componentSet);
-    containerFrame.appendChild(contentWrapper);
-
-    figma.currentPage.appendChild(containerFrame);
-    figma.viewport.scrollAndZoomIntoView([containerFrame]);
-    figma.notify(`✅ Radio System created with ${components.length} variants, spacing variables, color variables, and text styles!`);
-}
-
-// ============================================
-// RADIO COMPONENT - END
-// ============================================
-
-
-// ============================================
-// CHECKBOX COMPONENT - START
-// ============================================
-
-async function createCheckboxComponentSet(primaryColor, textColor, radius) {
-    await Promise.all([
-        figma.loadFontAsync({ family: "Poppins", style: "Regular" }),
-        figma.loadFontAsync({ family: "Poppins", style: "Medium" }),
-        figma.loadFontAsync({ family: "Poppins", style: "Bold" })
-    ]);
-
-    const primaryRgb = hexToRgb(primaryColor);
-    const textRgb = hexToRgb(textColor);
-    const mutedRgb = hexToRgb('#6B7280');
-    const disabledRgb = hexToRgb('#D1D5DB');
-    const borderRgb = hexToRgb('#E5E7EB');
-
-    // ============================================
-    // CREATE CHECKBOX SPACING VARIABLES - START
-    // ============================================
-
-    const collections = await figma.variables.getLocalVariableCollectionsAsync();
-    let checkboxSpacingCollection = collections.find(c => c.name === 'Checkbox/Spacing');
-
-    if (!checkboxSpacingCollection) {
-        checkboxSpacingCollection = figma.variables.createVariableCollection('Checkbox/Spacing');
-    }
-
-    const spacingModeId = checkboxSpacingCollection.modes[0].modeId;
-    const existingFloatVars = await figma.variables.getLocalVariablesAsync('FLOAT');
-
-    function createOrUpdateFloatVar(name, value) {
-        let floatVar = existingFloatVars.find(v => v.name === name && v.variableCollectionId === checkboxSpacingCollection.id);
-        if (!floatVar) {
-            floatVar = figma.variables.createVariable(name, checkboxSpacingCollection, 'FLOAT');
-            existingFloatVars.push(floatVar);
-        }
-        floatVar.setValueForMode(spacingModeId, value);
-        return floatVar;
-    }
-
-    // Checkbox size configurations
-    const checkboxSizeConfigs = [
-        { size: 'SM', fontSize: 13, padding: 12, gap: 16, cardPadding: 12, hintFontSize: 12 },
-        { size: 'MD', fontSize: 14, padding: 16, gap: 18, cardPadding: 16, hintFontSize: 12 },
-        { size: 'LG', fontSize: 16, padding: 20, gap: 20, cardPadding: 20, hintFontSize: 12 }
-    ];
-
-    const checkboxSpacingVariables = {};
-
-    for (const config of checkboxSizeConfigs) {
-        const sizeKey = config.size.toLowerCase();
-        checkboxSpacingVariables[sizeKey] = {
-            fontSize: createOrUpdateFloatVar(`checkbox/${sizeKey}/font-size`, config.fontSize),
-            padding: createOrUpdateFloatVar(`checkbox/${sizeKey}/padding`, config.padding),
-            gap: createOrUpdateFloatVar(`checkbox/${sizeKey}/gap`, config.gap),
-            cardPadding: createOrUpdateFloatVar(`checkbox/${sizeKey}/card-padding`, config.cardPadding),
-            hintFontSize: createOrUpdateFloatVar(`checkbox/${sizeKey}/hint-font-size`, config.hintFontSize)
-        };
-    }
-
-    const checkboxRadiusVar = createOrUpdateFloatVar('checkbox/radius', radius);
-    const checkboxSizeVar = createOrUpdateFloatVar('checkbox/size', 24);
-
-    // ============================================
-    // CREATE CHECKBOX SPACING VARIABLES - END
-    // ============================================
-
-    // ============================================
-    // CREATE CHECKBOX COLOR VARIABLES - START
-    // ============================================
-
-    let checkboxColorCollection = collections.find(c => c.name === 'Checkbox/Colors');
-
-    if (!checkboxColorCollection) {
-        checkboxColorCollection = figma.variables.createVariableCollection('Checkbox/Colors');
-    }
-
-    const colorModeId = checkboxColorCollection.modes[0].modeId;
-    const existingColorVars = await figma.variables.getLocalVariablesAsync('COLOR');
-
-    function createOrUpdateColorVar(name, color) {
-        let colorVar = existingColorVars.find(v => v.name === name && v.variableCollectionId === checkboxColorCollection.id);
-        if (!colorVar) {
-            colorVar = figma.variables.createVariable(name, checkboxColorCollection, 'COLOR');
-            existingColorVars.push(colorVar);
-        }
-        colorVar.setValueForMode(colorModeId, color);
-        return colorVar;
-    }
-
-    // Checkbox colors
-    const checkboxColorVariables = {
-        primary: createOrUpdateColorVar('checkbox/primary', primaryRgb),
-        text: createOrUpdateColorVar('checkbox/text', textRgb),
-        muted: createOrUpdateColorVar('checkbox/muted', mutedRgb),
-        disabled: createOrUpdateColorVar('checkbox/disabled', disabledRgb),
-        border: createOrUpdateColorVar('checkbox/border', borderRgb),
-        white: createOrUpdateColorVar('checkbox/white', { r: 1, g: 1, b: 1 }),
-        cardBg: createOrUpdateColorVar('checkbox/card-bg', { r: 1, g: 1, b: 1 }),
-        checkboxFill: {
-            unchecked: createOrUpdateColorVar('checkbox/fill/unchecked', { r: 1, g: 1, b: 1 }),
-            checked: createOrUpdateColorVar('checkbox/fill/checked', primaryRgb),
-            disabled: createOrUpdateColorVar('checkbox/fill/disabled', { r: 0.98, g: 0.98, b: 0.98 })
-        },
-        checkboxBorder: {
-            unchecked: createOrUpdateColorVar('checkbox/border/unchecked', borderRgb),
-            checked: createOrUpdateColorVar('checkbox/border/checked', primaryRgb),
-            disabled: createOrUpdateColorVar('checkbox/border/disabled', disabledRgb)
-        },
-        checkmark: createOrUpdateColorVar('checkbox/checkmark', { r: 1, g: 1, b: 1 }),
-        label: {
-            normal: createOrUpdateColorVar('checkbox/label/normal', textRgb),
-            disabled: createOrUpdateColorVar('checkbox/label/disabled', disabledRgb)
-        },
-        hint: {
-            normal: createOrUpdateColorVar('checkbox/hint/normal', mutedRgb),
-            disabled: createOrUpdateColorVar('checkbox/hint/disabled', disabledRgb)
-        },
-        link: createOrUpdateColorVar('checkbox/link', primaryRgb),
-        cardBorder: {
-            unchecked: createOrUpdateColorVar('checkbox/card-border/unchecked', borderRgb),
-            checked: createOrUpdateColorVar('checkbox/card-border/checked', primaryRgb),
-            disabled: createOrUpdateColorVar('checkbox/card-border/disabled', borderRgb)
-        }
-    };
-
-    // ============================================
-    // CREATE CHECKBOX COLOR VARIABLES - END
-    // ============================================
-
-    // ============================================
-    // CREATE CHECKBOX TEXT STYLES - START
-    // ============================================
-
-    const existingTextStyles = await figma.getLocalTextStylesAsync();
-    const checkboxTextStyles = {};
-
-    for (const config of checkboxSizeConfigs) {
-        const sizeKey = config.size;
-
-        // Label text style
-        let labelStyle = existingTextStyles.find(s => s.name === `Checkbox/Label/${sizeKey}`);
-        if (!labelStyle) {
-            labelStyle = figma.createTextStyle();
-            labelStyle.name = `Checkbox/Label/${sizeKey}`;
-        }
-        labelStyle.fontName = { family: "Poppins", style: "Medium" };
-        labelStyle.fontSize = config.fontSize;
-        labelStyle.lineHeight = { value: 150, unit: 'PERCENT' };
-        try {
-            labelStyle.setBoundVariable('fontSize', checkboxSpacingVariables[sizeKey.toLowerCase()].fontSize);
-        } catch (e) {
-            console.warn(`Could not bind fontSize variable for Checkbox/Label/${sizeKey}:`, e);
-        }
-
-        // Hint text style
-        let hintStyle = existingTextStyles.find(s => s.name === `Checkbox/Hint/${sizeKey}`);
-        if (!hintStyle) {
-            hintStyle = figma.createTextStyle();
-            hintStyle.name = `Checkbox/Hint/${sizeKey}`;
-        }
-        hintStyle.fontName = { family: "Poppins", style: "Regular" };
-        hintStyle.fontSize = config.hintFontSize;
-        hintStyle.lineHeight = { value: 150, unit: 'PERCENT' };
-        try {
-            hintStyle.setBoundVariable('fontSize', checkboxSpacingVariables[sizeKey.toLowerCase()].hintFontSize);
-        } catch (e) {
-            console.warn(`Could not bind fontSize variable for Checkbox/Hint/${sizeKey}:`, e);
-        }
-
-        checkboxTextStyles[sizeKey] = {
-            label: labelStyle,
-            hint: hintStyle
-        };
-    }
-
-    // ============================================
-    // CREATE CHECKBOX TEXT STYLES - END
-    // ============================================
-
-    // Helper function to bind color variable to vector nodes only
-    function bindColorVariableToNode(node, colorVar) {
-        try {
-            const vectorTypes = ['VECTOR', 'LINE', 'ELLIPSE', 'RECTANGLE', 'POLYGON', 'STAR', 'BOOLEAN_OPERATION'];
-            const containerTypes = ['FRAME', 'GROUP', 'COMPONENT', 'INSTANCE'];
-
-            const bindFills = (n) => {
-                if (vectorTypes.includes(n.type)) {
-                    if (n.fills && Array.isArray(n.fills) && n.fills.length > 0) {
-                        n.fills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: colorVar.id } }
-                        }];
-                    }
-                    if (n.strokes && Array.isArray(n.strokes) && n.strokes.length > 0) {
-                        n.strokes = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: colorVar.id } }
-                        }];
-                    }
-                }
-                if (containerTypes.includes(n.type) && n.fills && n.fills.length > 0) {
-                    n.fills = [];
-                }
-                if ('children' in n) {
-                    n.children.forEach(child => bindFills(child));
-                }
-            };
-            bindFills(node);
-        } catch (e) {
-            console.warn('Could not bind color variable to node:', e);
-        }
-    }
-
-    // Checkmark SVG
-    const checkmarkSVG = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M13.3334 4L6.00002 11.3333L2.66669 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`;
-
-    const types = [
-        { name: 'Checkbox Button', isButton: true },
-        { name: 'Checkbox Card', isCard: true }
-    ];
-
-    const states = ['Unchecked', 'Checked', 'Disabled'];
-    const sizes = [
-        { name: 'SM', checkboxSize: 24, fontSize: 13, padding: 12, gap: 16, cardPadding: 12, hintFontSize: 12 },
-        { name: 'MD', checkboxSize: 24, fontSize: 14, padding: 16, gap: 18, cardPadding: 16, hintFontSize: 12 },
-        { name: 'LG', checkboxSize: 24, fontSize: 16, padding: 20, gap: 20, cardPadding: 20, hintFontSize: 12 }
-    ];
-
-    const components = [];
-
-    // Layout: 3 columns (sizes) x 3 rows (states) for each type
-    // Checkbox Card on top, Checkbox Button on bottom
-    const columnWidth = 280;
-    const rowHeight = 100;
-    const columnGap = 10;
-    const rowGap = 10;
-    const typeGap = 10;
-
-    for (let tIndex = 0; tIndex < types.length; tIndex++) {
-        const type = types[tIndex];
-        const baseY = tIndex * (rowHeight * states.length + rowGap * (states.length - 1) + typeGap);
-
-        for (let sIndex = 0; sIndex < sizes.length; sIndex++) {
-            const size = sizes[sIndex];
-            const xPos = sIndex * (columnWidth + columnGap);
-
-            for (let stIndex = 0; stIndex < states.length; stIndex++) {
-                const state = states[stIndex];
-                const yPos = baseY + (stIndex * (rowHeight + rowGap));
-
-                const wrapper = figma.createComponent();
-                wrapper.name = `Type=${type.name}, Size=${size.name}, State=${state}`;
-                wrapper.layoutMode = 'VERTICAL';
-                wrapper.primaryAxisSizingMode = 'AUTO';
-                wrapper.counterAxisSizingMode = 'AUTO';
-                wrapper.itemSpacing = 8;
-                wrapper.fills = [];
-                wrapper.x = xPos;
-                wrapper.y = yPos;
-
-                // Determine colors based on state
-                let checkboxFill, checkboxBorder, labelColor, hintColor;
-                const isChecked = state === 'Checked';
-                const isDisabled = state === 'Disabled';
-                const stateKey = state.toLowerCase();
-                const sizeKey = size.name.toLowerCase();
-
-                if (isDisabled) {
-                    checkboxFill = { r: 0.98, g: 0.98, b: 0.98 };
-                    checkboxBorder = disabledRgb;
-                    labelColor = disabledRgb;
-                    hintColor = disabledRgb;
-                } else if (isChecked) {
-                    checkboxFill = primaryRgb;
-                    checkboxBorder = primaryRgb;
-                    labelColor = textRgb;
-                    hintColor = mutedRgb;
-                } else {
-                    checkboxFill = { r: 1, g: 1, b: 1 };
-                    checkboxBorder = borderRgb;
-                    labelColor = textRgb;
-                    hintColor = mutedRgb;
-                }
-
-                // Create main container based on type
-                let mainContainer;
-
-                if (type.isCard) {
-                    // Checkbox Card - Full card with border
-                    mainContainer = figma.createFrame();
-                    mainContainer.name = "CheckboxCard";
-                    mainContainer.layoutMode = 'HORIZONTAL';
-                    mainContainer.primaryAxisSizingMode = 'AUTO';
-                    mainContainer.counterAxisSizingMode = 'AUTO';
-                    mainContainer.counterAxisAlignItems = 'CENTER';
-                    mainContainer.itemSpacing = size.gap;
-                    mainContainer.paddingLeft = size.cardPadding;
-                    mainContainer.paddingRight = size.cardPadding;
-                    mainContainer.paddingTop = size.cardPadding;
-                    mainContainer.paddingBottom = size.cardPadding;
-                    mainContainer.cornerRadius = radius;
-                    mainContainer.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-                    mainContainer.strokes = [{ type: 'SOLID', color: isChecked && !isDisabled ? primaryRgb : borderRgb }];
-                    mainContainer.strokeWeight = 1;
-
-                    // Bind card spacing variables
-                    try {
-                        mainContainer.setBoundVariable('paddingLeft', checkboxSpacingVariables[sizeKey].cardPadding);
-                        mainContainer.setBoundVariable('paddingRight', checkboxSpacingVariables[sizeKey].cardPadding);
-                        mainContainer.setBoundVariable('paddingTop', checkboxSpacingVariables[sizeKey].cardPadding);
-                        mainContainer.setBoundVariable('paddingBottom', checkboxSpacingVariables[sizeKey].cardPadding);
-                        mainContainer.setBoundVariable('itemSpacing', checkboxSpacingVariables[sizeKey].gap);
-                        mainContainer.setBoundVariable('topLeftRadius', checkboxRadiusVar);
-                        mainContainer.setBoundVariable('topRightRadius', checkboxRadiusVar);
-                        mainContainer.setBoundVariable('bottomLeftRadius', checkboxRadiusVar);
-                        mainContainer.setBoundVariable('bottomRightRadius', checkboxRadiusVar);
-                    } catch (e) {
-                        console.warn('Could not bind card spacing variables:', e);
-                    }
-
-                    // Bind card background color
-                    try {
-                        mainContainer.fills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: checkboxColorVariables.cardBg.id } }
-                        }];
-                    } catch (e) {
-                        console.warn('Could not bind card background variable:', e);
-                    }
-
-                    // Bind card border color
-                    try {
-                        const cardBorderVar = isDisabled ? checkboxColorVariables.cardBorder.disabled :
-                            (isChecked ? checkboxColorVariables.cardBorder.checked : checkboxColorVariables.cardBorder.unchecked);
-                        mainContainer.strokes = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: cardBorderVar.id } }
-                        }];
-                    } catch (e) {
-                        console.warn('Could not bind card border variable:', e);
-                    }
-                } else {
-                    // Checkbox Button - Simple horizontal layout
-                    mainContainer = figma.createFrame();
-                    mainContainer.name = "CheckboxButton";
-                    mainContainer.layoutMode = 'HORIZONTAL';
-                    mainContainer.primaryAxisSizingMode = 'AUTO';
-                    mainContainer.counterAxisSizingMode = 'AUTO';
-                    mainContainer.counterAxisAlignItems = 'CENTER';
-                    mainContainer.itemSpacing = size.gap;
-                    mainContainer.fills = [];
-
-                    // Bind button gap variable
-                    try {
-                        mainContainer.setBoundVariable('itemSpacing', checkboxSpacingVariables[sizeKey].gap);
-                    } catch (e) {
-                        console.warn('Could not bind button gap variable:', e);
-                    }
-                }
-
-                // Create checkbox square (always 24px)
-                const checkboxSquare = figma.createFrame();
-                checkboxSquare.name = "CheckboxSquare";
-                checkboxSquare.resize(24, 24);
-                checkboxSquare.cornerRadius = radius;
-                checkboxSquare.fills = [{ type: 'SOLID', color: checkboxFill }];
-                checkboxSquare.strokes = [{ type: 'SOLID', color: checkboxBorder }];
-                checkboxSquare.strokeWeight = 1;
-                checkboxSquare.layoutMode = 'HORIZONTAL';
-                checkboxSquare.primaryAxisAlignItems = 'CENTER';
-                checkboxSquare.counterAxisAlignItems = 'CENTER';
-                checkboxSquare.primaryAxisSizingMode = 'FIXED';
-                checkboxSquare.counterAxisSizingMode = 'FIXED';
-
-                // Bind checkbox square radius
-                try {
-                    checkboxSquare.setBoundVariable('topLeftRadius', checkboxRadiusVar);
-                    checkboxSquare.setBoundVariable('topRightRadius', checkboxRadiusVar);
-                    checkboxSquare.setBoundVariable('bottomLeftRadius', checkboxRadiusVar);
-                    checkboxSquare.setBoundVariable('bottomRightRadius', checkboxRadiusVar);
-                } catch (e) {
-                    console.warn('Could not bind checkbox square radius:', e);
-                }
-
-                // Bind checkbox square colors
-                try {
-                    const fillVar = isDisabled ? checkboxColorVariables.checkboxFill.disabled :
-                        (isChecked ? checkboxColorVariables.checkboxFill.checked : checkboxColorVariables.checkboxFill.unchecked);
-                    checkboxSquare.fills = [{
-                        type: 'SOLID',
-                        color: { r: 0, g: 0, b: 0 },
-                        boundVariables: { color: { type: 'VARIABLE_ALIAS', id: fillVar.id } }
-                    }];
-
-                    const borderVar = isDisabled ? checkboxColorVariables.checkboxBorder.disabled :
-                        (isChecked ? checkboxColorVariables.checkboxBorder.checked : checkboxColorVariables.checkboxBorder.unchecked);
-                    checkboxSquare.strokes = [{
-                        type: 'SOLID',
-                        color: { r: 0, g: 0, b: 0 },
-                        boundVariables: { color: { type: 'VARIABLE_ALIAS', id: borderVar.id } }
-                    }];
-                } catch (e) {
-                    console.warn('Could not bind checkbox square color variables:', e);
-                }
-
-                // Checkmark icon (only visible when checked)
-                if (isChecked) {
-                    const checkmarkNode = figma.createNodeFromSvg(checkmarkSVG);
-                    checkmarkNode.name = "Checkmark";
-                    const scale = 16 / checkmarkNode.width;
-                    checkmarkNode.resize(checkmarkNode.width * scale, checkmarkNode.height * scale);
-                    checkmarkNode.x = (24 - checkmarkNode.width) / 2;
-                    checkmarkNode.y = (24 - checkmarkNode.height) / 2;
-
-                    if (checkmarkNode.type === 'FRAME' || checkmarkNode.type === 'GROUP') {
-                        [...checkmarkNode.children].forEach(child => {
-                            child.x += checkmarkNode.x;
-                            child.y += checkmarkNode.y;
-                            // Bind checkmark color variable
-                            try {
-                                bindColorVariableToNode(child, checkboxColorVariables.checkmark);
-                            } catch (e) {
-                                console.warn('Could not bind checkmark color variable:', e);
-                            }
-                            checkboxSquare.appendChild(child);
-                        });
-                        checkmarkNode.remove();
-                    } else {
-                        // Bind checkmark color variable
-                        try {
-                            bindColorVariableToNode(checkmarkNode, checkboxColorVariables.checkmark);
-                        } catch (e) {
-                            console.warn('Could not bind checkmark color variable:', e);
-                        }
-                        checkboxSquare.appendChild(checkmarkNode);
-                    }
-                }
-
-                mainContainer.appendChild(checkboxSquare);
-
-                // Create label section
-                const labelSection = figma.createFrame();
-                labelSection.name = "LabelSection";
-                labelSection.layoutMode = 'VERTICAL';
-                labelSection.primaryAxisSizingMode = 'AUTO';
-                labelSection.counterAxisSizingMode = 'AUTO';
-                labelSection.itemSpacing = 4;
-                labelSection.fills = [];
-
-                // Main label text (Heading for Checkbox Card)
-                const labelText = figma.createText();
-                labelText.name = type.isCard ? "HeadingText" : "LabelText";
-                labelText.fontName = { family: "Poppins", style: "Medium" };
-                labelText.fontSize = size.fontSize;
-                labelText.characters = type.isCard ? "Card Heading" : "Checkbox Label";
-                labelText.fills = [{ type: 'SOLID', color: labelColor }];
-
-                // Apply label text style
-                if (checkboxTextStyles[size.name] && checkboxTextStyles[size.name].label) {
-                    await labelText.setTextStyleIdAsync(checkboxTextStyles[size.name].label.id);
-                }
-
-                // Bind label color variable
-                try {
-                    const labelColorVar = isDisabled ? checkboxColorVariables.label.disabled : checkboxColorVariables.label.normal;
-                    labelText.fills = [{
-                        type: 'SOLID',
-                        color: { r: 0, g: 0, b: 0 },
-                        boundVariables: { color: { type: 'VARIABLE_ALIAS', id: labelColorVar.id } }
-                    }];
-                } catch (e) {
-                    console.warn('Could not bind label color variable:', e);
-                }
-
-                labelSection.appendChild(labelText);
-
-                // For Checkbox Card: Add description
-                if (type.isCard) {
-                    const descText = figma.createText();
-                    descText.name = "DescriptionText";
-                    descText.fontName = { family: "Poppins", style: "Regular" };
-                    descText.fontSize = size.hintFontSize;
-                    descText.characters = "Card description text";
-                    descText.fills = [{ type: 'SOLID', color: hintColor }];
-
-                    // Apply hint text style
-                    if (checkboxTextStyles[size.name] && checkboxTextStyles[size.name].hint) {
-                        await descText.setTextStyleIdAsync(checkboxTextStyles[size.name].hint.id);
-                    }
-
-                    // Bind description color variable
-                    try {
-                        const hintColorVar = isDisabled ? checkboxColorVariables.hint.disabled : checkboxColorVariables.hint.normal;
-                        descText.fills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: hintColorVar.id } }
-                        }];
-                    } catch (e) {
-                        console.warn('Could not bind description color variable:', e);
-                    }
-
-                    labelSection.appendChild(descText);
-                }
-
-                // For Checkbox Button: Hint and Link in one line
-                if (type.isButton) {
-                    const hintLinkRow = figma.createFrame();
-                    hintLinkRow.name = "HintLinkRow";
-                    hintLinkRow.layoutMode = 'HORIZONTAL';
-                    hintLinkRow.primaryAxisSizingMode = 'AUTO';
-                    hintLinkRow.counterAxisSizingMode = 'AUTO';
-                    hintLinkRow.itemSpacing = 6;
-                    hintLinkRow.fills = [];
-                    hintLinkRow.visible = false; // Hidden by default
-
-                    const hintText = figma.createText();
-                    hintText.name = "HintText";
-                    hintText.fontName = { family: "Poppins", style: "Regular" };
-                    hintText.fontSize = size.hintFontSize;
-                    hintText.characters = "Optional hint text";
-                    hintText.fills = [{ type: 'SOLID', color: hintColor }];
-
-                    // Apply hint text style
-                    if (checkboxTextStyles[size.name] && checkboxTextStyles[size.name].hint) {
-                        await hintText.setTextStyleIdAsync(checkboxTextStyles[size.name].hint.id);
-                    }
-
-                    // Bind hint color variable
-                    try {
-                        const hintColorVar = isDisabled ? checkboxColorVariables.hint.disabled : checkboxColorVariables.hint.normal;
-                        hintText.fills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: hintColorVar.id } }
-                        }];
-                    } catch (e) {
-                        console.warn('Could not bind hint color variable:', e);
-                    }
-
-                    hintLinkRow.appendChild(hintText);
-
-                    const linkText = figma.createText();
-                    linkText.name = "LinkText";
-                    linkText.fontName = { family: "Poppins", style: "Medium" };
-                    linkText.fontSize = size.hintFontSize;
-                    linkText.characters = "Learn more";
-                    linkText.fills = [{ type: 'SOLID', color: primaryRgb }];
-                    linkText.textDecoration = 'UNDERLINE';
-
-                    // Bind link color variable
-                    try {
-                        linkText.fills = [{
-                            type: 'SOLID',
-                            color: { r: 0, g: 0, b: 0 },
-                            boundVariables: { color: { type: 'VARIABLE_ALIAS', id: checkboxColorVariables.link.id } }
-                        }];
-                    } catch (e) {
-                        console.warn('Could not bind link color variable:', e);
-                    }
-
-                    hintLinkRow.appendChild(linkText);
-
-                    labelSection.appendChild(hintLinkRow);
-                }
-
-                mainContainer.appendChild(labelSection);
-                wrapper.appendChild(mainContainer);
-
-                components.push(wrapper);
-            }
-        }
-    }
-
-    // Create component set
-    const componentSet = figma.combineAsVariants(components, figma.currentPage);
-    componentSet.name = "Checkbox";
-
-    // Add component properties
-    const labelProp = componentSet.addComponentProperty("Label", "TEXT", "Checkbox Label");
-    const headingProp = componentSet.addComponentProperty("Heading", "TEXT", "Card Heading");
-    const descriptionProp = componentSet.addComponentProperty("Description", "TEXT", "Card description text");
-
-    // Properties for Checkbox Button type - Show HintLinkRow
-    const showHintLinkProp = componentSet.addComponentProperty("Show Hint & Link", "BOOLEAN", false);
-    const hintTextProp = componentSet.addComponentProperty("Hint Text", "TEXT", "Optional hint text");
-    const linkTextProp = componentSet.addComponentProperty("Link Text", "TEXT", "Learn more");
-
-    // Apply properties to variants
-    componentSet.children.forEach(variant => {
-        const labelTextNode = variant.findOne(n => n.name === "LabelText");
-        const headingTextNode = variant.findOne(n => n.name === "HeadingText");
-        const descriptionTextNode = variant.findOne(n => n.name === "DescriptionText");
-        const hintLinkRowNode = variant.findOne(n => n.name === "HintLinkRow");
-        const hintTextNode = variant.findOne(n => n.name === "HintText");
-        const linkTextNode = variant.findOne(n => n.name === "LinkText");
-
-        if (labelTextNode) {
-            labelTextNode.componentPropertyReferences = { characters: labelProp };
-        }
-
-        if (headingTextNode) {
-            headingTextNode.componentPropertyReferences = { characters: headingProp };
-        }
-
-        if (descriptionTextNode) {
-            descriptionTextNode.componentPropertyReferences = { characters: descriptionProp };
-        }
-
-        if (hintLinkRowNode) {
-            hintLinkRowNode.componentPropertyReferences = {
-                visible: showHintLinkProp
-            };
-        }
-
-        if (hintTextNode) {
-            hintTextNode.componentPropertyReferences = {
-                characters: hintTextProp
-            };
-        }
-
-        if (linkTextNode) {
-            linkTextNode.componentPropertyReferences = {
-                characters: linkTextProp
-            };
-        }
-    });
-
-    // Create documentation container
-    const containerFrame = figma.createFrame();
-    containerFrame.name = "Checkbox Component System";
-    containerFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-    containerFrame.layoutMode = 'VERTICAL';
-    containerFrame.primaryAxisSizingMode = 'AUTO';
-    containerFrame.counterAxisSizingMode = 'AUTO';
-    containerFrame.paddingBottom = 48;
-
-    // Header
-    const headerFrame = figma.createFrame();
-    headerFrame.name = "Header";
-    headerFrame.layoutMode = 'VERTICAL';
-    headerFrame.layoutAlign = 'STRETCH';
-    headerFrame.primaryAxisSizingMode = 'AUTO';
-    headerFrame.paddingLeft = 80;
-    headerFrame.paddingRight = 80;
-    headerFrame.paddingTop = 80;
-    headerFrame.paddingBottom = 100;
-    headerFrame.itemSpacing = 40;
-    headerFrame.counterAxisAlignItems = 'CENTER';
-    headerFrame.fills = [{
-        type: 'GRADIENT_LINEAR',
-        gradientStops: [
-            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
-            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
-        ],
-        gradientTransform: [[1, 0, 0], [0, 1, 0]]
-    }];
-
-    const headerMain = figma.createFrame();
-    headerMain.layoutMode = 'VERTICAL';
-    headerMain.primaryAxisSizingMode = 'AUTO';
-    headerMain.counterAxisSizingMode = 'AUTO';
-    headerMain.counterAxisAlignItems = 'CENTER';
-    headerMain.itemSpacing = 24;
-    headerMain.fills = [];
-    headerFrame.appendChild(headerMain);
-
-    const title = figma.createText();
-    title.fontName = { family: "Poppins", style: "Bold" };
-    title.characters = "Checkbox Component System";
-    title.fontSize = 56;
-    title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
-    title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    headerMain.appendChild(title);
-
-    const desc = figma.createText();
-    desc.fontName = { family: "Poppins", style: "Regular" };
-    desc.characters = `A comprehensive checkbox system with ${components.length} variants, including Checkbox Button and Checkbox Card styles with heading and description.`;
-    desc.fontSize = 18;
-    desc.opacity = 0.6;
-    desc.textAlignHorizontal = 'CENTER';
-    desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    desc.resize(800, desc.height);
-    headerMain.appendChild(desc);
-
-    // Stats row
-    const statsRow = figma.createFrame();
-    statsRow.layoutMode = 'HORIZONTAL';
-    statsRow.primaryAxisSizingMode = 'AUTO';
-    statsRow.counterAxisSizingMode = 'AUTO';
-    statsRow.itemSpacing = 16;
-    statsRow.fills = [];
-
-    function createStatBadge(label, value) {
-        const badge = figma.createFrame();
-        badge.layoutMode = 'HORIZONTAL';
-        badge.primaryAxisSizingMode = 'AUTO';
-        badge.counterAxisSizingMode = 'AUTO';
-        badge.paddingLeft = 20;
-        badge.paddingRight = 20;
-        badge.paddingTop = 10;
-        badge.paddingBottom = 10;
-        badge.cornerRadius = 100;
-        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
-        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
-        badge.strokeWeight = 1;
-        badge.itemSpacing = 10;
-        badge.counterAxisAlignItems = 'CENTER';
-        badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
-
-        const tLabel = figma.createText();
-        tLabel.fontName = { family: "Poppins", style: "Medium" };
-        tLabel.fontSize = 13;
-        tLabel.characters = label;
-        tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
-        badge.appendChild(tLabel);
-
-        const tValue = figma.createText();
-        tValue.fontName = { family: "Poppins", style: "Bold" };
-        tValue.fontSize = 13;
-        tValue.characters = value;
-        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        badge.appendChild(tValue);
-
-        return badge;
-    }
-
-    statsRow.appendChild(createStatBadge("Variants", String(components.length)));
-    statsRow.appendChild(createStatBadge("Types", String(types.length)));
-    statsRow.appendChild(createStatBadge("Sizes", String(sizes.length)));
-    const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-    statsRow.appendChild(createStatBadge("Last Updated", dateText));
-
-    headerFrame.appendChild(statsRow);
-    containerFrame.appendChild(headerFrame);
-
-    // Content wrapper
-    const contentWrapper = figma.createFrame();
-    contentWrapper.name = "Content";
-    contentWrapper.layoutMode = 'VERTICAL';
-    contentWrapper.primaryAxisSizingMode = 'AUTO';
-    contentWrapper.counterAxisSizingMode = 'AUTO';
-    contentWrapper.layoutAlign = 'STRETCH';
-    contentWrapper.paddingLeft = 48;
-    contentWrapper.paddingRight = 48;
-    contentWrapper.paddingTop = 48;
-    contentWrapper.paddingBottom = 48;
-    contentWrapper.fills = [];
-
-    contentWrapper.appendChild(componentSet);
-    containerFrame.appendChild(contentWrapper);
-
-    figma.currentPage.appendChild(containerFrame);
-    figma.viewport.scrollAndZoomIntoView([containerFrame]);
-    figma.notify(`✅ Checkbox System created with ${components.length} variants, spacing variables, color variables, and text styles!`);
-}
-
-// ============================================
-// CHECKBOX COMPONENT - END
-// ============================================
-
-
-// ============================================
-// RADIO COMPONENT - END
-// ============================================
-
-
-// ============================================
-// MESSAGE HANDLER - START
-// ============================================
 
 figma.ui.onmessage = async (msg) => {
-
-    // ----------------------------------------
-    // WINDOW & UI MESSAGES
-    // ----------------------------------------
-
-    if (msg.type === 'center-ui') {
-        try {
-            const bounds = figma.viewport.bounds;
-            const x = bounds.x + (bounds.width - 424) / 2;
-            const y = bounds.y + (bounds.height - 700) / 2;
-            figma.ui.reposition(x, y);
-        } catch (error) {
-            // Fallback if reposition fails
-            console.log('Could not center UI:', error);
-        }
+    if (msg.type === "close-plugin") {
+        figma.closePlugin();
     }
 
-    if (msg.type === 'resize-window') {
+    if (msg.type === "resize") {
         figma.ui.resize(msg.width, msg.height);
     }
 
-    if (msg.type === 'copy-to-clipboard') {
-        figma.ui.postMessage({ type: 'clipboard-ready' });
-    }
-
-    if (msg.type === 'download-json') {
-        figma.ui.postMessage({ type: 'download-ready', data: msg.data });
-    }
-
-    if (msg.type === 'close-plugin') {
-        figma.ui.postMessage({ type: 'show-goodbye' });
-        setTimeout(() => figma.closePlugin(), 5000);
-    }
-
-    if (msg.type === 'notify') {
-        figma.notify(msg.message);
-    }
-
-    // ----------------------------------------
-    // COMPONENT CREATION MESSAGES
-    // ----------------------------------------
-
-    if (msg.type === 'create-button-component') {
+    if (msg.type === "create-variables") {
         try {
-            await createButtonComponentSet(msg.buttonText, msg.bgColor, msg.textColor, msg.radius);
-            figma.ui.postMessage({ type: 'loading-complete' });
-            figma.ui.postMessage({ type: 'show-success', title: 'Button Created!', message: 'Your button component system has been created successfully.' });
-        } catch (error) {
-            figma.notify(`❌ Error creating button component: ${error.message}`);
-            figma.ui.postMessage({ type: 'loading-complete' });
-        }
-    }
-
-    if (msg.type === 'create-input-component') {
-        try {
-            await createInputComponentSet(msg.placeholder, msg.borderColor, msg.primaryColor, msg.textColor, msg.radius);
-            figma.ui.postMessage({ type: 'loading-complete' });
-            figma.ui.postMessage({ type: 'show-success', title: 'Input Created!', message: 'Your input component system has been created successfully.' });
-        } catch (error) {
-            figma.notify(`❌ Error creating input component: ${error.message}`);
-            figma.ui.postMessage({ type: 'loading-complete' });
-        }
-    }
-
-    if (msg.type === 'create-radio-component') {
-        try {
-            await createRadioComponentSet(msg.primaryColor, msg.textColor, msg.radius);
-            figma.ui.postMessage({ type: 'loading-complete' });
-            figma.ui.postMessage({ type: 'show-success', title: 'Radio Created!', message: 'Your radio component system has been created successfully.' });
-        } catch (error) {
-            figma.notify(`❌ Error creating radio component: ${error.message}`);
-            figma.ui.postMessage({ type: 'loading-complete' });
-        }
-    }
-
-    if (msg.type === 'create-checkbox-component') {
-        try {
-            await createCheckboxComponentSet(msg.primaryColor, msg.textColor, msg.radius);
-            figma.ui.postMessage({ type: 'loading-complete' });
-            figma.ui.postMessage({ type: 'show-success', title: 'Checkbox Created!', message: 'Your checkbox component system has been created successfully.' });
-        } catch (error) {
-            figma.notify(`❌ Error creating checkbox component: ${error.message}`);
-            figma.ui.postMessage({ type: 'loading-complete' });
-        }
-    }
-
-    // ----------------------------------------
-    // FULL DESIGN SYSTEM GENERATION (WIZARD)
-    // ----------------------------------------
-
-    if (msg.type === 'generate-full-design-system') {
-        try {
-            const data = msg.data;
-            figma.notify('🚀 Starting design system generation...');
-
-            // ============================================
-            // STEP 1: CREATE COLOR VARIABLES
-            // ============================================
-            figma.notify('Creating color variables...');
-
-            // Get all collections first
-            const collections = await figma.variables.getLocalVariableCollectionsAsync();
-
-            // Create Colors collection FIRST (if it doesn't exist)
-            let colorCollection = collections.find(c => c.name === '1. Colors');
-
-            if (!colorCollection) {
-                colorCollection = figma.variables.createVariableCollection('1. Colors');
-                colorCollection.renameMode(colorCollection.modes[0].modeId, 'Light');
+            // Get or create a collection for color variables
+            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Colors");
+            if (!collection) {
+                collection = figma.variables.createVariableCollection("Colors");
             }
 
-            const modeId = colorCollection.modes[0].modeId;
-            const existingColorVars = await figma.variables.getLocalVariablesAsync('COLOR');
+            // Get mode IDs
+            let lightModeId = collection.modes[0].modeId;
+            let darkModeId;
 
-            // Helper function to create or update color variable
-            async function createOrUpdateColorVar(name, hexColor) {
-                const rgb = hexToRgb(hexColor);
-                let colorVar = existingColorVars.find(v => v.name === name && v.variableCollectionId === colorCollection.id);
-
-                if (!colorVar) {
-                    colorVar = figma.variables.createVariable(name, colorCollection, 'COLOR');
-                    existingColorVars.push(colorVar);
-                }
-                colorVar.setValueForMode(modeId, rgb);
-                return colorVar;
+            // Rename first mode to Light if needed
+            if (collection.modes[0].name !== "Light") {
+                collection.renameMode(lightModeId, "Light");
             }
 
-            // Create primary color and shades
-            await createOrUpdateColorVar('color/primary', data.colors.primary);
-
-            // Generate primary shades (50-900)
-            const primaryRgb = hexToRgb(data.colors.primary);
-            const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
-            for (const shade of shades) {
-                const factor = (shade - 500) / 500;
-                const primaryShadeRgb = factor > 0 ?
-                    darkenColor(primaryRgb, Math.abs(factor) * 0.5) :
-                    lightenColor(primaryRgb, Math.abs(factor) * 0.5);
-                await createOrUpdateColorVar(`primary/${shade}`, rgbToHex(
-                    Math.round(primaryShadeRgb.r * 255),
-                    Math.round(primaryShadeRgb.g * 255),
-                    Math.round(primaryShadeRgb.b * 255)
-                ));
-            }
-
-            // Generate secondary colors only if enabled
-            if (data.colors.enableSecondary) {
-                await createOrUpdateColorVar('color/secondary', data.colors.secondary);
-                const secondaryRgb = hexToRgb(data.colors.secondary);
-                for (const shade of shades) {
-                    const factor = (shade - 500) / 500;
-                    const secondaryShadeRgb = factor > 0 ?
-                        darkenColor(secondaryRgb, Math.abs(factor) * 0.5) :
-                        lightenColor(secondaryRgb, Math.abs(factor) * 0.5);
-                    await createOrUpdateColorVar(`secondary/${shade}`, rgbToHex(
-                        Math.round(secondaryShadeRgb.r * 255),
-                        Math.round(secondaryShadeRgb.g * 255),
-                        Math.round(secondaryShadeRgb.b * 255)
-                    ));
+            // Create dark mode if it doesn't exist
+            if (collection.modes.length === 1) {
+                darkModeId = collection.addMode("Dark");
+            } else {
+                darkModeId = collection.modes[1].modeId;
+                // Rename second mode to Dark if needed
+                if (collection.modes[1].name !== "Dark") {
+                    collection.renameMode(darkModeId, "Dark");
                 }
             }
 
-            // Generate status colors with levels (100, 200, 300)
-            const statusColors = ['success', 'warning', 'error', 'info'];
-            for (const status of statusColors) {
-                const statusData = data.colors[status];
-                const baseColor = statusData.base;
-                const baseRgb = hexToRgb(baseColor);
+            const colors = msg.colors;
+            const includeStatus = msg.includeStatus;
+            const includeNeutral = msg.includeNeutral;
 
-                // Create base color
-                await createOrUpdateColorVar(`color/${status}`, baseColor);
+            // Helper function to convert hex to RGB
+            function hexToRgb(hex) {
+                // Remove # if present
+                hex = hex.replace('#', '');
 
-                // Generate levels: 100 (lightest), 200 (base), 300 (darkest)
-                for (const level of statusData.levels) {
-                    let colorRgb;
-                    if (level === 100) {
-                        // Lightest - 40% lighter
-                        colorRgb = lightenColor(baseRgb, 0.4);
-                    } else if (level === 200) {
-                        // Base color
-                        colorRgb = baseRgb;
-                    } else if (level === 300) {
-                        // Darkest - 30% darker
-                        colorRgb = darkenColor(baseRgb, 0.3);
+                // Handle 3-digit hex
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                }
+
+                // Validate hex
+                if (!/^[0-9A-Fa-f]{6}$/.test(hex)) {
+                    throw new Error(`Invalid hex color: ${hex}`);
+                }
+
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+                return { r, g, b };
+            }
+
+            // Create variables for each color
+            for (const color of colors) {
+                const colorName = color.name;
+                const shades = color.shades;
+
+                // Create variables for each shade
+                for (let i = 0; i < shades.length; i++) {
+                    const shadeNumber = Math.round((i + 1) * (1000 / shades.length));
+                    const variableName = `${colorName}/${shadeNumber}`;
+
+                    try {
+                        // Check if variable already exists in this collection
+                        let variable = figma.variables.getLocalVariables().find(v =>
+                            v.name === variableName && v.variableCollectionId === collection.id
+                        );
+
+                        if (!variable) {
+                            variable = figma.variables.createVariable(variableName, collection, "COLOR");
+                        }
+
+                        // Convert hex to RGB
+                        const rgb = hexToRgb(shades[i]);
+
+                        // Set the value for light mode
+                        variable.setValueForMode(lightModeId, rgb);
+
+                        // Set inverted value for dark mode (reverse the shade order)
+                        const darkShadeIndex = shades.length - 1 - i;
+                        const darkRgb = hexToRgb(shades[darkShadeIndex]);
+                        variable.setValueForMode(darkModeId, darkRgb);
+                    } catch (err) {
+                        console.error(`Error creating variable ${variableName}:`, err);
+                        throw new Error(`Failed to create ${variableName}: ${err.message}`);
                     }
-                    await createOrUpdateColorVar(`${status}/${level}`, rgbToHex(
-                        Math.round(colorRgb.r * 255),
-                        Math.round(colorRgb.g * 255),
-                        Math.round(colorRgb.b * 255)
-                    ));
                 }
             }
 
-            // Generate neutral colors if enabled
-            if (data.colors.neutral.generate) {
-                const neutralShades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
-                const neutralBase = hexToRgb(data.colors.neutral.base); // Gray base
-
-                for (const shade of neutralShades) {
-                    const factor = (shade - 500) / 500;
-                    const neutralRgb = factor > 0 ?
-                        darkenColor(neutralBase, Math.abs(factor) * 0.5) :
-                        lightenColor(neutralBase, Math.abs(factor) * 0.5);
-                    await createOrUpdateColorVar(`neutral/${shade}`, rgbToHex(
-                        Math.round(neutralRgb.r * 255),
-                        Math.round(neutralRgb.g * 255),
-                        Math.round(neutralRgb.b * 255)
-                    ));
-                }
-            }
-
-            // ============================================
-            // STEP 2: CREATE TEXT STYLES
-            // ============================================
-            figma.notify('Creating text styles...');
-
-            // Load fonts
-            await figma.loadFontAsync({ family: data.typography.primaryFont, style: "Regular" });
-            await figma.loadFontAsync({ family: data.typography.primaryFont, style: "Medium" });
-            await figma.loadFontAsync({ family: data.typography.primaryFont, style: "Bold" });
-
-            const existingTextStyles = await figma.getLocalTextStylesAsync();
-
-            // Helper function to create or update text style
-            function createOrUpdateTextStyle(name, fontSize, fontWeight) {
-                let textStyle = existingTextStyles.find(s => s.name === name);
-                if (!textStyle) {
-                    textStyle = figma.createTextStyle();
-                    textStyle.name = name;
-                }
-                textStyle.fontName = { family: data.typography.primaryFont, style: fontWeight };
-                textStyle.fontSize = fontSize;
-                textStyle.lineHeight = { value: 150, unit: 'PERCENT' };
-                textStyle.letterSpacing = { value: 0, unit: 'PIXELS' };
-                return textStyle;
-            }
-
-            // Create text styles
-            const baseSize = data.typography.baseSize;
-            createOrUpdateTextStyle('Display', baseSize * 3, 'Bold');
-            createOrUpdateTextStyle('H1', baseSize * 2.5, 'Bold');
-            createOrUpdateTextStyle('H2', baseSize * 2, 'Bold');
-            createOrUpdateTextStyle('H3', baseSize * 1.75, 'Bold');
-            createOrUpdateTextStyle('H4', baseSize * 1.5, 'Bold');
-            createOrUpdateTextStyle('H5', baseSize * 1.25, 'Bold');
-            createOrUpdateTextStyle('H6', baseSize * 1.125, 'Bold');
-            createOrUpdateTextStyle('Body', baseSize, 'Regular');
-            createOrUpdateTextStyle('Body/Bold', baseSize, 'Bold');
-            createOrUpdateTextStyle('Caption', baseSize * 0.875, 'Regular');
-            createOrUpdateTextStyle('Button', baseSize * 0.875, 'Medium');
-
-            // ============================================
-            // STEP 3: CREATE SPACING TOKENS
-            // ============================================
-            figma.notify('Creating spacing tokens...');
-
-            // Refresh collections list to ensure proper order
-            const updatedCollections = await figma.variables.getLocalVariableCollectionsAsync();
-            let spacingCollection = updatedCollections.find(c => c.name === '2. Tokens');
-            if (!spacingCollection) {
-                spacingCollection = figma.variables.createVariableCollection('2. Tokens');
-            }
-
-            const spacingModeId = spacingCollection.modes[0].modeId;
-            const existingSpacingVars = await figma.variables.getLocalVariablesAsync('FLOAT');
-
-            // Helper function to create or update spacing variable
-            function createOrUpdateSpacingVar(name, value) {
-                let spacingVar = existingSpacingVars.find(v => v.name === name && v.variableCollectionId === spacingCollection.id);
-                if (!spacingVar) {
-                    spacingVar = figma.variables.createVariable(name, spacingCollection, 'FLOAT');
-                    existingSpacingVars.push(spacingVar);
-                }
-                spacingVar.setValueForMode(spacingModeId, value);
-                return spacingVar;
-            }
-
-            // Create spacing variables based on scale (2pt, 4pt, or 8pt)
-            const spacingBase = parseInt(data.tokens.spacingBase); // 2, 4, or 8
-
-            // Generate comprehensive spacing scale
-            const spacingValues = [];
-            for (let i = 0; i <= 20; i++) {
-                spacingValues.push(i * spacingBase);
-            }
-
-            // Create named spacing tokens
-            spacingValues.forEach((value, index) => {
-                createOrUpdateSpacingVar(`spacing/${value}`, value);
-            });
-
-            // Also create semantic spacing tokens
-            createOrUpdateSpacingVar('spacing/xs', spacingBase);
-            createOrUpdateSpacingVar('spacing/sm', spacingBase * 2);
-            createOrUpdateSpacingVar('spacing/md', spacingBase * 3);
-            createOrUpdateSpacingVar('spacing/lg', spacingBase * 4);
-            createOrUpdateSpacingVar('spacing/xl', spacingBase * 5);
-            createOrUpdateSpacingVar('spacing/2xl', spacingBase * 6);
-            createOrUpdateSpacingVar('spacing/3xl', spacingBase * 8);
-
-            // ============================================
-            // STEP 4: CREATE PADDING TOKENS
-            // ============================================
-            const paddingBase = parseInt(data.tokens.paddingBase); // 2, 4, or 8
-
-            // Generate comprehensive padding scale
-            const paddingValues = [];
-            for (let i = 0; i <= 20; i++) {
-                paddingValues.push(i * paddingBase);
-            }
-
-            // Create named padding tokens
-            paddingValues.forEach((value, index) => {
-                createOrUpdateSpacingVar(`padding/${value}`, value);
-            });
-
-            // Also create semantic padding tokens
-            createOrUpdateSpacingVar('padding/xs', paddingBase);
-            createOrUpdateSpacingVar('padding/sm', paddingBase * 2);
-            createOrUpdateSpacingVar('padding/md', paddingBase * 3);
-            createOrUpdateSpacingVar('padding/lg', paddingBase * 4);
-            createOrUpdateSpacingVar('padding/xl', paddingBase * 5);
-
-            // ============================================
-            // STEP 5: CREATE RADIUS TOKENS
-            // ============================================
-            createOrUpdateSpacingVar('radius/sm', data.tokens.radius / 2);
-            createOrUpdateSpacingVar('radius/md', data.tokens.radius);
-            createOrUpdateSpacingVar('radius/lg', data.tokens.radius * 2);
-            createOrUpdateSpacingVar('radius/xl', data.tokens.radius * 3);
-            createOrUpdateSpacingVar('radius/full', 9999);
-
-            // ============================================
-            // STEP 5.5: CREATE GRID SYSTEM TOKENS
-            // ============================================
-            figma.notify('Creating grid systems...');
-
-            // Desktop Grid
-            createOrUpdateSpacingVar('grid/desktop/columns', data.tokens.grids.desktop.columns);
-            createOrUpdateSpacingVar('grid/desktop/max-width', data.tokens.grids.desktop.maxWidth);
-            createOrUpdateSpacingVar('grid/desktop/gutter', data.tokens.grids.desktop.gutter);
-
-            // Tablet Grid
-            createOrUpdateSpacingVar('grid/tablet/columns', data.tokens.grids.tablet.columns);
-            createOrUpdateSpacingVar('grid/tablet/max-width', data.tokens.grids.tablet.maxWidth);
-            createOrUpdateSpacingVar('grid/tablet/gutter', data.tokens.grids.tablet.gutter);
-
-            // Mobile Grid
-            createOrUpdateSpacingVar('grid/mobile/columns', data.tokens.grids.mobile.columns);
-            createOrUpdateSpacingVar('grid/mobile/max-width', data.tokens.grids.mobile.maxWidth);
-            createOrUpdateSpacingVar('grid/mobile/gutter', data.tokens.grids.mobile.gutter);
-
-            // ============================================
-            // STEP 5.6: CREATE SHADOW TOKENS (as effect styles)
-            // ============================================
-            figma.notify('Creating shadow tokens...');
-
-            const existingEffectStyles = await figma.getLocalEffectStylesAsync();
-
-            function createOrUpdateShadowStyle(name, shadowConfig) {
-                let effectStyle = existingEffectStyles.find(s => s.name === name);
-                if (!effectStyle) {
-                    effectStyle = figma.createEffectStyle();
-                    effectStyle.name = name;
-                }
-
-                // Parse shadow string (e.g., "0 1px 2px rgba(0,0,0,0.05)")
-                // For simplicity, create a basic drop shadow
-                const shadows = {
-                    'xs': { x: 0, y: 1, blur: 2, color: { r: 0, g: 0, b: 0, a: 0.05 } },
-                    'sm': { x: 0, y: 1, blur: 3, color: { r: 0, g: 0, b: 0, a: 0.1 } },
-                    'md': { x: 0, y: 4, blur: 6, color: { r: 0, g: 0, b: 0, a: 0.1 } },
-                    'lg': { x: 0, y: 10, blur: 15, color: { r: 0, g: 0, b: 0, a: 0.1 } },
-                    'xl': { x: 0, y: 20, blur: 25, color: { r: 0, g: 0, b: 0, a: 0.1 } },
-                    '2xl': { x: 0, y: 25, blur: 50, color: { r: 0, g: 0, b: 0, a: 0.25 } }
+            // Add status colors if toggle is on
+            if (includeStatus) {
+                const statusColors = {
+                    'Success': ['#ECFDF5', '#D1FAE5', '#A7F3D0', '#6EE7B7', '#34D399', '#10B981', '#059669', '#047857', '#065F46', '#064E3B'],
+                    'Warning': ['#FFFBEB', '#FEF3C7', '#FDE68A', '#FCD34D', '#FBBF24', '#F59E0B', '#D97706', '#B45309', '#92400E', '#78350F'],
+                    'Error': ['#FEF2F2', '#FEE2E2', '#FECACA', '#FCA5A5', '#F87171', '#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D'],
+                    'Info': ['#EFF6FF', '#DBEAFE', '#BFDBFE', '#93C5FD', '#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF', '#1E3A8A']
                 };
 
-                const shadowKey = name.replace('shadow/', '');
-                const shadow = shadows[shadowKey];
+                for (const [colorName, shades] of Object.entries(statusColors)) {
+                    for (let i = 0; i < shades.length; i++) {
+                        const shadeNumber = (i + 1) * 100;
+                        const variableName = `Status/${colorName}/${shadeNumber}`;
 
-                if (shadow) {
-                    effectStyle.effects = [{
-                        type: 'DROP_SHADOW',
-                        color: shadow.color,
-                        offset: { x: shadow.x, y: shadow.y },
-                        radius: shadow.blur,
-                        visible: true,
-                        blendMode: 'NORMAL'
-                    }];
-                }
-
-                return effectStyle;
-            }
-
-            // Create shadow effect styles
-            createOrUpdateShadowStyle('shadow/xs', data.tokens.shadows.xs);
-            createOrUpdateShadowStyle('shadow/sm', data.tokens.shadows.sm);
-            createOrUpdateShadowStyle('shadow/md', data.tokens.shadows.md);
-            createOrUpdateShadowStyle('shadow/lg', data.tokens.shadows.lg);
-            createOrUpdateShadowStyle('shadow/xl', data.tokens.shadows.xl);
-            createOrUpdateShadowStyle('shadow/2xl', data.tokens.shadows['2xl']);
-
-            // ============================================
-            // STEP 6: CREATE COLOR STYLES
-            // ============================================
-            figma.notify('Creating color styles...');
-
-            const existingColorStyles = await figma.getLocalPaintStylesAsync();
-
-            // Helper function to create or update color style
-            function createOrUpdateColorStyle(name, hexColor) {
-                let colorStyle = existingColorStyles.find(s => s.name === name);
-                if (!colorStyle) {
-                    colorStyle = figma.createPaintStyle();
-                    colorStyle.name = name;
-                }
-                const rgb = hexToRgb(hexColor);
-                colorStyle.paints = [{ type: 'SOLID', color: rgb }];
-                return colorStyle;
-            }
-
-            // Create color styles
-            createOrUpdateColorStyle('Primary', data.colors.primary);
-            createOrUpdateColorStyle('Secondary', data.colors.secondary);
-            createOrUpdateColorStyle('Success', data.colors.success);
-            createOrUpdateColorStyle('Warning', data.colors.warning);
-            createOrUpdateColorStyle('Error', data.colors.error);
-
-            // ============================================
-            // STEP 6.5: ENSURE COMPONENT COLOR VARIABLES EXIST
-            // ============================================
-            figma.notify('Creating component color variables...');
-
-            // Helper function to ensure a color variable exists
-            async function ensureColorVariableExists(collectionName, varName, fallbackColor, aliasVar = null) {
-                const collections = await figma.variables.getLocalVariableCollectionsAsync();
-                let collection = collections.find(c => c.name === collectionName);
-
-                if (!collection) {
-                    collection = figma.variables.createVariableCollection(collectionName);
-                }
-
-                const modeId = collection.modes[0].modeId;
-                const existingVars = await figma.variables.getLocalVariablesAsync('COLOR');
-
-                let colorVar = existingVars.find(v => v.name === varName && v.variableCollectionId === collection.id);
-
-                if (!colorVar) {
-                    colorVar = figma.variables.createVariable(varName, collection, 'COLOR');
-                }
-
-                // Set value - use alias if provided, otherwise use color
-                if (aliasVar) {
-                    try {
-                        colorVar.setValueForMode(modeId, {
-                            type: 'VARIABLE_ALIAS',
-                            id: aliasVar.id
-                        });
-                    } catch (e) {
-                        colorVar.setValueForMode(modeId, fallbackColor);
-                    }
-                } else {
-                    colorVar.setValueForMode(modeId, fallbackColor);
-                }
-
-                return colorVar;
-            }
-
-            // Helper function to ensure a spacing variable exists
-            async function ensureSpacingVariableExists(collectionName, varName, value) {
-                const collections = await figma.variables.getLocalVariableCollectionsAsync();
-                let collection = collections.find(c => c.name === collectionName);
-
-                if (!collection) {
-                    collection = figma.variables.createVariableCollection(collectionName);
-                }
-
-                const modeId = collection.modes[0].modeId;
-                const existingVars = await figma.variables.getLocalVariablesAsync('FLOAT');
-
-                let spacingVar = existingVars.find(v => v.name === varName && v.variableCollectionId === collection.id);
-
-                if (!spacingVar) {
-                    spacingVar = figma.variables.createVariable(varName, collection, 'FLOAT');
-                }
-
-                spacingVar.setValueForMode(modeId, value);
-                return spacingVar;
-            }
-
-            // Get primary color variables for aliasing
-            const allColorVars = await figma.variables.getLocalVariablesAsync('COLOR');
-            const primary500Var = allColorVars.find(v => v.name === 'primary/500');
-            const primary600Var = allColorVars.find(v => v.name === 'primary/600');
-            const primary700Var = allColorVars.find(v => v.name === 'primary/700');
-
-            // Create Button color variables
-            const buttonPrimaryRgb = hexToRgb(data.colors.primary);
-            const whiteRgb = { r: 1, g: 1, b: 1 };
-            const disabledRgb = { r: 0.85, g: 0.85, b: 0.85 };
-            const disabledTextRgb = { r: 0.6, g: 0.6, b: 0.6 };
-
-            // Button/Primary colors
-            await ensureColorVariableExists('Button/Colors', 'button/primary/bg/normal', buttonPrimaryRgb, primary500Var);
-            await ensureColorVariableExists('Button/Colors', 'button/primary/bg/hover', darkenColor(buttonPrimaryRgb, 0.1), primary600Var);
-            await ensureColorVariableExists('Button/Colors', 'button/primary/bg/click', darkenColor(buttonPrimaryRgb, 0.2), primary700Var);
-            await ensureColorVariableExists('Button/Colors', 'button/primary/bg/disabled', disabledRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/primary/text/normal', whiteRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/primary/text/hover', whiteRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/primary/text/click', whiteRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/primary/text/disabled', disabledTextRgb);
-
-            // Button/Destructive colors
-            const destructiveRgb = { r: 0.937, g: 0.267, b: 0.267 };
-            await ensureColorVariableExists('Button/Colors', 'button/destructive/bg/normal', destructiveRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/destructive/bg/hover', darkenColor(destructiveRgb, 0.1));
-            await ensureColorVariableExists('Button/Colors', 'button/destructive/bg/click', darkenColor(destructiveRgb, 0.2));
-            await ensureColorVariableExists('Button/Colors', 'button/destructive/bg/disabled', disabledRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/destructive/text/normal', whiteRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/destructive/text/hover', whiteRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/destructive/text/click', whiteRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/destructive/text/disabled', disabledTextRgb);
-
-            // Button/Line colors
-            const borderRgb = { r: 0.8, g: 0.8, b: 0.85 };
-            await ensureColorVariableExists('Button/Colors', 'button/line/bg/normal', { r: 1, g: 1, b: 1, a: 0 });
-            await ensureColorVariableExists('Button/Colors', 'button/line/bg/hover', lightenColor(buttonPrimaryRgb, 0.95));
-            await ensureColorVariableExists('Button/Colors', 'button/line/bg/click', lightenColor(buttonPrimaryRgb, 0.9));
-            await ensureColorVariableExists('Button/Colors', 'button/line/bg/disabled', { r: 0.98, g: 0.98, b: 0.98, a: 0.5 });
-            await ensureColorVariableExists('Button/Colors', 'button/line/border/normal', borderRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/line/border/hover', buttonPrimaryRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/line/border/click', buttonPrimaryRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/line/border/disabled', { r: 0.9, g: 0.9, b: 0.9 });
-            await ensureColorVariableExists('Button/Colors', 'button/line/text/normal', buttonPrimaryRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/line/text/hover', buttonPrimaryRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/line/text/click', buttonPrimaryRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/line/text/disabled', { r: 0.8, g: 0.8, b: 0.8 });
-
-            // Button/Ghost colors
-            await ensureColorVariableExists('Button/Colors', 'button/ghost/bg/normal', { r: 1, g: 1, b: 1, a: 0 });
-            await ensureColorVariableExists('Button/Colors', 'button/ghost/bg/hover', lightenColor(buttonPrimaryRgb, 0.95));
-            await ensureColorVariableExists('Button/Colors', 'button/ghost/bg/click', lightenColor(buttonPrimaryRgb, 0.9));
-            await ensureColorVariableExists('Button/Colors', 'button/ghost/bg/disabled', { r: 1, g: 1, b: 1, a: 0 });
-            await ensureColorVariableExists('Button/Colors', 'button/ghost/text/normal', buttonPrimaryRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/ghost/text/hover', buttonPrimaryRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/ghost/text/click', buttonPrimaryRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/ghost/text/disabled', { r: 0.8, g: 0.8, b: 0.8 });
-
-            // Button/Link colors
-            await ensureColorVariableExists('Button/Colors', 'button/link/bg/normal', { r: 1, g: 1, b: 1, a: 0 });
-            await ensureColorVariableExists('Button/Colors', 'button/link/bg/hover', { r: 1, g: 1, b: 1, a: 0 });
-            await ensureColorVariableExists('Button/Colors', 'button/link/bg/click', { r: 1, g: 1, b: 1, a: 0 });
-            await ensureColorVariableExists('Button/Colors', 'button/link/bg/disabled', { r: 1, g: 1, b: 1, a: 0 });
-            await ensureColorVariableExists('Button/Colors', 'button/link/text/normal', buttonPrimaryRgb);
-            await ensureColorVariableExists('Button/Colors', 'button/link/text/hover', darkenColor(buttonPrimaryRgb, 0.2));
-            await ensureColorVariableExists('Button/Colors', 'button/link/text/click', darkenColor(buttonPrimaryRgb, 0.3));
-            await ensureColorVariableExists('Button/Colors', 'button/link/text/disabled', { r: 0.8, g: 0.8, b: 0.8 });
-
-            // Create Button spacing variables
-            await ensureSpacingVariableExists('Button/Spacing', 'button/sm/padding-x', 12);
-            await ensureSpacingVariableExists('Button/Spacing', 'button/sm/padding-y', 8);
-            await ensureSpacingVariableExists('Button/Spacing', 'button/sm/gap', 6);
-            await ensureSpacingVariableExists('Button/Spacing', 'button/sm/font-size', 12);
-
-            await ensureSpacingVariableExists('Button/Spacing', 'button/md/padding-x', 16);
-            await ensureSpacingVariableExists('Button/Spacing', 'button/md/padding-y', 10);
-            await ensureSpacingVariableExists('Button/Spacing', 'button/md/gap', 8);
-            await ensureSpacingVariableExists('Button/Spacing', 'button/md/font-size', 14);
-
-            await ensureSpacingVariableExists('Button/Spacing', 'button/lg/padding-x', 20);
-            await ensureSpacingVariableExists('Button/Spacing', 'button/lg/padding-y', 12);
-            await ensureSpacingVariableExists('Button/Spacing', 'button/lg/gap', 10);
-            await ensureSpacingVariableExists('Button/Spacing', 'button/lg/font-size', 16);
-
-            await ensureSpacingVariableExists('Button/Spacing', 'button/radius', data.tokens.radius);
-
-            // Create Input color variables
-            const inputBorderRgb = hexToRgb('#E5E7EB');
-            const inputTextRgb = hexToRgb('#1F2937');
-            const inputMutedRgb = hexToRgb('#9CA3AF');
-
-            await ensureColorVariableExists('Input/Colors', 'input/bg/normal', whiteRgb);
-            await ensureColorVariableExists('Input/Colors', 'input/bg/disabled', { r: 0.95, g: 0.95, b: 0.95 });
-            await ensureColorVariableExists('Input/Colors', 'input/border/normal', inputBorderRgb);
-            await ensureColorVariableExists('Input/Colors', 'input/border/hover', { r: 0.4, g: 0.4, b: 0.4 });
-            await ensureColorVariableExists('Input/Colors', 'input/border/click', buttonPrimaryRgb);
-            await ensureColorVariableExists('Input/Colors', 'input/border/error', { r: 0.937, g: 0.267, b: 0.267 });
-            await ensureColorVariableExists('Input/Colors', 'input/border/disabled', inputBorderRgb);
-            await ensureColorVariableExists('Input/Colors', 'input/text/primary', inputTextRgb);
-            await ensureColorVariableExists('Input/Colors', 'input/text/placeholder', inputMutedRgb);
-            await ensureColorVariableExists('Input/Colors', 'input/text/label', { r: 0.22, g: 0.25, b: 0.32 });
-
-            // Create Input spacing variables
-            await ensureSpacingVariableExists('Input/Spacing', 'input/padding-x', 14);
-            await ensureSpacingVariableExists('Input/Spacing', 'input/padding-y', 10);
-            await ensureSpacingVariableExists('Input/Spacing', 'input/item-spacing', 10);
-            await ensureSpacingVariableExists('Input/Spacing', 'input/label-gap', 8);
-            await ensureSpacingVariableExists('Input/Spacing', 'input/radius', data.tokens.radius);
-
-            // ============================================
-            // STEP 7: CREATE COMPONENTS
-            // ============================================
-            figma.notify('Creating components...');
-
-            if (data.components && data.components.length > 0) {
-                for (const component of data.components) {
-                    if (component === 'Button') {
-                        await createButtonComponentSet(
-                            'Button',
-                            data.colors.primary,
-                            '#FFFFFF',
-                            data.tokens.radius
+                        let variable = figma.variables.getLocalVariables().find(v =>
+                            v.name === variableName && v.variableCollectionId === collection.id
                         );
-                    } else if (component === 'Input') {
-                        await createInputComponentSet(
-                            'Enter text...',
-                            '#E5E7EB',
-                            data.colors.primary,
-                            '#1F2937',
-                            data.tokens.radius
-                        );
-                    } else if (component === 'Checkbox') {
-                        await createCheckboxComponentSet(
-                            data.colors.primary,
-                            '#1F2937',
-                            data.tokens.radius / 2
-                        );
-                    } else if (component === 'Radio') {
-                        await createRadioComponentSet(
-                            data.colors.primary,
-                            '#1F2937',
-                            data.tokens.radius
-                        );
+
+                        if (!variable) {
+                            variable = figma.variables.createVariable(variableName, collection, "COLOR");
+                        }
+
+                        const rgb = hexToRgb(shades[i]);
+                        variable.setValueForMode(lightModeId, rgb);
+
+                        // Set inverted value for dark mode
+                        const darkShadeIndex = shades.length - 1 - i;
+                        const darkRgb = hexToRgb(shades[darkShadeIndex]);
+                        variable.setValueForMode(darkModeId, darkRgb);
                     }
                 }
             }
 
-            // ============================================
-            // STEP 8: CREATE DESIGN SYSTEM DOCUMENTATION PAGE
-            // ============================================
-            figma.notify('Creating documentation page...');
+            // Add neutral colors if toggle is on
+            if (includeNeutral) {
+                const neutralShades = [
+                    '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF',
+                    '#6B7280', '#4B5563', '#374151', '#1F2937', '#111827'
+                ];
 
-            // Find or create Design System page
-            let designSystemPage = figma.root.children.find(page => page.name === '🎨 Design System');
-            if (!designSystemPage) {
-                designSystemPage = figma.createPage();
-                designSystemPage.name = '🎨 Design System';
+                for (let i = 0; i < neutralShades.length; i++) {
+                    const shadeNumber = (i + 1) * 100;
+                    const variableName = `Neutral/${shadeNumber}`;
+
+                    let variable = figma.variables.getLocalVariables().find(v =>
+                        v.name === variableName && v.variableCollectionId === collection.id
+                    );
+
+                    if (!variable) {
+                        variable = figma.variables.createVariable(variableName, collection, "COLOR");
+                    }
+
+                    const rgb = hexToRgb(neutralShades[i]);
+                    variable.setValueForMode(lightModeId, rgb);
+
+                    // Set inverted value for dark mode
+                    const darkShadeIndex = neutralShades.length - 1 - i;
+                    const darkRgb = hexToRgb(neutralShades[darkShadeIndex]);
+                    variable.setValueForMode(darkModeId, darkRgb);
+                }
             }
 
-            // Switch to the design system page
-            figma.currentPage = designSystemPage;
+            notifyUI('variables', true, 'Color variables created successfully!');
+        } catch (error) {
+            notifyUI('variables', false, 'Failed to create color variables', error.message);
+        }
+    }
 
-            // Load font for documentation
-            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+    if (msg.type === "create-spacing-tokens") {
+        try {
+            const baseValue = msg.baseValue;
+            const numberOfTokens = msg.numberOfTokens;
+
+            // Get or create a collection for spacing variables
+            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Spacing");
+            if (!collection) {
+                collection = figma.variables.createVariableCollection("Spacing");
+            }
+
+            // Create Desktop, Tablet, and Mobile modes if they don't exist
+            let desktopModeId, tabletModeId, mobileModeId;
+
+            if (collection.modes.length === 1) {
+                // Rename default mode to Desktop
+                collection.renameMode(collection.modes[0].modeId, "Desktop");
+                desktopModeId = collection.modes[0].modeId;
+                // Add Tablet and Mobile modes
+                tabletModeId = collection.addMode("Tablet");
+                mobileModeId = collection.addMode("Mobile");
+            } else if (collection.modes.length === 2) {
+                desktopModeId = collection.modes[0].modeId;
+                tabletModeId = collection.modes[1].modeId;
+                mobileModeId = collection.addMode("Mobile");
+            } else if (collection.modes.length >= 3) {
+                desktopModeId = collection.modes[0].modeId;
+                tabletModeId = collection.modes[1].modeId;
+                mobileModeId = collection.modes[2].modeId;
+            }
+
+            // Generate spacing tokens (all even numbers)
+            for (let i = 0; i < numberOfTokens; i++) {
+                const desktopValue = baseValue * i;
+                // Tablet uses 75% of desktop value (rounded to even number)
+                const tabletValue = Math.round((desktopValue * 0.75) / 2) * 2;
+                // Mobile uses 50% of desktop value (rounded to even number)
+                const mobileValue = Math.round((desktopValue * 0.5) / 2) * 2;
+
+                const variableName = `spacing-${desktopValue}px`;
+
+                // Check if variable already exists
+                let variable = figma.variables.getLocalVariables().find(v => v.name === variableName);
+
+                if (!variable) {
+                    variable = figma.variables.createVariable(variableName, collection, "FLOAT");
+                }
+
+                // Set different values for each mode
+                variable.setValueForMode(desktopModeId, desktopValue);
+                variable.setValueForMode(tabletModeId, tabletValue);
+                variable.setValueForMode(mobileModeId, mobileValue);
+            }
+
+            notifyUI('spacing', true, `Created ${numberOfTokens} spacing tokens!`);
+        } catch (error) {
+            notifyUI('spacing', false, 'Error creating spacing tokens', error.message);
+        }
+    }
+
+    if (msg.type === "create-spacing-doc") {
+        try {
+            const baseValue = msg.baseValue;
+            const numberOfTokens = msg.numberOfTokens;
+
+            // Load fonts
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
             await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
             await figma.loadFontAsync({ family: "Inter", style: "Bold" });
 
-            let yOffset = 0;
-            const sectionGap = 100;
-            const itemGap = 16;
-
-            // Helper function to create section title
-            function createSectionTitle(title, y) {
-                const titleText = figma.createText();
-                titleText.fontName = { family: "Inter", style: "Bold" };
-                titleText.fontSize = 32;
-                titleText.characters = title;
-                titleText.x = 0;
-                titleText.y = y;
-                titleText.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
-                return titleText;
+            // Helper function to convert hex to RGB
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                }
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+                return { r, g, b };
             }
 
-            // Helper function to create label
-            function createLabel(text, x, y, size = 14) {
-                const label = figma.createText();
-                label.fontName = { family: "Inter", style: "Medium" };
-                label.fontSize = size;
-                label.characters = text;
-                label.x = x;
-                label.y = y;
-                label.fills = [{ type: 'SOLID', color: { r: 0.4, g: 0.4, b: 0.4 } }];
-                return label;
+            // Create main frame
+            const frame = figma.createFrame();
+            frame.name = "Token Spacing";
+            frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            frame.paddingTop = 40;
+            frame.paddingBottom = 40;
+            frame.paddingLeft = 40;
+            frame.paddingRight = 40;
+            frame.layoutMode = "VERTICAL";
+            frame.primaryAxisSizingMode = "AUTO";
+            frame.counterAxisSizingMode = "AUTO";
+            frame.itemSpacing = 40;
+
+            // Add top border
+            const borderColor = hexToRgb('#1350FF');
+            frame.strokes = [{ type: 'SOLID', color: borderColor }];
+            frame.strokeWeight = 8;
+            frame.strokeAlign = "INSIDE";
+            frame.strokeTopWeight = 8;
+            frame.strokeBottomWeight = 0;
+            frame.strokeLeftWeight = 0;
+            frame.strokeRightWeight = 0;
+
+            // Title section
+            const titleSection = figma.createFrame();
+            titleSection.name = "Title Section";
+            titleSection.layoutMode = "VERTICAL";
+            titleSection.primaryAxisSizingMode = "AUTO";
+            titleSection.counterAxisSizingMode = "AUTO";
+            titleSection.itemSpacing = 34;
+            titleSection.fills = [];
+
+            // Create logo from SVG
+            const logoSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_466_1736)"><g clip-path="url(#clip1_466_1736)"><path d="M47.9502 22.765C46.7073 22.0781 45.7261 21.1295 45.0065 19.952C44.2869 18.7418 43.9271 17.4008 43.9271 15.8962C43.9271 14.3916 44.2869 13.0506 45.0065 11.8404C45.7261 10.6302 46.7073 9.71438 47.9502 9.0275C49.1931 8.34063 50.5996 8.01355 52.1696 8.01355C53.4125 8.01355 54.59 8.24251 55.604 8.66771C56.6506 9.09292 57.5337 9.74708 58.2533 10.5648L56.4217 12.2983C55.3096 11.0881 53.9358 10.4994 52.3004 10.4994C51.2538 10.4994 50.3052 10.7283 49.4548 11.1862C48.6044 11.6442 47.9829 12.2983 47.4923 13.116C47.0344 13.9337 46.8054 14.8496 46.8054 15.8962C46.8054 16.9429 47.0344 17.8587 47.4923 18.6764C47.9502 19.4941 48.6044 20.1483 49.4548 20.6062C50.3052 21.0641 51.2211 21.2931 52.3004 21.2931C53.9358 21.2931 55.3096 20.6716 56.4217 19.4614L58.2533 21.2277C57.5337 22.0781 56.6506 22.6995 55.604 23.1247C54.5573 23.5499 53.4125 23.7789 52.1369 23.7789C50.5996 23.7789 49.1931 23.4191 47.9502 22.765Z" fill="black"/><path d="M63.6175 22.7649C62.3745 22.0781 61.3606 21.1295 60.641 19.9193C59.9214 18.7091 59.5616 17.3681 59.5616 15.8635C59.5616 14.3589 59.9214 13.0179 60.641 11.8077C61.3606 10.5975 62.3418 9.64895 63.6175 8.96207C64.8604 8.2752 66.2995 7.94812 67.8695 7.94812C69.4395 7.94812 70.846 8.2752 72.1216 8.96207C73.3645 9.64895 74.3785 10.5975 75.098 11.775C75.8176 12.9852 76.1774 14.3262 76.1774 15.8308C76.1774 17.3354 75.8176 18.6764 75.098 19.8866C74.3785 21.0968 73.3972 22.0126 72.1216 22.6995C70.8787 23.3864 69.4395 23.7135 67.8695 23.7135C66.2995 23.7789 64.8604 23.4191 63.6175 22.7649ZM70.617 20.5735C71.4347 20.1156 72.0889 19.4614 72.5468 18.6437C73.0047 17.826 73.2337 16.8775 73.2337 15.8635C73.2337 14.8496 73.0047 13.901 72.5468 13.0833C72.0889 12.2656 71.4347 11.6114 70.617 11.1535C69.7993 10.6956 68.8835 10.4667 67.8368 10.4667C66.8229 10.4667 65.8743 10.6956 65.0566 11.1535C64.2389 11.6114 63.5848 12.2656 63.1268 13.0833C62.6689 13.901 62.44 14.8496 62.44 15.8635C62.44 16.8775 62.6689 17.826 63.1268 18.6437C63.5848 19.4614 64.2389 20.1156 65.0566 20.5735C65.8743 21.0314 66.7902 21.2604 67.8368 21.2604C68.8835 21.2604 69.7993 21.0314 70.617 20.5735Z" fill="black"/><path d="M79.1539 8.17706H85.8591C87.4945 8.17706 88.9663 8.50414 90.242 9.1256C91.5176 9.74706 92.4988 10.6629 93.2184 11.8404C93.9053 13.0179 94.2651 14.3589 94.2651 15.8635C94.2651 17.4008 93.9053 18.7418 93.2184 19.8866C92.5315 21.0641 91.5176 21.9472 90.242 22.6014C88.9663 23.2228 87.5272 23.5499 85.8918 23.5499H79.1539V8.17706ZM85.7282 21.1295C86.8403 21.1295 87.8543 20.9006 88.7047 20.4753C89.5551 20.0501 90.2093 19.4287 90.6672 18.6437C91.1251 17.8587 91.354 16.9102 91.354 15.8635C91.354 14.8168 91.1251 13.8683 90.6672 13.0833C90.2093 12.2983 89.5551 11.6768 88.7047 11.2516C87.8543 10.8264 86.8403 10.5975 85.7282 10.5975H81.9995V21.1295H85.7282Z" fill="black"/><path d="M108.82 21.1622V23.5499H97.3069V8.17706H108.526V10.5648H100.153V14.5552H107.577V16.9102H100.153V21.1622H108.82Z" fill="black"/><path d="M115.133 10.5975H110.03V8.17706H123.081V10.5975H117.978V23.5499H115.133V10.5975Z" fill="black"/><path d="M138.879 8.17706V23.5499H136.033V16.9756H128.085V23.5499H125.24V8.17706H128.085V14.5225H136.033V8.17706H138.879Z" fill="black"/><path d="M154.514 21.1622V23.5499H143V8.17706H154.219V10.5648H145.846V14.5552H153.271V16.9102H145.846V21.1622H154.514Z" fill="black"/><path d="M160.597 22.7649C159.354 22.0781 158.34 21.1295 157.621 19.9193C156.901 18.7091 156.542 17.3681 156.542 15.8635C156.542 14.3589 156.901 13.0179 157.621 11.8077C158.34 10.5975 159.322 9.64895 160.597 8.96207C161.873 8.2752 163.279 7.94812 164.849 7.94812C166.419 7.94812 167.826 8.2752 169.101 8.96207C170.344 9.64895 171.358 10.5975 172.078 11.775C172.797 12.9852 173.157 14.3262 173.157 15.8308C173.157 17.3354 172.797 18.6764 172.078 19.8866C171.358 21.0968 170.377 22.0126 169.101 22.6995C167.859 23.3864 166.419 23.7135 164.849 23.7135C163.247 23.7789 161.84 23.4191 160.597 22.7649ZM167.597 20.5735C168.415 20.1156 169.069 19.4614 169.527 18.6437C169.985 17.826 170.214 16.8775 170.214 15.8635C170.214 14.8496 169.985 13.901 169.527 13.0833C169.069 12.2656 168.415 11.6114 167.597 11.1535C166.779 10.6956 165.863 10.4667 164.817 10.4667C163.803 10.4667 162.854 10.6956 162.036 11.1535C161.219 11.6114 160.565 12.2656 160.107 13.0833C159.649 13.901 159.42 14.8496 159.42 15.8635C159.42 16.8775 159.649 17.826 160.107 18.6437C160.565 19.4614 161.219 20.1156 162.036 20.5735C162.854 21.0314 163.77 21.2604 164.817 21.2604C165.863 21.2604 166.779 21.0314 167.597 20.5735Z" fill="black"/><path d="M186.175 23.5499L183.035 19.0362C182.904 19.0362 182.708 19.0689 182.446 19.0689H178.979V23.5499H176.134V8.17706H182.446C183.787 8.17706 184.932 8.40602 185.913 8.83123C186.895 9.25643 187.647 9.9106 188.17 10.7283C188.694 11.546 188.955 12.5273 188.955 13.6393C188.955 14.7841 188.661 15.7981 188.105 16.6158C187.549 17.4662 186.731 18.0877 185.685 18.4801L189.25 23.5499H186.175ZM185.161 11.3825C184.507 10.8591 183.558 10.5975 182.316 10.5975H178.979V16.7139H182.316C183.558 16.7139 184.507 16.4522 185.161 15.8962C185.815 15.3729 186.142 14.6206 186.142 13.6393C186.11 12.6581 185.815 11.9058 185.161 11.3825Z" fill="black"/><path d="M203.707 21.1622V23.5499H192.193V8.17706H203.412V10.5648H195.039V14.5552H202.464V16.9102H195.039V21.1622H203.707Z" fill="black"/><path d="M221.009 23.5499L220.977 13.3777L215.94 21.8164H214.664L209.627 13.5085V23.5499H206.912V8.17706H209.267L215.384 18.3493L221.336 8.17706H223.691L223.724 23.5499H221.009Z" fill="black"/><path d="M34.1474 24.5312H1.83165C0.327072 24.5312 -0.523342 22.8303 0.392488 21.6201L15.9943 1.01395C17.041 -0.359794 19.1016 -0.359794 20.1155 1.01395L35.6192 21.5874C36.5023 22.7976 35.6519 24.5312 34.1474 24.5312Z" fill="url(#paint0_linear_466_1736)"/><path d="M4.15395 28.5215L16.7466 11.9385C17.5643 10.8591 19.167 10.8918 19.952 11.9385L32.4465 28.5215C33.4278 29.8626 32.512 31.727 30.8438 31.727H5.75665C4.08853 31.727 3.14 29.8299 4.15395 28.5215Z" fill="url(#paint1_linear_466_1736)"/><path d="M29.4047 24.5312L19.952 11.9385C19.1343 10.8591 17.5643 10.8591 16.7466 11.9385L7.1958 24.5312H29.4047Z" fill="#6699FF"/></g></g><defs><linearGradient id="paint0_linear_466_1736" x1="0.0140991" y1="12.2574" x2="35.977" y2="12.2574" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><linearGradient id="paint1_linear_466_1736" x1="3.73645" y1="21.4341" x2="32.8498" y2="21.4341" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><clipPath id="clip0_466_1736"><rect width="224" height="31.727" fill="white"/></clipPath><clipPath id="clip1_466_1736"><rect width="223.724" height="31.727" fill="white"/></clipPath></defs></svg>`;
+
+            const logo = figma.createNodeFromSvg(logoSvg);
+            logo.name = "logo - Horizontal";
+            logo.resize(224, 31.73);
+
+            // Header Section frame
+            const headerSection = figma.createFrame();
+            headerSection.name = "Header Section";
+            headerSection.layoutMode = "VERTICAL";
+            headerSection.primaryAxisSizingMode = "AUTO";
+            headerSection.counterAxisSizingMode = "AUTO";
+            headerSection.itemSpacing = 6;
+            headerSection.fills = [];
+
+            // Title text
+            const titleText = figma.createText();
+            titleText.characters = "Spacing";
+            titleText.fontSize = 40;
+            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+            titleText.lineHeight = { value: 150, unit: "PERCENT" };
+
+            // Subtitle text
+            const subtitleText = figma.createText();
+            subtitleText.characters = "Generate using a fixed base for best result.";
+            subtitleText.fontSize = 16;
+            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+            subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
+            subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
+
+            headerSection.appendChild(titleText);
+            headerSection.appendChild(subtitleText);
+
+            titleSection.appendChild(logo);
+            titleSection.appendChild(headerSection);
+            frame.appendChild(titleSection);
+
+            const tokenGrid = figma.createFrame();
+            tokenGrid.name = "Token Grid";
+            tokenGrid.layoutMode = "HORIZONTAL";
+            tokenGrid.primaryAxisSizingMode = "AUTO";
+            tokenGrid.counterAxisSizingMode = "AUTO";
+            tokenGrid.itemSpacing = 2;
+            tokenGrid.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            const gridBorderColor = hexToRgb('#D5D5D6');
+            tokenGrid.strokes = [{ type: 'SOLID', color: gridBorderColor }];
+            tokenGrid.strokeWeight = 1;
+            tokenGrid.cornerRadius = 8;
+            tokenGrid.cornerRadius = 8;
+
+            // Generate spacing token cards
+            for (let i = 0; i < numberOfTokens; i++) {
+                const spacingValue = baseValue * i;
+
+                const tokenCard = figma.createFrame();
+                tokenCard.name = `${i}`;
+                tokenCard.layoutMode = "VERTICAL";
+                tokenCard.primaryAxisSizingMode = "AUTO";
+                tokenCard.counterAxisSizingMode = "FIXED";
+                tokenCard.resize(160, 156);
+                tokenCard.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                // Preview Frame
+                const previewFrame = figma.createFrame();
+                previewFrame.name = "Preview Frame";
+                previewFrame.layoutMode = "HORIZONTAL";
+                previewFrame.primaryAxisSizingMode = "FIXED";
+                previewFrame.counterAxisSizingMode = "FIXED";
+                previewFrame.resize(160, 100);
+                previewFrame.primaryAxisAlignItems = "CENTER";
+                previewFrame.counterAxisAlignItems = "CENTER";
+                previewFrame.itemSpacing = spacingValue;
+                previewFrame.paddingTop = 16;
+                previewFrame.paddingBottom = 16;
+                previewFrame.paddingLeft = 16;
+                previewFrame.paddingRight = 16;
+                previewFrame.fills = [{ type: 'SOLID', color: hexToRgb('#E0E8FF') }];
+
+                // Create two circles with spacing between them
+                const circle1 = figma.createFrame();
+                circle1.name = "Ellipse 1";
+                circle1.resize(34, 34);
+                circle1.fills = [{ type: 'SOLID', color: hexToRgb('#ADC2FF') }];
+                circle1.strokes = [{ type: 'SOLID', color: hexToRgb('#1350FF') }];
+                circle1.strokeWeight = 0.5;
+                circle1.strokeAlign = "INSIDE";
+                circle1.dashPattern = [2, 2];
+                circle1.cornerRadius = 34;
+
+                const circle2 = figma.createFrame();
+                circle2.name = "Ellipse 2";
+                circle2.resize(34, 34);
+                circle2.fills = [{ type: 'SOLID', color: hexToRgb('#ADC2FF') }];
+                circle2.strokes = [{ type: 'SOLID', color: hexToRgb('#1350FF') }];
+                circle2.strokeWeight = 0.5;
+                circle2.strokeAlign = "INSIDE";
+                circle2.dashPattern = [2, 2];
+                circle2.cornerRadius = 34;
+
+                previewFrame.appendChild(circle1);
+                previewFrame.appendChild(circle2);
+
+                // Token Info
+                const tokenInfo = figma.createFrame();
+                tokenInfo.name = "Token Info";
+                tokenInfo.layoutMode = "VERTICAL";
+                tokenInfo.primaryAxisSizingMode = "AUTO";
+                tokenInfo.counterAxisSizingMode = "FIXED";
+                tokenInfo.resize(160, 56);
+                tokenInfo.itemSpacing = 6;
+                tokenInfo.paddingTop = 12;
+                tokenInfo.paddingBottom = 12;
+                tokenInfo.paddingLeft = 12;
+                tokenInfo.paddingRight = 12;
+                tokenInfo.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                // Token name
+                const tokenName = figma.createText();
+                tokenName.characters = `Spacing-${spacingValue}px`;
+                tokenName.fontSize = 12;
+                tokenName.fontName = { family: "Inter", style: "Medium" };
+                tokenName.fills = [{ type: 'SOLID', color: hexToRgb('#2D3339') }];
+
+                // Token value
+                const tokenValue = figma.createText();
+                tokenValue.characters = `${spacingValue}px`;
+                tokenValue.fontSize = 9;
+                tokenValue.fontName = { family: "Inter", style: "Regular" };
+                tokenValue.fills = [{ type: 'SOLID', color: hexToRgb('#7F7F7F') }];
+
+                tokenInfo.appendChild(tokenName);
+                tokenInfo.appendChild(tokenValue);
+
+                tokenCard.appendChild(previewFrame);
+                tokenCard.appendChild(tokenInfo);
+                tokenGrid.appendChild(tokenCard);
             }
 
-            // ============================================
-            // SECTION 1: COLORS
-            // ============================================
-            createSectionTitle('🎨 Colors', yOffset);
-            yOffset += 60;
+            frame.appendChild(tokenGrid);
 
-            // Main colors
-            const colorData = [
-                { name: 'Primary', hex: data.colors.primary },
-                { name: 'Secondary', hex: data.colors.secondary },
-                { name: 'Success', hex: data.colors.success },
-                { name: 'Warning', hex: data.colors.warning },
-                { name: 'Error', hex: data.colors.error }
-            ];
+            // Add footer
+            const footer = figma.createFrame();
+            footer.name = "Footer Section";
+            footer.layoutMode = "VERTICAL";
+            footer.primaryAxisSizingMode = "AUTO";
+            footer.counterAxisSizingMode = "AUTO";
+            footer.primaryAxisAlignItems = "MIN";
+            footer.itemSpacing = 8;
+            footer.fills = [];
 
-            let xOffset = 0;
-            for (const color of colorData) {
-                // Color swatch
-                const swatch = figma.createRectangle();
-                swatch.resize(120, 80);
-                swatch.x = xOffset;
-                swatch.y = yOffset;
-                swatch.fills = [{ type: 'SOLID', color: hexToRgb(color.hex) }];
-                swatch.cornerRadius = 8;
+            const createdBy = figma.createText();
+            createdBy.characters = "Created By";
+            createdBy.fontSize = 12;
+            createdBy.fontName = { family: "Inter", style: "Regular" };
+            createdBy.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+            createdBy.textAlignHorizontal = "CENTER";
 
-                // Color name
-                createLabel(color.name, xOffset, yOffset + 90, 14);
+            const website = figma.createText();
+            website.characters = "Slate.Design";
+            website.fontSize = 16;
+            website.fontName = { family: "Inter", style: "Bold" };
+            website.fills = [{ type: 'SOLID', color: hexToRgb('#121212') }];
+            website.textAlignHorizontal = "CENTER";
 
-                // Hex value
-                createLabel(color.hex, xOffset, yOffset + 110, 12);
+            footer.appendChild(createdBy);
+            footer.appendChild(website);
+            frame.appendChild(footer);
 
-                xOffset += 140;
-            }
+            // Select and zoom to the created frame
+            figma.currentPage.selection = [frame];
+            figma.viewport.scrollAndZoomIntoView([frame]);
 
-            yOffset += 150;
-
-            // Color shades for Primary
-            createLabel('Primary Shades', 0, yOffset, 16);
-            yOffset += 30;
-
-            xOffset = 0;
-            const docPrimaryRgb = hexToRgb(data.colors.primary);
-            const shadeValues = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
-
-            for (const shade of shadeValues) {
-                const factor = (shade - 500) / 500;
-                const shadeRgb = factor > 0 ?
-                    darkenColor(docPrimaryRgb, Math.abs(factor) * 0.5) :
-                    lightenColor(docPrimaryRgb, Math.abs(factor) * 0.5);
-
-                const swatch = figma.createRectangle();
-                swatch.resize(80, 60);
-                swatch.x = xOffset;
-                swatch.y = yOffset;
-                swatch.fills = [{ type: 'SOLID', color: shadeRgb }];
-                swatch.cornerRadius = 6;
-
-                createLabel(shade.toString(), xOffset, yOffset + 70, 12);
-
-                xOffset += 90;
-            }
-
-            yOffset += 120 + sectionGap;
-
-            // ============================================
-            // SECTION 2: TYPOGRAPHY
-            // ============================================
-            createSectionTitle('📝 Typography', yOffset);
-            yOffset += 60;
-
-            const typographyStyles = [
-                { name: 'Display', size: data.typography.baseSize * 3 },
-                { name: 'H1', size: data.typography.baseSize * 2.5 },
-                { name: 'H2', size: data.typography.baseSize * 2 },
-                { name: 'H3', size: data.typography.baseSize * 1.75 },
-                { name: 'H4', size: data.typography.baseSize * 1.5 },
-                { name: 'H5', size: data.typography.baseSize * 1.25 },
-                { name: 'H6', size: data.typography.baseSize * 1.125 },
-                { name: 'Body', size: data.typography.baseSize },
-                { name: 'Caption', size: data.typography.baseSize * 0.875 }
-            ];
-
-            for (const style of typographyStyles) {
-                const text = figma.createText();
-                text.fontName = { family: data.typography.primaryFont, style: "Regular" };
-                text.fontSize = style.size;
-                text.characters = `${style.name} - ${Math.round(style.size)}px`;
-                text.x = 0;
-                text.y = yOffset;
-                text.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
-
-                yOffset += style.size + 20;
-            }
-
-            yOffset += sectionGap;
-
-            // ============================================
-            // SECTION 3: SPACING TOKENS
-            // ============================================
-            createSectionTitle('📏 Spacing', yOffset);
-            yOffset += 60;
-
-            const docSpacingScale = data.tokens.spacing === '8pt' ? 8 : 4;
-            const spacingTokens = [
-                { name: 'XS', value: docSpacingScale },
-                { name: 'SM', value: docSpacingScale * 2 },
-                { name: 'MD', value: docSpacingScale * 3 },
-                { name: 'LG', value: docSpacingScale * 4 },
-                { name: 'XL', value: docSpacingScale * 5 },
-                { name: '2XL', value: docSpacingScale * 6 },
-                { name: '3XL', value: docSpacingScale * 8 }
-            ];
-
-            xOffset = 0;
-            for (const token of spacingTokens) {
-                // Visual representation
-                const box = figma.createRectangle();
-                box.resize(token.value, token.value);
-                box.x = xOffset;
-                box.y = yOffset;
-                box.fills = [{ type: 'SOLID', color: hexToRgb(data.colors.primary) }];
-                box.cornerRadius = 4;
-
-                // Label
-                createLabel(`${token.name} (${token.value}px)`, xOffset, yOffset + token.value + 10, 12);
-
-                xOffset += Math.max(token.value, 60) + 20;
-            }
-
-            yOffset += 150 + sectionGap;
-
-            // ============================================
-            // SECTION 4: RADIUS TOKENS
-            // ============================================
-            createSectionTitle('⭕ Border Radius', yOffset);
-            yOffset += 60;
-
-            const radiusTokens = [
-                { name: 'SM', value: data.tokens.radius / 2 },
-                { name: 'MD', value: data.tokens.radius },
-                { name: 'LG', value: data.tokens.radius * 2 },
-                { name: 'XL', value: data.tokens.radius * 3 }
-            ];
-
-            xOffset = 0;
-            for (const token of radiusTokens) {
-                const box = figma.createRectangle();
-                box.resize(80, 80);
-                box.x = xOffset;
-                box.y = yOffset;
-                box.fills = [{ type: 'SOLID', color: hexToRgb(data.colors.secondary) }];
-                box.cornerRadius = token.value;
-
-                createLabel(`${token.name} (${token.value}px)`, xOffset, yOffset + 90, 12);
-
-                xOffset += 100;
-            }
-
-            yOffset += 130 + sectionGap;
-
-            // ============================================
-            // SECTION 5: COMPONENTS
-            // ============================================
-            if (data.components && data.components.length > 0) {
-                createSectionTitle('🧩 Components', yOffset);
-                yOffset += 60;
-
-                const componentList = figma.createText();
-                componentList.fontName = { family: "Inter", style: "Regular" };
-                componentList.fontSize = 16;
-                componentList.characters = `Created Components:\n\n${data.components.map(c => `• ${c}`).join('\n')}`;
-                componentList.x = 0;
-                componentList.y = yOffset;
-                componentList.fills = [{ type: 'SOLID', color: { r: 0.3, g: 0.3, b: 0.3 } }];
-                componentList.lineHeight = { value: 150, unit: 'PERCENT' };
-            }
-
-            // Zoom to fit all content
-            figma.viewport.scrollAndZoomIntoView([designSystemPage]);
-
-            // Success!
-            figma.ui.postMessage({ type: 'loading-complete' });
-            figma.ui.postMessage({
-                type: 'show-success',
-                title: '✅ Design System Created!',
-                message: 'Your complete design system has been generated successfully with colors, typography, tokens, components, and documentation page.'
-            });
-            figma.notify('✨ Design System created successfully!');
-
-            // Switch to manual mode after 2 seconds
-            setTimeout(() => {
-                figma.ui.postMessage({ type: 'switch-to-manual-mode' });
-            }, 2000);
-
+            notifyUI('spacing-doc', true, 'Spacing Documentation created!');
         } catch (error) {
-            figma.notify(`❌ Error generating design system: ${error.message}`);
-            figma.ui.postMessage({ type: 'loading-complete' });
-            console.error('Design system generation error:', error);
+            notifyUI('spacing-doc', false, 'Error creating spacing doc', error.message);
+            console.error(error);
         }
     }
 
-    // ----------------------------------------
-    // DESIGN TOKENS / VARIABLES MESSAGES
-    // ----------------------------------------
-
-    if (msg.type === 'create-variables') {
+    if (msg.type === "create-padding-tokens") {
         try {
-            if (!msg.colors) {
-                throw new Error('No color data received');
-            }
+            const baseValue = msg.baseValue;
+            const numberOfTokens = msg.numberOfTokens;
 
-            // Get or create variable collection
-            const collections = await figma.variables.getLocalVariableCollectionsAsync();
-            let collection = collections.find(c => c.name === 'Colors');
-
+            // Get or create a collection for padding variables
+            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Padding");
             if (!collection) {
-                collection = figma.variables.createVariableCollection('Colors');
-                collection.renameMode(collection.modes[0].modeId, 'Light');
-                collection.addMode('Dark');
-            } else {
-                if (!collection.modes.some(mode => mode.name === 'Dark')) {
-                    collection.addMode('Dark');
-                }
+                collection = figma.variables.createVariableCollection("Padding");
             }
 
-            const lightModeId = collection.modes.find(m => m.name === 'Light').modeId;
-            const darkModeId = collection.modes.find(m => m.name === 'Dark').modeId;
+            // Create Desktop, Tablet, and Mobile modes if they don't exist
+            let desktopModeId, tabletModeId, mobileModeId;
 
-            async function createOrUpdateVariable(name, hexLight, hexDark, coll, lightId, darkId) {
-                if (!name || !hexLight) return null;
-                const rgbLight = hexToRgb(hexLight);
-                const rgbDark = hexToRgb(hexDark || hexLight);
-
-                const existingVars = await figma.variables.getLocalVariablesAsync('COLOR');
-                const existingVar = existingVars.find(v => v.name === name && v.variableCollectionId === coll.id);
-
-                if (existingVar) {
-                    existingVar.setValueForMode(lightId, rgbLight);
-                    existingVar.setValueForMode(darkId, rgbDark);
-                    return existingVar;
-                } else {
-                    const variable = figma.variables.createVariable(name, coll, 'COLOR');
-                    variable.setValueForMode(lightId, rgbLight);
-                    variable.setValueForMode(darkId, rgbDark);
-                    return variable;
-                }
+            if (collection.modes.length === 1) {
+                // Rename default mode to Desktop
+                collection.renameMode(collection.modes[0].modeId, "Desktop");
+                desktopModeId = collection.modes[0].modeId;
+                // Add Tablet and Mobile modes
+                tabletModeId = collection.addMode("Tablet");
+                mobileModeId = collection.addMode("Mobile");
+            } else if (collection.modes.length === 2) {
+                desktopModeId = collection.modes[0].modeId;
+                tabletModeId = collection.modes[1].modeId;
+                mobileModeId = collection.addMode("Mobile");
+            } else if (collection.modes.length >= 3) {
+                desktopModeId = collection.modes[0].modeId;
+                tabletModeId = collection.modes[1].modeId;
+                mobileModeId = collection.modes[2].modeId;
             }
+
+            // Generate padding tokens (all even numbers)
+            for (let i = 0; i < numberOfTokens; i++) {
+                const desktopValue = baseValue * i;
+                // Tablet uses 75% of desktop value (rounded to even number)
+                const tabletValue = Math.round((desktopValue * 0.75) / 2) * 2;
+                // Mobile uses 50% of desktop value (rounded to even number)
+                const mobileValue = Math.round((desktopValue * 0.5) / 2) * 2;
+
+                const variableName = `padding-${desktopValue}px`;
+
+                // Check if variable already exists
+                let variable = figma.variables.getLocalVariables().find(v => v.name === variableName);
+
+                if (!variable) {
+                    variable = figma.variables.createVariable(variableName, collection, "FLOAT");
+                }
+
+                // Set different values for each mode
+                variable.setValueForMode(desktopModeId, desktopValue);
+                variable.setValueForMode(tabletModeId, tabletValue);
+                variable.setValueForMode(mobileModeId, mobileValue);
+            }
+
+            notifyUI('padding', true, `Created ${numberOfTokens} padding tokens!`);
+        } catch (error) {
+            notifyUI('padding', false, 'Error creating padding tokens', error.message);
+        }
+    }
+
+    if (msg.type === "create-padding-doc") {
+        try {
+            const baseValue = msg.baseValue;
+            const numberOfTokens = msg.numberOfTokens;
+
+            // Load fonts
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+
+            // Helper function to convert hex to RGB
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                }
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+                return { r, g, b };
+            }
+
+            // Create main frame
+            const frame = figma.createFrame();
+            frame.name = "Token Padding";
+            frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            frame.paddingTop = 40;
+            frame.paddingBottom = 40;
+            frame.paddingLeft = 40;
+            frame.paddingRight = 40;
+            frame.layoutMode = "VERTICAL";
+            frame.primaryAxisSizingMode = "AUTO";
+            frame.counterAxisSizingMode = "AUTO";
+            frame.itemSpacing = 40;
+
+            // Add top border
+            const borderColor = hexToRgb('#1350FF');
+            frame.strokes = [{ type: 'SOLID', color: borderColor }];
+            frame.strokeWeight = 8;
+            frame.strokeAlign = "INSIDE";
+            frame.strokeTopWeight = 8;
+            frame.strokeBottomWeight = 0;
+            frame.strokeLeftWeight = 0;
+            frame.strokeRightWeight = 0;
+
+            // Title section
+            const titleSection = figma.createFrame();
+            titleSection.name = "Title Section";
+            titleSection.layoutMode = "VERTICAL";
+            titleSection.primaryAxisSizingMode = "AUTO";
+            titleSection.counterAxisSizingMode = "AUTO";
+            titleSection.itemSpacing = 34;
+            titleSection.fills = [];
+
+            // Create logo from SVG
+            const logoSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_466_1736)"><g clip-path="url(#clip1_466_1736)"><path d="M47.9502 22.765C46.7073 22.0781 45.7261 21.1295 45.0065 19.952C44.2869 18.7418 43.9271 17.4008 43.9271 15.8962C43.9271 14.3916 44.2869 13.0506 45.0065 11.8404C45.7261 10.6302 46.7073 9.71438 47.9502 9.0275C49.1931 8.34063 50.5996 8.01355 52.1696 8.01355C53.4125 8.01355 54.59 8.24251 55.604 8.66771C56.6506 9.09292 57.5337 9.74708 58.2533 10.5648L56.4217 12.2983C55.3096 11.0881 53.9358 10.4994 52.3004 10.4994C51.2538 10.4994 50.3052 10.7283 49.4548 11.1862C48.6044 11.6442 47.9829 12.2983 47.4923 13.116C47.0344 13.9337 46.8054 14.8496 46.8054 15.8962C46.8054 16.9429 47.0344 17.8587 47.4923 18.6764C47.9502 19.4941 48.6044 20.1483 49.4548 20.6062C50.3052 21.0641 51.2211 21.2931 52.3004 21.2931C53.9358 21.2931 55.3096 20.6716 56.4217 19.4614L58.2533 21.2277C57.5337 22.0781 56.6506 22.6995 55.604 23.1247C54.5573 23.5499 53.4125 23.7789 52.1369 23.7789C50.5996 23.7789 49.1931 23.4191 47.9502 22.765Z" fill="black"/><path d="M63.6175 22.7649C62.3745 22.0781 61.3606 21.1295 60.641 19.9193C59.9214 18.7091 59.5616 17.3681 59.5616 15.8635C59.5616 14.3589 59.9214 13.0179 60.641 11.8077C61.3606 10.5975 62.3418 9.64895 63.6175 8.96207C64.8604 8.2752 66.2995 7.94812 67.8695 7.94812C69.4395 7.94812 70.846 8.2752 72.1216 8.96207C73.3645 9.64895 74.3785 10.5975 75.098 11.775C75.8176 12.9852 76.1774 14.3262 76.1774 15.8308C76.1774 17.3354 75.8176 18.6764 75.098 19.8866C74.3785 21.0968 73.3972 22.0126 72.1216 22.6995C70.8787 23.3864 69.4395 23.7135 67.8695 23.7135C66.2995 23.7789 64.8604 23.4191 63.6175 22.7649ZM70.617 20.5735C71.4347 20.1156 72.0889 19.4614 72.5468 18.6437C73.0047 17.826 73.2337 16.8775 73.2337 15.8635C73.2337 14.8496 73.0047 13.901 72.5468 13.0833C72.0889 12.2656 71.4347 11.6114 70.617 11.1535C69.7993 10.6956 68.8835 10.4667 67.8368 10.4667C66.8229 10.4667 65.8743 10.6956 65.0566 11.1535C64.2389 11.6114 63.5848 12.2656 63.1268 13.0833C62.6689 13.901 62.44 14.8496 62.44 15.8635C62.44 16.8775 62.6689 17.826 63.1268 18.6437C63.5848 19.4614 64.2389 20.1156 65.0566 20.5735C65.8743 21.0314 66.7902 21.2604 67.8368 21.2604C68.8835 21.2604 69.7993 21.0314 70.617 20.5735Z" fill="black"/><path d="M79.1539 8.17706H85.8591C87.4945 8.17706 88.9663 8.50414 90.242 9.1256C91.5176 9.74706 92.4988 10.6629 93.2184 11.8404C93.9053 13.0179 94.2651 14.3589 94.2651 15.8635C94.2651 17.4008 93.9053 18.7418 93.2184 19.8866C92.5315 21.0641 91.5176 21.9472 90.242 22.6014C88.9663 23.2228 87.5272 23.5499 85.8918 23.5499H79.1539V8.17706ZM85.7282 21.1295C86.8403 21.1295 87.8543 20.9006 88.7047 20.4753C89.5551 20.0501 90.2093 19.4287 90.6672 18.6437C91.1251 17.8587 91.354 16.9102 91.354 15.8635C91.354 14.8168 91.1251 13.8683 90.6672 13.0833C90.2093 12.2983 89.5551 11.6768 88.7047 11.2516C87.8543 10.8264 86.8403 10.5975 85.7282 10.5975H81.9995V21.1295H85.7282Z" fill="black"/><path d="M108.82 21.1622V23.5499H97.3069V8.17706H108.526V10.5648H100.153V14.5552H107.577V16.9102H100.153V21.1622H108.82Z" fill="black"/><path d="M115.133 10.5975H110.03V8.17706H123.081V10.5975H117.978V23.5499H115.133V10.5975Z" fill="black"/><path d="M138.879 8.17706V23.5499H136.033V16.9756H128.085V23.5499H125.24V8.17706H128.085V14.5225H136.033V8.17706H138.879Z" fill="black"/><path d="M154.514 21.1622V23.5499H143V8.17706H154.219V10.5648H145.846V14.5552H153.271V16.9102H145.846V21.1622H154.514Z" fill="black"/><path d="M160.597 22.7649C159.354 22.0781 158.34 21.1295 157.621 19.9193C156.901 18.7091 156.542 17.3681 156.542 15.8635C156.542 14.3589 156.901 13.0179 157.621 11.8077C158.34 10.5975 159.322 9.64895 160.597 8.96207C161.873 8.2752 163.279 7.94812 164.849 7.94812C166.419 7.94812 167.826 8.2752 169.101 8.96207C170.344 9.64895 171.358 10.5975 172.078 11.775C172.797 12.9852 173.157 14.3262 173.157 15.8308C173.157 17.3354 172.797 18.6764 172.078 19.8866C171.358 21.0968 170.377 22.0126 169.101 22.6995C167.859 23.3864 166.419 23.7135 164.849 23.7135C163.247 23.7789 161.84 23.4191 160.597 22.7649ZM167.597 20.5735C168.415 20.1156 169.069 19.4614 169.527 18.6437C169.985 17.826 170.214 16.8775 170.214 15.8635C170.214 14.8496 169.985 13.901 169.527 13.0833C169.069 12.2656 168.415 11.6114 167.597 11.1535C166.779 10.6956 165.863 10.4667 164.817 10.4667C163.803 10.4667 162.854 10.6956 162.036 11.1535C161.219 11.6114 160.565 12.2656 160.107 13.0833C159.649 13.901 159.42 14.8496 159.42 15.8635C159.42 16.8775 159.649 17.826 160.107 18.6437C160.565 19.4614 161.219 20.1156 162.036 20.5735C162.854 21.0314 163.77 21.2604 164.817 21.2604C165.863 21.2604 166.779 21.0314 167.597 20.5735Z" fill="black"/><path d="M186.175 23.5499L183.035 19.0362C182.904 19.0362 182.708 19.0689 182.446 19.0689H178.979V23.5499H176.134V8.17706H182.446C183.787 8.17706 184.932 8.40602 185.913 8.83123C186.895 9.25643 187.647 9.9106 188.17 10.7283C188.694 11.546 188.955 12.5273 188.955 13.6393C188.955 14.7841 188.661 15.7981 188.105 16.6158C187.549 17.4662 186.731 18.0877 185.685 18.4801L189.25 23.5499H186.175ZM185.161 11.3825C184.507 10.8591 183.558 10.5975 182.316 10.5975H178.979V16.7139H182.316C183.558 16.7139 184.507 16.4522 185.161 15.8962C185.815 15.3729 186.142 14.6206 186.142 13.6393C186.11 12.6581 185.815 11.9058 185.161 11.3825Z" fill="black"/><path d="M203.707 21.1622V23.5499H192.193V8.17706H203.412V10.5648H195.039V14.5552H202.464V16.9102H195.039V21.1622H203.707Z" fill="black"/><path d="M221.009 23.5499L220.977 13.3777L215.94 21.8164H214.664L209.627 13.5085V23.5499H206.912V8.17706H209.267L215.384 18.3493L221.336 8.17706H223.691L223.724 23.5499H221.009Z" fill="black"/><path d="M34.1474 24.5312H1.83165C0.327072 24.5312 -0.523342 22.8303 0.392488 21.6201L15.9943 1.01395C17.041 -0.359794 19.1016 -0.359794 20.1155 1.01395L35.6192 21.5874C36.5023 22.7976 35.6519 24.5312 34.1474 24.5312Z" fill="url(#paint0_linear_466_1736)"/><path d="M4.15395 28.5215L16.7466 11.9385C17.5643 10.8591 19.167 10.8918 19.952 11.9385L32.4465 28.5215C33.4278 29.8626 32.512 31.727 30.8438 31.727H5.75665C4.08853 31.727 3.14 29.8299 4.15395 28.5215Z" fill="url(#paint1_linear_466_1736)"/><path d="M29.4047 24.5312L19.952 11.9385C19.1343 10.8591 17.5643 10.8591 16.7466 11.9385L7.1958 24.5312H29.4047Z" fill="#6699FF"/></g></g><defs><linearGradient id="paint0_linear_466_1736" x1="0.0140991" y1="12.2574" x2="35.977" y2="12.2574" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><linearGradient id="paint1_linear_466_1736" x1="3.73645" y1="21.4341" x2="32.8498" y2="21.4341" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><clipPath id="clip0_466_1736"><rect width="224" height="31.727" fill="white"/></clipPath><clipPath id="clip1_466_1736"><rect width="223.724" height="31.727" fill="white"/></clipPath></defs></svg>`;
+
+            const logo = figma.createNodeFromSvg(logoSvg);
+            logo.name = "logo - Horizontal";
+            logo.resize(224, 31.73);
+
+            // Header Section frame
+            const headerSection = figma.createFrame();
+            headerSection.name = "Header Section";
+            headerSection.layoutMode = "VERTICAL";
+            headerSection.primaryAxisSizingMode = "AUTO";
+            headerSection.counterAxisSizingMode = "AUTO";
+            headerSection.itemSpacing = 6;
+            headerSection.fills = [];
+
+            // Title text
+            const titleText = figma.createText();
+            titleText.characters = "Padding";
+            titleText.fontSize = 40;
+            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+            titleText.lineHeight = { value: 150, unit: "PERCENT" };
+
+            // Subtitle text
+            const subtitleText = figma.createText();
+            subtitleText.characters = "Generate using a fixed base for best result.";
+            subtitleText.fontSize = 16;
+            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+            subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
+            subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
+
+            headerSection.appendChild(titleText);
+            headerSection.appendChild(subtitleText);
+
+            titleSection.appendChild(logo);
+            titleSection.appendChild(headerSection);
+            frame.appendChild(titleSection);
+
+            // Create padding tokens grid
+            const tokenGrid = figma.createFrame();
+            tokenGrid.name = "Token Grid";
+            tokenGrid.layoutMode = "HORIZONTAL";
+            tokenGrid.primaryAxisSizingMode = "AUTO";
+            tokenGrid.counterAxisSizingMode = "AUTO";
+            tokenGrid.itemSpacing = 2;
+            tokenGrid.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            const gridBorderColor = hexToRgb('#D5D5D6');
+            tokenGrid.strokes = [{ type: 'SOLID', color: gridBorderColor }];
+            tokenGrid.strokeWeight = 1;
+            tokenGrid.cornerRadius = 8;
+
+            // Generate padding token cards
+            for (let i = 0; i < numberOfTokens; i++) {
+                const paddingValue = baseValue * i;
+
+                const tokenCard = figma.createFrame();
+                tokenCard.name = `${i}`;
+                tokenCard.layoutMode = "VERTICAL";
+                tokenCard.primaryAxisSizingMode = "AUTO";
+                tokenCard.counterAxisSizingMode = "FIXED";
+                tokenCard.resize(160, 156);
+                tokenCard.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                // Preview Frame
+                const previewFrame = figma.createFrame();
+                previewFrame.name = "Preview Frame";
+                previewFrame.layoutMode = "HORIZONTAL";
+                previewFrame.primaryAxisSizingMode = "FIXED";
+                previewFrame.counterAxisSizingMode = "FIXED";
+                previewFrame.resize(160, 100);
+                previewFrame.primaryAxisAlignItems = "CENTER";
+                previewFrame.counterAxisAlignItems = "CENTER";
+                previewFrame.fills = [{ type: 'SOLID', color: hexToRgb('#E0E8FF') }];
+
+                // Create inner box with padding
+                const innerBox = figma.createFrame();
+                innerBox.name = "Inner Box";
+                innerBox.layoutMode = "VERTICAL";
+                innerBox.primaryAxisSizingMode = "AUTO";
+                innerBox.counterAxisSizingMode = "AUTO";
+                innerBox.fills = [{ type: 'SOLID', color: hexToRgb('#ADC2FF') }];
+                innerBox.strokes = [{ type: 'SOLID', color: hexToRgb('#1350FF') }];
+                innerBox.strokeWeight = 0.5;
+                innerBox.strokeAlign = "INSIDE";
+                innerBox.dashPattern = [2, 2];
+                innerBox.cornerRadius = 2;
+                innerBox.paddingTop = paddingValue;
+                innerBox.paddingBottom = paddingValue;
+                innerBox.paddingLeft = paddingValue;
+                innerBox.paddingRight = paddingValue;
+                innerBox.primaryAxisAlignItems = "CENTER";
+                innerBox.counterAxisAlignItems = "CENTER";
+
+                // Create center element
+                const centerElement = figma.createFrame();
+                centerElement.name = "Center";
+                centerElement.resize(34, 34);
+                centerElement.fills = [{ type: 'SOLID', color: hexToRgb('#6699FF') }];
+                centerElement.cornerRadius = 2;
+
+                innerBox.appendChild(centerElement);
+                previewFrame.appendChild(innerBox);
+
+                // Token Info
+                const tokenInfo = figma.createFrame();
+                tokenInfo.name = "Token Info";
+                tokenInfo.layoutMode = "VERTICAL";
+                tokenInfo.primaryAxisSizingMode = "AUTO";
+                tokenInfo.counterAxisSizingMode = "FIXED";
+                tokenInfo.resize(160, 56);
+                tokenInfo.itemSpacing = 6;
+                tokenInfo.paddingTop = 12;
+                tokenInfo.paddingBottom = 12;
+                tokenInfo.paddingLeft = 12;
+                tokenInfo.paddingRight = 12;
+                tokenInfo.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                // Token name
+                const tokenName = figma.createText();
+                tokenName.characters = `Padding-${paddingValue}px`;
+                tokenName.fontSize = 12;
+                tokenName.fontName = { family: "Inter", style: "Medium" };
+                tokenName.fills = [{ type: 'SOLID', color: hexToRgb('#2D3339') }];
+
+                // Token value
+                const tokenValue = figma.createText();
+                tokenValue.characters = `${paddingValue}px`;
+                tokenValue.fontSize = 9;
+                tokenValue.fontName = { family: "Inter", style: "Regular" };
+                tokenValue.fills = [{ type: 'SOLID', color: hexToRgb('#7F7F7F') }];
+
+                tokenInfo.appendChild(tokenName);
+                tokenInfo.appendChild(tokenValue);
+
+                tokenCard.appendChild(previewFrame);
+                tokenCard.appendChild(tokenInfo);
+                tokenGrid.appendChild(tokenCard);
+            }
+
+            frame.appendChild(tokenGrid);
+
+            // Add footer
+            const footer = figma.createFrame();
+            footer.name = "Footer Section";
+            footer.layoutMode = "VERTICAL";
+            footer.primaryAxisSizingMode = "AUTO";
+            footer.counterAxisSizingMode = "AUTO";
+            footer.primaryAxisAlignItems = "MIN";
+            footer.itemSpacing = 8;
+            footer.fills = [];
+
+            const createdBy = figma.createText();
+            createdBy.characters = "Created By";
+            createdBy.fontSize = 12;
+            createdBy.fontName = { family: "Inter", style: "Regular" };
+            createdBy.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+            createdBy.textAlignHorizontal = "CENTER";
+
+            const website = figma.createText();
+            website.characters = "Slate.Design";
+            website.fontSize = 16;
+            website.fontName = { family: "Inter", style: "Bold" };
+            website.fills = [{ type: 'SOLID', color: hexToRgb('#121212') }];
+            website.textAlignHorizontal = "CENTER";
+
+            footer.appendChild(createdBy);
+            footer.appendChild(website);
+            frame.appendChild(footer);
+
+            // Select and zoom to the created frame
+            figma.currentPage.selection = [frame];
+            figma.viewport.scrollAndZoomIntoView([frame]);
+
+            notifyUI('padding-doc', true, 'Padding Documentation created!');
+        } catch (error) {
+            notifyUI('padding-doc', false, 'Error creating padding doc', error.message);
+            console.error(error);
+        }
+    }
+
+    if (msg.type === "create-radius-tokens") {
+        try {
+            const baseValue = msg.baseValue;
+            const numberOfTokens = msg.numberOfTokens;
+
+            // Get or create a collection for radius variables
+            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Radius");
+            if (!collection) {
+                collection = figma.variables.createVariableCollection("Radius");
+            }
+
+            // Create Desktop, Tablet, and Mobile modes if they don't exist
+            let desktopModeId, tabletModeId, mobileModeId;
+
+            if (collection.modes.length === 1) {
+                // Rename default mode to Desktop
+                collection.renameMode(collection.modes[0].modeId, "Desktop");
+                desktopModeId = collection.modes[0].modeId;
+                // Add Tablet and Mobile modes
+                tabletModeId = collection.addMode("Tablet");
+                mobileModeId = collection.addMode("Mobile");
+            } else if (collection.modes.length === 2) {
+                desktopModeId = collection.modes[0].modeId;
+                tabletModeId = collection.modes[1].modeId;
+                mobileModeId = collection.addMode("Mobile");
+            } else if (collection.modes.length >= 3) {
+                desktopModeId = collection.modes[0].modeId;
+                tabletModeId = collection.modes[1].modeId;
+                mobileModeId = collection.modes[2].modeId;
+            }
+
+            // Generate radius tokens (all even numbers)
+            for (let i = 0; i < numberOfTokens; i++) {
+                const desktopValue = baseValue * i;
+                // Tablet uses 75% of desktop value (rounded to even number)
+                const tabletValue = Math.round((desktopValue * 0.75) / 2) * 2;
+                // Mobile uses 50% of desktop value (rounded to even number)
+                const mobileValue = Math.round((desktopValue * 0.5) / 2) * 2;
+
+                const variableName = `radius-${desktopValue}px`;
+
+                // Check if variable already exists
+                let variable = figma.variables.getLocalVariables().find(v => v.name === variableName);
+
+                if (!variable) {
+                    variable = figma.variables.createVariable(variableName, collection, "FLOAT");
+                }
+
+                // Set different values for each mode
+                variable.setValueForMode(desktopModeId, desktopValue);
+                variable.setValueForMode(tabletModeId, tabletValue);
+                variable.setValueForMode(mobileModeId, mobileValue);
+            }
+
+            notifyUI('radius', true, `Created ${numberOfTokens} radius tokens!`);
+        } catch (error) {
+            notifyUI('radius', false, 'Error creating radius tokens', error.message);
+        }
+    }
+
+    if (msg.type === "create-radius-doc") {
+        try {
+            const baseValue = msg.baseValue;
+            const numberOfTokens = msg.numberOfTokens;
+
+            // Load fonts
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+
+            // Helper function to convert hex to RGB
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                }
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+                return { r, g, b };
+            }
+
+            // Create main frame
+            const frame = figma.createFrame();
+            frame.name = "Token Radius";
+            frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            frame.paddingTop = 40;
+            frame.paddingBottom = 40;
+            frame.paddingLeft = 40;
+            frame.paddingRight = 40;
+            frame.layoutMode = "VERTICAL";
+            frame.primaryAxisSizingMode = "AUTO";
+            frame.counterAxisSizingMode = "AUTO";
+            frame.itemSpacing = 40;
+
+            // Add top border
+            const borderColor = hexToRgb('#1350FF');
+            frame.strokes = [{ type: 'SOLID', color: borderColor }];
+            frame.strokeWeight = 8;
+            frame.strokeAlign = "INSIDE";
+            frame.strokeTopWeight = 8;
+            frame.strokeBottomWeight = 0;
+            frame.strokeLeftWeight = 0;
+            frame.strokeRightWeight = 0;
+
+            // Title section
+            const titleSection = figma.createFrame();
+            titleSection.name = "Title Section";
+            titleSection.layoutMode = "VERTICAL";
+            titleSection.primaryAxisSizingMode = "AUTO";
+            titleSection.counterAxisSizingMode = "AUTO";
+            titleSection.itemSpacing = 34;
+            titleSection.fills = [];
+
+            // Create logo from SVG
+            const logoSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_466_1736)"><g clip-path="url(#clip1_466_1736)"><path d="M47.9502 22.765C46.7073 22.0781 45.7261 21.1295 45.0065 19.952C44.2869 18.7418 43.9271 17.4008 43.9271 15.8962C43.9271 14.3916 44.2869 13.0506 45.0065 11.8404C45.7261 10.6302 46.7073 9.71438 47.9502 9.0275C49.1931 8.34063 50.5996 8.01355 52.1696 8.01355C53.4125 8.01355 54.59 8.24251 55.604 8.66771C56.6506 9.09292 57.5337 9.74708 58.2533 10.5648L56.4217 12.2983C55.3096 11.0881 53.9358 10.4994 52.3004 10.4994C51.2538 10.4994 50.3052 10.7283 49.4548 11.1862C48.6044 11.6442 47.9829 12.2983 47.4923 13.116C47.0344 13.9337 46.8054 14.8496 46.8054 15.8962C46.8054 16.9429 47.0344 17.8587 47.4923 18.6764C47.9502 19.4941 48.6044 20.1483 49.4548 20.6062C50.3052 21.0641 51.2211 21.2931 52.3004 21.2931C53.9358 21.2931 55.3096 20.6716 56.4217 19.4614L58.2533 21.2277C57.5337 22.0781 56.6506 22.6995 55.604 23.1247C54.5573 23.5499 53.4125 23.7789 52.1369 23.7789C50.5996 23.7789 49.1931 23.4191 47.9502 22.765Z" fill="black"/><path d="M63.6175 22.7649C62.3745 22.0781 61.3606 21.1295 60.641 19.9193C59.9214 18.7091 59.5616 17.3681 59.5616 15.8635C59.5616 14.3589 59.9214 13.0179 60.641 11.8077C61.3606 10.5975 62.3418 9.64895 63.6175 8.96207C64.8604 8.2752 66.2995 7.94812 67.8695 7.94812C69.4395 7.94812 70.846 8.2752 72.1216 8.96207C73.3645 9.64895 74.3785 10.5975 75.098 11.775C75.8176 12.9852 76.1774 14.3262 76.1774 15.8308C76.1774 17.3354 75.8176 18.6764 75.098 19.8866C74.3785 21.0968 73.3972 22.0126 72.1216 22.6995C70.8787 23.3864 69.4395 23.7135 67.8695 23.7135C66.2995 23.7789 64.8604 23.4191 63.6175 22.7649ZM70.617 20.5735C71.4347 20.1156 72.0889 19.4614 72.5468 18.6437C73.0047 17.826 73.2337 16.8775 73.2337 15.8635C73.2337 14.8496 73.0047 13.901 72.5468 13.0833C72.0889 12.2656 71.4347 11.6114 70.617 11.1535C69.7993 10.6956 68.8835 10.4667 67.8368 10.4667C66.8229 10.4667 65.8743 10.6956 65.0566 11.1535C64.2389 11.6114 63.5848 12.2656 63.1268 13.0833C62.6689 13.901 62.44 14.8496 62.44 15.8635C62.44 16.8775 62.6689 17.826 63.1268 18.6437C63.5848 19.4614 64.2389 20.1156 65.0566 20.5735C65.8743 21.0314 66.7902 21.2604 67.8368 21.2604C68.8835 21.2604 69.7993 21.0314 70.617 20.5735Z" fill="black"/><path d="M79.1539 8.17706H85.8591C87.4945 8.17706 88.9663 8.50414 90.242 9.1256C91.5176 9.74706 92.4988 10.6629 93.2184 11.8404C93.9053 13.0179 94.2651 14.3589 94.2651 15.8635C94.2651 17.4008 93.9053 18.7418 93.2184 19.8866C92.5315 21.0641 91.5176 21.9472 90.242 22.6014C88.9663 23.2228 87.5272 23.5499 85.8918 23.5499H79.1539V8.17706ZM85.7282 21.1295C86.8403 21.1295 87.8543 20.9006 88.7047 20.4753C89.5551 20.0501 90.2093 19.4287 90.6672 18.6437C91.1251 17.8587 91.354 16.9102 91.354 15.8635C91.354 14.8168 91.1251 13.8683 90.6672 13.0833C90.2093 12.2983 89.5551 11.6768 88.7047 11.2516C87.8543 10.8264 86.8403 10.5975 85.7282 10.5975H81.9995V21.1295H85.7282Z" fill="black"/><path d="M108.82 21.1622V23.5499H97.3069V8.17706H108.526V10.5648H100.153V14.5552H107.577V16.9102H100.153V21.1622H108.82Z" fill="black"/><path d="M115.133 10.5975H110.03V8.17706H123.081V10.5975H117.978V23.5499H115.133V10.5975Z" fill="black"/><path d="M138.879 8.17706V23.5499H136.033V16.9756H128.085V23.5499H125.24V8.17706H128.085V14.5225H136.033V8.17706H138.879Z" fill="black"/><path d="M154.514 21.1622V23.5499H143V8.17706H154.219V10.5648H145.846V14.5552H153.271V16.9102H145.846V21.1622H154.514Z" fill="black"/><path d="M160.597 22.7649C159.354 22.0781 158.34 21.1295 157.621 19.9193C156.901 18.7091 156.542 17.3681 156.542 15.8635C156.542 14.3589 156.901 13.0179 157.621 11.8077C158.34 10.5975 159.322 9.64895 160.597 8.96207C161.873 8.2752 163.279 7.94812 164.849 7.94812C166.419 7.94812 167.826 8.2752 169.101 8.96207C170.344 9.64895 171.358 10.5975 172.078 11.775C172.797 12.9852 173.157 14.3262 173.157 15.8308C173.157 17.3354 172.797 18.6764 172.078 19.8866C171.358 21.0968 170.377 22.0126 169.101 22.6995C167.859 23.3864 166.419 23.7135 164.849 23.7135C163.247 23.7789 161.84 23.4191 160.597 22.7649ZM167.597 20.5735C168.415 20.1156 169.069 19.4614 169.527 18.6437C169.985 17.826 170.214 16.8775 170.214 15.8635C170.214 14.8496 169.985 13.901 169.527 13.0833C169.069 12.2656 168.415 11.6114 167.597 11.1535C166.779 10.6956 165.863 10.4667 164.817 10.4667C163.803 10.4667 162.854 10.6956 162.036 11.1535C161.219 11.6114 160.565 12.2656 160.107 13.0833C159.649 13.901 159.42 14.8496 159.42 15.8635C159.42 16.8775 159.649 17.826 160.107 18.6437C160.565 19.4614 161.219 20.1156 162.036 20.5735C162.854 21.0314 163.77 21.2604 164.817 21.2604C165.863 21.2604 166.779 21.0314 167.597 20.5735Z" fill="black"/><path d="M186.175 23.5499L183.035 19.0362C182.904 19.0362 182.708 19.0689 182.446 19.0689H178.979V23.5499H176.134V8.17706H182.446C183.787 8.17706 184.932 8.40602 185.913 8.83123C186.895 9.25643 187.647 9.9106 188.17 10.7283C188.694 11.546 188.955 12.5273 188.955 13.6393C188.955 14.7841 188.661 15.7981 188.105 16.6158C187.549 17.4662 186.731 18.0877 185.685 18.4801L189.25 23.5499H186.175ZM185.161 11.3825C184.507 10.8591 183.558 10.5975 182.316 10.5975H178.979V16.7139H182.316C183.558 16.7139 184.507 16.4522 185.161 15.8962C185.815 15.3729 186.142 14.6206 186.142 13.6393C186.11 12.6581 185.815 11.9058 185.161 11.3825Z" fill="black"/><path d="M203.707 21.1622V23.5499H192.193V8.17706H203.412V10.5648H195.039V14.5552H202.464V16.9102H195.039V21.1622H203.707Z" fill="black"/><path d="M221.009 23.5499L220.977 13.3777L215.94 21.8164H214.664L209.627 13.5085V23.5499H206.912V8.17706H209.267L215.384 18.3493L221.336 8.17706H223.691L223.724 23.5499H221.009Z" fill="black"/><path d="M34.1474 24.5312H1.83165C0.327072 24.5312 -0.523342 22.8303 0.392488 21.6201L15.9943 1.01395C17.041 -0.359794 19.1016 -0.359794 20.1155 1.01395L35.6192 21.5874C36.5023 22.7976 35.6519 24.5312 34.1474 24.5312Z" fill="url(#paint0_linear_466_1736)"/><path d="M4.15395 28.5215L16.7466 11.9385C17.5643 10.8591 19.167 10.8918 19.952 11.9385L32.4465 28.5215C33.4278 29.8626 32.512 31.727 30.8438 31.727H5.75665C4.08853 31.727 3.14 29.8299 4.15395 28.5215Z" fill="url(#paint1_linear_466_1736)"/><path d="M29.4047 24.5312L19.952 11.9385C19.1343 10.8591 17.5643 10.8591 16.7466 11.9385L7.1958 24.5312H29.4047Z" fill="#6699FF"/></g></g><defs><linearGradient id="paint0_linear_466_1736" x1="0.0140991" y1="12.2574" x2="35.977" y2="12.2574" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><linearGradient id="paint1_linear_466_1736" x1="3.73645" y1="21.4341" x2="32.8498" y2="21.4341" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><clipPath id="clip0_466_1736"><rect width="224" height="31.727" fill="white"/></clipPath><clipPath id="clip1_466_1736"><rect width="223.724" height="31.727" fill="white"/></clipPath></defs></svg>`;
+
+            const logo = figma.createNodeFromSvg(logoSvg);
+            logo.name = "logo - Horizontal";
+            logo.resize(224, 31.73);
+
+            // Header Section frame
+            const headerSection = figma.createFrame();
+            headerSection.name = "Header Section";
+            headerSection.layoutMode = "VERTICAL";
+            headerSection.primaryAxisSizingMode = "AUTO";
+            headerSection.counterAxisSizingMode = "AUTO";
+            headerSection.itemSpacing = 6;
+            headerSection.fills = [];
+
+            // Title text
+            const titleText = figma.createText();
+            titleText.characters = "Radius";
+            titleText.fontSize = 40;
+            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+            titleText.lineHeight = { value: 150, unit: "PERCENT" };
+
+            // Subtitle text
+            const subtitleText = figma.createText();
+            subtitleText.characters = "Generate using a fixed base for best result.";
+            subtitleText.fontSize = 16;
+            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+            subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
+            subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
+
+            headerSection.appendChild(titleText);
+            headerSection.appendChild(subtitleText);
+
+            titleSection.appendChild(logo);
+            titleSection.appendChild(headerSection);
+            frame.appendChild(titleSection);
+
+            const tokenGrid = figma.createFrame();
+            tokenGrid.name = "Token Grid";
+            tokenGrid.layoutMode = "HORIZONTAL";
+            tokenGrid.primaryAxisSizingMode = "AUTO";
+            tokenGrid.counterAxisSizingMode = "AUTO";
+            tokenGrid.itemSpacing = 2;
+            tokenGrid.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            const gridBorderColor = hexToRgb('#D5D5D6');
+            tokenGrid.strokes = [{ type: 'SOLID', color: gridBorderColor }];
+            tokenGrid.strokeWeight = 1;
+            tokenGrid.cornerRadius = 8;
+
+            // Generate radius token cards
+            for (let i = 0; i < numberOfTokens; i++) {
+                const radiusValue = baseValue * i;
+
+                const tokenCard = figma.createFrame();
+                tokenCard.name = `${i}`;
+                tokenCard.layoutMode = "VERTICAL";
+                tokenCard.primaryAxisSizingMode = "AUTO";
+                tokenCard.counterAxisSizingMode = "FIXED";
+                tokenCard.resize(160, 156);
+                tokenCard.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                // Preview Frame
+                const previewFrame = figma.createFrame();
+                previewFrame.name = "Preview Frame";
+                previewFrame.layoutMode = "HORIZONTAL";
+                previewFrame.primaryAxisSizingMode = "FIXED";
+                previewFrame.counterAxisSizingMode = "FIXED";
+                previewFrame.resize(160, 100);
+                previewFrame.primaryAxisAlignItems = "CENTER";
+                previewFrame.counterAxisAlignItems = "CENTER";
+                previewFrame.paddingTop = 16;
+                previewFrame.paddingBottom = 16;
+                previewFrame.paddingLeft = 16;
+                previewFrame.paddingRight = 16;
+                previewFrame.fills = [{ type: 'SOLID', color: hexToRgb('#E0E8FF') }];
+
+                // Create rounded rectangle to show radius
+                const radiusBox = figma.createFrame();
+                radiusBox.name = "Radius Box";
+                radiusBox.resize(68, 68);
+                radiusBox.fills = [{ type: 'SOLID', color: hexToRgb('#ADC2FF') }];
+                radiusBox.strokes = [{ type: 'SOLID', color: hexToRgb('#1350FF') }];
+                radiusBox.strokeWeight = 0.5;
+                radiusBox.strokeAlign = "INSIDE";
+                radiusBox.dashPattern = [2, 2];
+                radiusBox.cornerRadius = radiusValue;
+
+                previewFrame.appendChild(radiusBox);
+
+                // Token Info
+                const tokenInfo = figma.createFrame();
+                tokenInfo.name = "Token Info";
+                tokenInfo.layoutMode = "VERTICAL";
+                tokenInfo.primaryAxisSizingMode = "AUTO";
+                tokenInfo.counterAxisSizingMode = "FIXED";
+                tokenInfo.resize(160, 56);
+                tokenInfo.itemSpacing = 6;
+                tokenInfo.paddingTop = 12;
+                tokenInfo.paddingBottom = 12;
+                tokenInfo.paddingLeft = 12;
+                tokenInfo.paddingRight = 12;
+                tokenInfo.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                // Token name
+                const tokenName = figma.createText();
+                tokenName.characters = `Radius-${radiusValue}px`;
+                tokenName.fontSize = 12;
+                tokenName.fontName = { family: "Inter", style: "Medium" };
+                tokenName.fills = [{ type: 'SOLID', color: hexToRgb('#2D3339') }];
+
+                // Token value
+                const tokenValue = figma.createText();
+                tokenValue.characters = `${radiusValue}px`;
+                tokenValue.fontSize = 9;
+                tokenValue.fontName = { family: "Inter", style: "Regular" };
+                tokenValue.fills = [{ type: 'SOLID', color: hexToRgb('#7F7F7F') }];
+
+                tokenInfo.appendChild(tokenName);
+                tokenInfo.appendChild(tokenValue);
+
+                tokenCard.appendChild(previewFrame);
+                tokenCard.appendChild(tokenInfo);
+                tokenGrid.appendChild(tokenCard);
+            }
+
+            frame.appendChild(tokenGrid);
+
+            // Add footer
+            const footer = figma.createFrame();
+            footer.name = "Footer Section";
+            footer.layoutMode = "VERTICAL";
+            footer.primaryAxisSizingMode = "AUTO";
+            footer.counterAxisSizingMode = "AUTO";
+            footer.primaryAxisAlignItems = "MIN";
+            footer.itemSpacing = 8;
+            footer.fills = [];
+
+            const createdBy = figma.createText();
+            createdBy.characters = "Created By";
+            createdBy.fontSize = 12;
+            createdBy.fontName = { family: "Inter", style: "Regular" };
+            createdBy.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+            createdBy.textAlignHorizontal = "CENTER";
+
+            const website = figma.createText();
+            website.characters = "Slate.Design";
+            website.fontSize = 16;
+            website.fontName = { family: "Inter", style: "Bold" };
+            website.fills = [{ type: 'SOLID', color: hexToRgb('#121212') }];
+            website.textAlignHorizontal = "CENTER";
+
+            footer.appendChild(createdBy);
+            footer.appendChild(website);
+            frame.appendChild(footer);
+
+            // Select and zoom to the created frame
+            figma.currentPage.selection = [frame];
+            figma.viewport.scrollAndZoomIntoView([frame]);
+
+            notifyUI('radius-doc', true, 'Radius Documentation created!');
+        } catch (error) {
+            notifyUI('radius-doc', false, 'Error creating radius doc', error.message);
+            console.error(error);
+        }
+    }
+
+    if (msg.type === "create-stroke-tokens") {
+        try {
+            const baseValue = msg.baseValue;
+            const numberOfTokens = msg.numberOfTokens;
+
+            // Get or create a collection for stroke variables
+            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Stroke");
+            if (!collection) {
+                collection = figma.variables.createVariableCollection("Stroke");
+            }
+
+            // Create Desktop, Tablet, and Mobile modes if they don't exist
+            let desktopModeId, tabletModeId, mobileModeId;
+
+            if (collection.modes.length === 1) {
+                // Rename default mode to Desktop
+                collection.renameMode(collection.modes[0].modeId, "Desktop");
+                desktopModeId = collection.modes[0].modeId;
+                // Add Tablet and Mobile modes
+                tabletModeId = collection.addMode("Tablet");
+                mobileModeId = collection.addMode("Mobile");
+            } else if (collection.modes.length === 2) {
+                desktopModeId = collection.modes[0].modeId;
+                tabletModeId = collection.modes[1].modeId;
+                mobileModeId = collection.addMode("Mobile");
+            } else if (collection.modes.length >= 3) {
+                desktopModeId = collection.modes[0].modeId;
+                tabletModeId = collection.modes[1].modeId;
+                mobileModeId = collection.modes[2].modeId;
+            }
+
+            // Generate stroke tokens
+            for (let i = 0; i < numberOfTokens; i++) {
+                const desktopValue = baseValue * i;
+                // Tablet uses 75% of desktop value
+                const tabletValue = Math.round((desktopValue * 0.75) * 10) / 10;
+                // Mobile uses 50% of desktop value
+                const mobileValue = Math.round((desktopValue * 0.5) * 10) / 10;
+
+                // Format the variable name to replace decimal point with underscore
+                const formattedValue = desktopValue.toString().replace('.', '_');
+                const variableName = `stroke-${formattedValue}px`;
+
+                // Check if variable already exists
+                let variable = figma.variables.getLocalVariables().find(v => v.name === variableName);
+
+                if (!variable) {
+                    variable = figma.variables.createVariable(variableName, collection, "FLOAT");
+                }
+
+                // Set different values for each mode
+                variable.setValueForMode(desktopModeId, desktopValue);
+                variable.setValueForMode(tabletModeId, tabletValue);
+                variable.setValueForMode(mobileModeId, mobileValue);
+            }
+
+            notifyUI('stroke', true, `Created ${numberOfTokens} stroke tokens!`);
+        } catch (error) {
+            notifyUI('stroke', false, 'Error creating stroke tokens', error.message);
+        }
+    }
+
+    if (msg.type === "create-stroke-doc") {
+        try {
+            const baseValue = msg.baseValue;
+            const numberOfTokens = msg.numberOfTokens;
+
+            // Load fonts
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+
+            // Helper function to convert hex to RGB
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                }
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+                return { r, g, b };
+            }
+
+            // Create main frame
+            const frame = figma.createFrame();
+            frame.name = "Token Stroke";
+            frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            frame.paddingTop = 40;
+            frame.paddingBottom = 40;
+            frame.paddingLeft = 40;
+            frame.paddingRight = 40;
+            frame.layoutMode = "VERTICAL";
+            frame.primaryAxisSizingMode = "AUTO";
+            frame.counterAxisSizingMode = "AUTO";
+            frame.itemSpacing = 40;
+
+            // Add top border
+            const borderColor = hexToRgb('#1350FF');
+            frame.strokes = [{ type: 'SOLID', color: borderColor }];
+            frame.strokeWeight = 8;
+            frame.strokeAlign = "INSIDE";
+            frame.strokeTopWeight = 8;
+            frame.strokeBottomWeight = 0;
+            frame.strokeLeftWeight = 0;
+            frame.strokeRightWeight = 0;
+
+            // Title section
+            const titleSection = figma.createFrame();
+            titleSection.name = "Title Section";
+            titleSection.layoutMode = "VERTICAL";
+            titleSection.primaryAxisSizingMode = "AUTO";
+            titleSection.counterAxisSizingMode = "AUTO";
+            titleSection.itemSpacing = 34;
+            titleSection.fills = [];
+
+            // Create logo from SVG
+            const logoSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_466_1736)"><g clip-path="url(#clip1_466_1736)"><path d="M47.9502 22.765C46.7073 22.0781 45.7261 21.1295 45.0065 19.952C44.2869 18.7418 43.9271 17.4008 43.9271 15.8962C43.9271 14.3916 44.2869 13.0506 45.0065 11.8404C45.7261 10.6302 46.7073 9.71438 47.9502 9.0275C49.1931 8.34063 50.5996 8.01355 52.1696 8.01355C53.4125 8.01355 54.59 8.24251 55.604 8.66771C56.6506 9.09292 57.5337 9.74708 58.2533 10.5648L56.4217 12.2983C55.3096 11.0881 53.9358 10.4994 52.3004 10.4994C51.2538 10.4994 50.3052 10.7283 49.4548 11.1862C48.6044 11.6442 47.9829 12.2983 47.4923 13.116C47.0344 13.9337 46.8054 14.8496 46.8054 15.8962C46.8054 16.9429 47.0344 17.8587 47.4923 18.6764C47.9502 19.4941 48.6044 20.1483 49.4548 20.6062C50.3052 21.0641 51.2211 21.2931 52.3004 21.2931C53.9358 21.2931 55.3096 20.6716 56.4217 19.4614L58.2533 21.2277C57.5337 22.0781 56.6506 22.6995 55.604 23.1247C54.5573 23.5499 53.4125 23.7789 52.1369 23.7789C50.5996 23.7789 49.1931 23.4191 47.9502 22.765Z" fill="black"/><path d="M63.6175 22.7649C62.3745 22.0781 61.3606 21.1295 60.641 19.9193C59.9214 18.7091 59.5616 17.3681 59.5616 15.8635C59.5616 14.3589 59.9214 13.0179 60.641 11.8077C61.3606 10.5975 62.3418 9.64895 63.6175 8.96207C64.8604 8.2752 66.2995 7.94812 67.8695 7.94812C69.4395 7.94812 70.846 8.2752 72.1216 8.96207C73.3645 9.64895 74.3785 10.5975 75.098 11.775C75.8176 12.9852 76.1774 14.3262 76.1774 15.8308C76.1774 17.3354 75.8176 18.6764 75.098 19.8866C74.3785 21.0968 73.3972 22.0126 72.1216 22.6995C70.8787 23.3864 69.4395 23.7135 67.8695 23.7135C66.2995 23.7789 64.8604 23.4191 63.6175 22.7649ZM70.617 20.5735C71.4347 20.1156 72.0889 19.4614 72.5468 18.6437C73.0047 17.826 73.2337 16.8775 73.2337 15.8635C73.2337 14.8496 73.0047 13.901 72.5468 13.0833C72.0889 12.2656 71.4347 11.6114 70.617 11.1535C69.7993 10.6956 68.8835 10.4667 67.8368 10.4667C66.8229 10.4667 65.8743 10.6956 65.0566 11.1535C64.2389 11.6114 63.5848 12.2656 63.1268 13.0833C62.6689 13.901 62.44 14.8496 62.44 15.8635C62.44 16.8775 62.6689 17.826 63.1268 18.6437C63.5848 19.4614 64.2389 20.1156 65.0566 20.5735C65.8743 21.0314 66.7902 21.2604 67.8368 21.2604C68.8835 21.2604 69.7993 21.0314 70.617 20.5735Z" fill="black"/><path d="M79.1539 8.17706H85.8591C87.4945 8.17706 88.9663 8.50414 90.242 9.1256C91.5176 9.74706 92.4988 10.6629 93.2184 11.8404C93.9053 13.0179 94.2651 14.3589 94.2651 15.8635C94.2651 17.4008 93.9053 18.7418 93.2184 19.8866C92.5315 21.0641 91.5176 21.9472 90.242 22.6014C88.9663 23.2228 87.5272 23.5499 85.8918 23.5499H79.1539V8.17706ZM85.7282 21.1295C86.8403 21.1295 87.8543 20.9006 88.7047 20.4753C89.5551 20.0501 90.2093 19.4287 90.6672 18.6437C91.1251 17.8587 91.354 16.9102 91.354 15.8635C91.354 14.8168 91.1251 13.8683 90.6672 13.0833C90.2093 12.2983 89.5551 11.6768 88.7047 11.2516C87.8543 10.8264 86.8403 10.5975 85.7282 10.5975H81.9995V21.1295H85.7282Z" fill="black"/><path d="M108.82 21.1622V23.5499H97.3069V8.17706H108.526V10.5648H100.153V14.5552H107.577V16.9102H100.153V21.1622H108.82Z" fill="black"/><path d="M115.133 10.5975H110.03V8.17706H123.081V10.5975H117.978V23.5499H115.133V10.5975Z" fill="black"/><path d="M138.879 8.17706V23.5499H136.033V16.9756H128.085V23.5499H125.24V8.17706H128.085V14.5225H136.033V8.17706H138.879Z" fill="black"/><path d="M154.514 21.1622V23.5499H143V8.17706H154.219V10.5648H145.846V14.5552H153.271V16.9102H145.846V21.1622H154.514Z" fill="black"/><path d="M160.597 22.7649C159.354 22.0781 158.34 21.1295 157.621 19.9193C156.901 18.7091 156.542 17.3681 156.542 15.8635C156.542 14.3589 156.901 13.0179 157.621 11.8077C158.34 10.5975 159.322 9.64895 160.597 8.96207C161.873 8.2752 163.279 7.94812 164.849 7.94812C166.419 7.94812 167.826 8.2752 169.101 8.96207C170.344 9.64895 171.358 10.5975 172.078 11.775C172.797 12.9852 173.157 14.3262 173.157 15.8308C173.157 17.3354 172.797 18.6764 172.078 19.8866C171.358 21.0968 170.377 22.0126 169.101 22.6995C167.859 23.3864 166.419 23.7135 164.849 23.7135C163.247 23.7789 161.84 23.4191 160.597 22.7649ZM167.597 20.5735C168.415 20.1156 169.069 19.4614 169.527 18.6437C169.985 17.826 170.214 16.8775 170.214 15.8635C170.214 14.8496 169.985 13.901 169.527 13.0833C169.069 12.2656 168.415 11.6114 167.597 11.1535C166.779 10.6956 165.863 10.4667 164.817 10.4667C163.803 10.4667 162.854 10.6956 162.036 11.1535C161.219 11.6114 160.565 12.2656 160.107 13.0833C159.649 13.901 159.42 14.8496 159.42 15.8635C159.42 16.8775 159.649 17.826 160.107 18.6437C160.565 19.4614 161.219 20.1156 162.036 20.5735C162.854 21.0314 163.77 21.2604 164.817 21.2604C165.863 21.2604 166.779 21.0314 167.597 20.5735Z" fill="black"/><path d="M186.175 23.5499L183.035 19.0362C182.904 19.0362 182.708 19.0689 182.446 19.0689H178.979V23.5499H176.134V8.17706H182.446C183.787 8.17706 184.932 8.40602 185.913 8.83123C186.895 9.25643 187.647 9.9106 188.17 10.7283C188.694 11.546 188.955 12.5273 188.955 13.6393C188.955 14.7841 188.661 15.7981 188.105 16.6158C187.549 17.4662 186.731 18.0877 185.685 18.4801L189.25 23.5499H186.175ZM185.161 11.3825C184.507 10.8591 183.558 10.5975 182.316 10.5975H178.979V16.7139H182.316C183.558 16.7139 184.507 16.4522 185.161 15.8962C185.815 15.3729 186.142 14.6206 186.142 13.6393C186.11 12.6581 185.815 11.9058 185.161 11.3825Z" fill="black"/><path d="M203.707 21.1622V23.5499H192.193V8.17706H203.412V10.5648H195.039V14.5552H202.464V16.9102H195.039V21.1622H203.707Z" fill="black"/><path d="M221.009 23.5499L220.977 13.3777L215.94 21.8164H214.664L209.627 13.5085V23.5499H206.912V8.17706H209.267L215.384 18.3493L221.336 8.17706H223.691L223.724 23.5499H221.009Z" fill="black"/><path d="M34.1474 24.5312H1.83165C0.327072 24.5312 -0.523342 22.8303 0.392488 21.6201L15.9943 1.01395C17.041 -0.359794 19.1016 -0.359794 20.1155 1.01395L35.6192 21.5874C36.5023 22.7976 35.6519 24.5312 34.1474 24.5312Z" fill="url(#paint0_linear_466_1736)"/><path d="M4.15395 28.5215L16.7466 11.9385C17.5643 10.8591 19.167 10.8918 19.952 11.9385L32.4465 28.5215C33.4278 29.8626 32.512 31.727 30.8438 31.727H5.75665C4.08853 31.727 3.14 29.8299 4.15395 28.5215Z" fill="url(#paint1_linear_466_1736)"/><path d="M29.4047 24.5312L19.952 11.9385C19.1343 10.8591 17.5643 10.8591 16.7466 11.9385L7.1958 24.5312H29.4047Z" fill="#6699FF"/></g></g><defs><linearGradient id="paint0_linear_466_1736" x1="0.0140991" y1="12.2574" x2="35.977" y2="12.2574" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><linearGradient id="paint1_linear_466_1736" x1="3.73645" y1="21.4341" x2="32.8498" y2="21.4341" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><clipPath id="clip0_466_1736"><rect width="224" height="31.727" fill="white"/></clipPath><clipPath id="clip1_466_1736"><rect width="223.724" height="31.727" fill="white"/></clipPath></defs></svg>`;
+
+            const logo = figma.createNodeFromSvg(logoSvg);
+            logo.name = "logo - Horizontal";
+            logo.resize(224, 31.73);
+
+            // Header Section frame
+            const headerSection = figma.createFrame();
+            headerSection.name = "Header Section";
+            headerSection.layoutMode = "VERTICAL";
+            headerSection.primaryAxisSizingMode = "AUTO";
+            headerSection.counterAxisSizingMode = "AUTO";
+            headerSection.itemSpacing = 6;
+            headerSection.fills = [];
+
+            // Title text
+            const titleText = figma.createText();
+            titleText.characters = "Stroke";
+            titleText.fontSize = 40;
+            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+            titleText.lineHeight = { value: 150, unit: "PERCENT" };
+
+            // Subtitle text
+            const subtitleText = figma.createText();
+            subtitleText.characters = "Generate using a fixed base for best result.";
+            subtitleText.fontSize = 16;
+            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+            subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
+            subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
+
+            headerSection.appendChild(titleText);
+            headerSection.appendChild(subtitleText);
+
+            titleSection.appendChild(logo);
+            titleSection.appendChild(headerSection);
+            frame.appendChild(titleSection);
+
+            const tokenGrid = figma.createFrame();
+            tokenGrid.name = "Token Grid";
+            tokenGrid.layoutMode = "HORIZONTAL";
+            tokenGrid.primaryAxisSizingMode = "AUTO";
+            tokenGrid.counterAxisSizingMode = "AUTO";
+            tokenGrid.itemSpacing = 2;
+            tokenGrid.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            const gridBorderColor = hexToRgb('#D5D5D6');
+            tokenGrid.strokes = [{ type: 'SOLID', color: gridBorderColor }];
+            tokenGrid.strokeWeight = 1;
+            tokenGrid.cornerRadius = 8;
+
+            // Generate stroke token cards
+            for (let i = 0; i < numberOfTokens; i++) {
+                const strokeValue = baseValue * i;
+
+                const tokenCard = figma.createFrame();
+                tokenCard.name = `${i}`;
+                tokenCard.layoutMode = "VERTICAL";
+                tokenCard.primaryAxisSizingMode = "AUTO";
+                tokenCard.counterAxisSizingMode = "FIXED";
+                tokenCard.resize(160, 156);
+                tokenCard.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                // Preview Frame
+                const previewFrame = figma.createFrame();
+                previewFrame.name = "Preview Frame";
+                previewFrame.layoutMode = "HORIZONTAL";
+                previewFrame.primaryAxisSizingMode = "FIXED";
+                previewFrame.counterAxisSizingMode = "FIXED";
+                previewFrame.resize(160, 100);
+                previewFrame.primaryAxisAlignItems = "CENTER";
+                previewFrame.counterAxisAlignItems = "CENTER";
+                previewFrame.paddingTop = 16;
+                previewFrame.paddingBottom = 16;
+                previewFrame.paddingLeft = 16;
+                previewFrame.paddingRight = 16;
+                previewFrame.fills = [{ type: 'SOLID', color: hexToRgb('#E0E8FF') }];
+
+                // Create rectangle with stroke to show border width
+                const strokeBox = figma.createFrame();
+                strokeBox.name = "Stroke Box";
+                strokeBox.resize(68, 68);
+                strokeBox.fills = [{ type: 'SOLID', color: hexToRgb('#FFFFFF') }];
+                strokeBox.strokes = [{ type: 'SOLID', color: hexToRgb('#1350FF') }];
+                strokeBox.strokeWeight = strokeValue;
+                strokeBox.strokeAlign = "INSIDE";
+                strokeBox.cornerRadius = 4;
+
+                previewFrame.appendChild(strokeBox);
+
+                // Token Info
+                const tokenInfo = figma.createFrame();
+                tokenInfo.name = "Token Info";
+                tokenInfo.layoutMode = "VERTICAL";
+                tokenInfo.primaryAxisSizingMode = "AUTO";
+                tokenInfo.counterAxisSizingMode = "FIXED";
+                tokenInfo.resize(160, 56);
+                tokenInfo.itemSpacing = 6;
+                tokenInfo.paddingTop = 12;
+                tokenInfo.paddingBottom = 12;
+                tokenInfo.paddingLeft = 12;
+                tokenInfo.paddingRight = 12;
+                tokenInfo.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                // Token name
+                const formattedValue = strokeValue.toString().replace('.', '_');
+                const tokenName = figma.createText();
+                tokenName.characters = `Stroke-${formattedValue}px`;
+                tokenName.fontSize = 12;
+                tokenName.fontName = { family: "Inter", style: "Medium" };
+                tokenName.fills = [{ type: 'SOLID', color: hexToRgb('#2D3339') }];
+
+                // Token value
+                const tokenValue = figma.createText();
+                tokenValue.characters = `${strokeValue}px`;
+                tokenValue.fontSize = 9;
+                tokenValue.fontName = { family: "Inter", style: "Regular" };
+                tokenValue.fills = [{ type: 'SOLID', color: hexToRgb('#7F7F7F') }];
+
+                tokenInfo.appendChild(tokenName);
+                tokenInfo.appendChild(tokenValue);
+
+                tokenCard.appendChild(previewFrame);
+                tokenCard.appendChild(tokenInfo);
+                tokenGrid.appendChild(tokenCard);
+            }
+
+            frame.appendChild(tokenGrid);
+
+            // Add footer
+            const footer = figma.createFrame();
+            footer.name = "Footer Section";
+            footer.layoutMode = "VERTICAL";
+            footer.primaryAxisSizingMode = "AUTO";
+            footer.counterAxisSizingMode = "AUTO";
+            footer.primaryAxisAlignItems = "MIN";
+            footer.itemSpacing = 8;
+            footer.fills = [];
+
+            const createdBy = figma.createText();
+            createdBy.characters = "Created By";
+            createdBy.fontSize = 12;
+            createdBy.fontName = { family: "Inter", style: "Regular" };
+            createdBy.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+            createdBy.textAlignHorizontal = "CENTER";
+
+            const website = figma.createText();
+            website.characters = "Slate.Design";
+            website.fontSize = 16;
+            website.fontName = { family: "Inter", style: "Bold" };
+            website.fills = [{ type: 'SOLID', color: hexToRgb('#121212') }];
+            website.textAlignHorizontal = "CENTER";
+
+            footer.appendChild(createdBy);
+            footer.appendChild(website);
+            frame.appendChild(footer);
+
+            // Select and zoom to the created frame
+            figma.currentPage.selection = [frame];
+            figma.viewport.scrollAndZoomIntoView([frame]);
+
+            notifyUI('stroke-doc', true, 'Stroke Documentation created!');
+        } catch (error) {
+            notifyUI('stroke-doc', false, 'Error creating stroke doc', error.message);
+        }
+    }
+
+    if (msg.type === "create-shadow-styles") {
+        try {
+            // Define predefined shadow styles
+            const shadows = [
+                { name: 'shadow-xs', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.05 }, offset: { x: 0, y: 1 }, radius: 2, spread: 0, visible: true, blendMode: 'NORMAL' } },
+                { name: 'shadow-sm', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.1 }, offset: { x: 0, y: 1 }, radius: 3, spread: 0, visible: true, blendMode: 'NORMAL' } },
+                { name: 'shadow-base', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.1 }, offset: { x: 0, y: 2 }, radius: 4, spread: 0, visible: true, blendMode: 'NORMAL' } },
+                { name: 'shadow-md', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.1 }, offset: { x: 0, y: 4 }, radius: 6, spread: 0, visible: true, blendMode: 'NORMAL' } },
+                { name: 'shadow-lg', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.1 }, offset: { x: 0, y: 10 }, radius: 15, spread: 0, visible: true, blendMode: 'NORMAL' } },
+                { name: 'shadow-xl', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.1 }, offset: { x: 0, y: 20 }, radius: 25, spread: 0, visible: true, blendMode: 'NORMAL' } },
+                { name: 'shadow-2xl', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.15 }, offset: { x: 0, y: 25 }, radius: 50, spread: 0, visible: true, blendMode: 'NORMAL' } },
+                { name: 'shadow-3xl', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.15 }, offset: { x: 0, y: 40 }, radius: 50, spread: 0, visible: true, blendMode: 'NORMAL' } }
+            ];
 
             let createdCount = 0;
-            const colors = msg.colors;
 
-            // Create color variables for each category
-            const colorCategories = [
-                { key: 'primary', prefix: 'primary', hasLightDark: true },
-                { key: 'secondary', prefix: 'secondary', hasLightDark: true },
-                { key: 'success', prefix: 'success', hasLightDark: false },
-                { key: 'error', prefix: 'error', hasLightDark: false },
-                { key: 'warning', prefix: 'warning', hasLightDark: false },
-                { key: 'info', prefix: 'info', hasLightDark: false },
-                { key: 'neutral', prefix: 'neutral', hasLightDark: true }
+            for (const shadow of shadows) {
+                // Check if style already exists
+                let style = figma.getLocalEffectStyles().find(s => s.name === shadow.name);
+
+                if (!style) {
+                    style = figma.createEffectStyle();
+                    style.name = shadow.name;
+                }
+
+                // Set the effect
+                style.effects = [shadow.effect];
+                createdCount++;
+            }
+
+            notifyUI('shadow', true, `Created ${createdCount} shadow styles!`);
+        } catch (error) {
+            notifyUI('shadow', false, 'Error creating shadow styles', error.message);
+        }
+    }
+
+    if (msg.type === "create-shadow-doc") {
+        try {
+            // Load fonts
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+
+            // Helper function to convert hex to RGB
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                }
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+                return { r, g, b };
+            }
+
+            // Define shadow styles (same as in create-shadow-styles)
+            const shadows = [
+                { name: 'shadow-xs', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.05 }, offset: { x: 0, y: 1 }, radius: 2, spread: 0, visible: true, blendMode: 'NORMAL' }, description: 'X: 0, Y: 1, Blur: 2' },
+                { name: 'shadow-sm', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.1 }, offset: { x: 0, y: 1 }, radius: 3, spread: 0, visible: true, blendMode: 'NORMAL' }, description: 'X: 0, Y: 1, Blur: 3' },
+                { name: 'shadow-base', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.1 }, offset: { x: 0, y: 2 }, radius: 4, spread: 0, visible: true, blendMode: 'NORMAL' }, description: 'X: 0, Y: 2, Blur: 4' },
+                { name: 'shadow-md', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.1 }, offset: { x: 0, y: 4 }, radius: 6, spread: 0, visible: true, blendMode: 'NORMAL' }, description: 'X: 0, Y: 4, Blur: 6' },
+                { name: 'shadow-lg', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.1 }, offset: { x: 0, y: 10 }, radius: 15, spread: 0, visible: true, blendMode: 'NORMAL' }, description: 'X: 0, Y: 10, Blur: 15' },
+                { name: 'shadow-xl', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.1 }, offset: { x: 0, y: 20 }, radius: 25, spread: 0, visible: true, blendMode: 'NORMAL' }, description: 'X: 0, Y: 20, Blur: 25' },
+                { name: 'shadow-2xl', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.15 }, offset: { x: 0, y: 25 }, radius: 50, spread: 0, visible: true, blendMode: 'NORMAL' }, description: 'X: 0, Y: 25, Blur: 50' },
+                { name: 'shadow-3xl', effect: { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.15 }, offset: { x: 0, y: 40 }, radius: 50, spread: 0, visible: true, blendMode: 'NORMAL' }, description: 'X: 0, Y: 40, Blur: 50' }
             ];
 
-            for (const cat of colorCategories) {
-                if (cat.hasLightDark) {
-                    if (colors[cat.key] && colors[cat.key].light) {
-                        const lightColors = colors[cat.key].light;
-                        const darkColors = colors[cat.key].dark || lightColors;
-                        const keys = Object.keys(lightColors);
+            // Create main frame
+            const frame = figma.createFrame();
+            frame.name = "Token Shadow";
+            frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            frame.paddingTop = 40;
+            frame.paddingBottom = 40;
+            frame.paddingLeft = 40;
+            frame.paddingRight = 40;
+            frame.layoutMode = "VERTICAL";
+            frame.primaryAxisSizingMode = "AUTO";
+            frame.counterAxisSizingMode = "AUTO";
+            frame.itemSpacing = 40;
 
-                        for (let i = 0; i < keys.length; i++) {
-                            const name = keys[i];
-                            const cleanName = name.replace(new RegExp(`^${cat.prefix}-`), '');
-                            await createOrUpdateVariable(`${cat.prefix}/${cleanName}`, Object.values(lightColors)[i], Object.values(darkColors)[i], collection, lightModeId, darkModeId);
-                            createdCount++;
-                        }
-                    }
-                } else {
-                    if (colors[cat.key]) {
-                        const colorData = colors[cat.key];
-                        const keys = Object.keys(colorData);
+            // Add top border
+            const borderColor = hexToRgb('#1350FF');
+            frame.strokes = [{ type: 'SOLID', color: borderColor }];
+            frame.strokeWeight = 8;
+            frame.strokeAlign = "INSIDE";
+            frame.strokeTopWeight = 8;
+            frame.strokeBottomWeight = 0;
+            frame.strokeLeftWeight = 0;
+            frame.strokeRightWeight = 0;
 
-                        for (let i = 0; i < keys.length; i++) {
-                            const name = keys[i];
-                            const value = Object.values(colorData)[i];
-                            let cleanName = name.replace(new RegExp(`^${cat.prefix}-`), '');
+            // Title section
+            const titleSection = figma.createFrame();
+            titleSection.name = "Title Section";
+            titleSection.layoutMode = "VERTICAL";
+            titleSection.primaryAxisSizingMode = "AUTO";
+            titleSection.counterAxisSizingMode = "AUTO";
+            titleSection.itemSpacing = 34;
+            titleSection.fills = [];
 
-                            // Rename status color variants: light->100, default->200, dark->300
-                            if (!cat.hasLightDark) {
-                                cleanName = cleanName.replace(/light$/, '100')
-                                    .replace(/default$/, '200')
-                                    .replace(/dark$/, '300');
-                            }
+            // Create logo from SVG
+            const logoSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_466_1736)"><g clip-path="url(#clip1_466_1736)"><path d="M47.9502 22.765C46.7073 22.0781 45.7261 21.1295 45.0065 19.952C44.2869 18.7418 43.9271 17.4008 43.9271 15.8962C43.9271 14.3916 44.2869 13.0506 45.0065 11.8404C45.7261 10.6302 46.7073 9.71438 47.9502 9.0275C49.1931 8.34063 50.5996 8.01355 52.1696 8.01355C53.4125 8.01355 54.59 8.24251 55.604 8.66771C56.6506 9.09292 57.5337 9.74708 58.2533 10.5648L56.4217 12.2983C55.3096 11.0881 53.9358 10.4994 52.3004 10.4994C51.2538 10.4994 50.3052 10.7283 49.4548 11.1862C48.6044 11.6442 47.9829 12.2983 47.4923 13.116C47.0344 13.9337 46.8054 14.8496 46.8054 15.8962C46.8054 16.9429 47.0344 17.8587 47.4923 18.6764C47.9502 19.4941 48.6044 20.1483 49.4548 20.6062C50.3052 21.0641 51.2211 21.2931 52.3004 21.2931C53.9358 21.2931 55.3096 20.6716 56.4217 19.4614L58.2533 21.2277C57.5337 22.0781 56.6506 22.6995 55.604 23.1247C54.5573 23.5499 53.4125 23.7789 52.1369 23.7789C50.5996 23.7789 49.1931 23.4191 47.9502 22.765Z" fill="black"/><path d="M63.6175 22.7649C62.3745 22.0781 61.3606 21.1295 60.641 19.9193C59.9214 18.7091 59.5616 17.3681 59.5616 15.8635C59.5616 14.3589 59.9214 13.0179 60.641 11.8077C61.3606 10.5975 62.3418 9.64895 63.6175 8.96207C64.8604 8.2752 66.2995 7.94812 67.8695 7.94812C69.4395 7.94812 70.846 8.2752 72.1216 8.96207C73.3645 9.64895 74.3785 10.5975 75.098 11.775C75.8176 12.9852 76.1774 14.3262 76.1774 15.8308C76.1774 17.3354 75.8176 18.6764 75.098 19.8866C74.3785 21.0968 73.3972 22.0126 72.1216 22.6995C70.8787 23.3864 69.4395 23.7135 67.8695 23.7135C66.2995 23.7789 64.8604 23.4191 63.6175 22.7649ZM70.617 20.5735C71.4347 20.1156 72.0889 19.4614 72.5468 18.6437C73.0047 17.826 73.2337 16.8775 73.2337 15.8635C73.2337 14.8496 73.0047 13.901 72.5468 13.0833C72.0889 12.2656 71.4347 11.6114 70.617 11.1535C69.7993 10.6956 68.8835 10.4667 67.8368 10.4667C66.8229 10.4667 65.8743 10.6956 65.0566 11.1535C64.2389 11.6114 63.5848 12.2656 63.1268 13.0833C62.6689 13.901 62.44 14.8496 62.44 15.8635C62.44 16.8775 62.6689 17.826 63.1268 18.6437C63.5848 19.4614 64.2389 20.1156 65.0566 20.5735C65.8743 21.0314 66.7902 21.2604 67.8368 21.2604C68.8835 21.2604 69.7993 21.0314 70.617 20.5735Z" fill="black"/><path d="M79.1539 8.17706H85.8591C87.4945 8.17706 88.9663 8.50414 90.242 9.1256C91.5176 9.74706 92.4988 10.6629 93.2184 11.8404C93.9053 13.0179 94.2651 14.3589 94.2651 15.8635C94.2651 17.4008 93.9053 18.7418 93.2184 19.8866C92.5315 21.0641 91.5176 21.9472 90.242 22.6014C88.9663 23.2228 87.5272 23.5499 85.8918 23.5499H79.1539V8.17706ZM85.7282 21.1295C86.8403 21.1295 87.8543 20.9006 88.7047 20.4753C89.5551 20.0501 90.2093 19.4287 90.6672 18.6437C91.1251 17.8587 91.354 16.9102 91.354 15.8635C91.354 14.8168 91.1251 13.8683 90.6672 13.0833C90.2093 12.2983 89.5551 11.6768 88.7047 11.2516C87.8543 10.8264 86.8403 10.5975 85.7282 10.5975H81.9995V21.1295H85.7282Z" fill="black"/><path d="M108.82 21.1622V23.5499H97.3069V8.17706H108.526V10.5648H100.153V14.5552H107.577V16.9102H100.153V21.1622H108.82Z" fill="black"/><path d="M115.133 10.5975H110.03V8.17706H123.081V10.5975H117.978V23.5499H115.133V10.5975Z" fill="black"/><path d="M138.879 8.17706V23.5499H136.033V16.9756H128.085V23.5499H125.24V8.17706H128.085V14.5225H136.033V8.17706H138.879Z" fill="black"/><path d="M154.514 21.1622V23.5499H143V8.17706H154.219V10.5648H145.846V14.5552H153.271V16.9102H145.846V21.1622H154.514Z" fill="black"/><path d="M160.597 22.7649C159.354 22.0781 158.34 21.1295 157.621 19.9193C156.901 18.7091 156.542 17.3681 156.542 15.8635C156.542 14.3589 156.901 13.0179 157.621 11.8077C158.34 10.5975 159.322 9.64895 160.597 8.96207C161.873 8.2752 163.279 7.94812 164.849 7.94812C166.419 7.94812 167.826 8.2752 169.101 8.96207C170.344 9.64895 171.358 10.5975 172.078 11.775C172.797 12.9852 173.157 14.3262 173.157 15.8308C173.157 17.3354 172.797 18.6764 172.078 19.8866C171.358 21.0968 170.377 22.0126 169.101 22.6995C167.859 23.3864 166.419 23.7135 164.849 23.7135C163.247 23.7789 161.84 23.4191 160.597 22.7649ZM167.597 20.5735C168.415 20.1156 169.069 19.4614 169.527 18.6437C169.985 17.826 170.214 16.8775 170.214 15.8635C170.214 14.8496 169.985 13.901 169.527 13.0833C169.069 12.2656 168.415 11.6114 167.597 11.1535C166.779 10.6956 165.863 10.4667 164.817 10.4667C163.803 10.4667 162.854 10.6956 162.036 11.1535C161.219 11.6114 160.565 12.2656 160.107 13.0833C159.649 13.901 159.42 14.8496 159.42 15.8635C159.42 16.8775 159.649 17.826 160.107 18.6437C160.565 19.4614 161.219 20.1156 162.036 20.5735C162.854 21.0314 163.77 21.2604 164.817 21.2604C165.863 21.2604 166.779 21.0314 167.597 20.5735Z" fill="black"/><path d="M186.175 23.5499L183.035 19.0362C182.904 19.0362 182.708 19.0689 182.446 19.0689H178.979V23.5499H176.134V8.17706H182.446C183.787 8.17706 184.932 8.40602 185.913 8.83123C186.895 9.25643 187.647 9.9106 188.17 10.7283C188.694 11.546 188.955 12.5273 188.955 13.6393C188.955 14.7841 188.661 15.7981 188.105 16.6158C187.549 17.4662 186.731 18.0877 185.685 18.4801L189.25 23.5499H186.175ZM185.161 11.3825C184.507 10.8591 183.558 10.5975 182.316 10.5975H178.979V16.7139H182.316C183.558 16.7139 184.507 16.4522 185.161 15.8962C185.815 15.3729 186.142 14.6206 186.142 13.6393C186.11 12.6581 185.815 11.9058 185.161 11.3825Z" fill="black"/><path d="M203.707 21.1622V23.5499H192.193V8.17706H203.412V10.5648H195.039V14.5552H202.464V16.9102H195.039V21.1622H203.707Z" fill="black"/><path d="M221.009 23.5499L220.977 13.3777L215.94 21.8164H214.664L209.627 13.5085V23.5499H206.912V8.17706H209.267L215.384 18.3493L221.336 8.17706H223.691L223.724 23.5499H221.009Z" fill="black"/><path d="M34.1474 24.5312H1.83165C0.327072 24.5312 -0.523342 22.8303 0.392488 21.6201L15.9943 1.01395C17.041 -0.359794 19.1016 -0.359794 20.1155 1.01395L35.6192 21.5874C36.5023 22.7976 35.6519 24.5312 34.1474 24.5312Z" fill="url(#paint0_linear_466_1736)"/><path d="M4.15395 28.5215L16.7466 11.9385C17.5643 10.8591 19.167 10.8918 19.952 11.9385L32.4465 28.5215C33.4278 29.8626 32.512 31.727 30.8438 31.727H5.75665C4.08853 31.727 3.14 29.8299 4.15395 28.5215Z" fill="url(#paint1_linear_466_1736)"/><path d="M29.4047 24.5312L19.952 11.9385C19.1343 10.8591 17.5643 10.8591 16.7466 11.9385L7.1958 24.5312H29.4047Z" fill="#6699FF"/></g></g><defs><linearGradient id="paint0_linear_466_1736" x1="0.0140991" y1="12.2574" x2="35.977" y2="12.2574" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><linearGradient id="paint1_linear_466_1736" x1="3.73645" y1="21.4341" x2="32.8498" y2="21.4341" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><clipPath id="clip0_466_1736"><rect width="224" height="31.727" fill="white"/></clipPath><clipPath id="clip1_466_1736"><rect width="223.724" height="31.727" fill="white"/></clipPath></defs></svg>`;
 
-                            await createOrUpdateVariable(`${cat.prefix}/${cleanName}`, value, value, collection, lightModeId, darkModeId);
-                            createdCount++;
-                        }
-                    }
-                }
+            const logo = figma.createNodeFromSvg(logoSvg);
+            logo.name = "logo - Horizontal";
+            logo.resize(224, 31.73);
+
+            // Header Section frame
+            const headerSection = figma.createFrame();
+            headerSection.name = "Header Section";
+            headerSection.layoutMode = "VERTICAL";
+            headerSection.primaryAxisSizingMode = "AUTO";
+            headerSection.counterAxisSizingMode = "AUTO";
+            headerSection.itemSpacing = 6;
+            headerSection.fills = [];
+
+            // Title text
+            const titleText = figma.createText();
+            titleText.characters = "Shadow";
+            titleText.fontSize = 40;
+            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+            titleText.lineHeight = { value: 150, unit: "PERCENT" };
+
+            // Subtitle text
+            const subtitleText = figma.createText();
+            subtitleText.characters = "Predefined shadow styles for consistent depth.";
+            subtitleText.fontSize = 16;
+            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+            subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
+            subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
+
+            headerSection.appendChild(titleText);
+            headerSection.appendChild(subtitleText);
+
+            titleSection.appendChild(logo);
+            titleSection.appendChild(headerSection);
+            frame.appendChild(titleSection);
+
+            const tokenGrid = figma.createFrame();
+            tokenGrid.name = "Token Grid";
+            tokenGrid.layoutMode = "HORIZONTAL";
+            tokenGrid.primaryAxisSizingMode = "AUTO";
+            tokenGrid.counterAxisSizingMode = "AUTO";
+            tokenGrid.itemSpacing = 2;
+            tokenGrid.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            const gridBorderColor = hexToRgb('#D5D5D6');
+            tokenGrid.strokes = [{ type: 'SOLID', color: gridBorderColor }];
+            tokenGrid.strokeWeight = 1;
+            tokenGrid.cornerRadius = 8;
+
+            // Generate shadow token cards
+            for (let i = 0; i < shadows.length; i++) {
+                const shadow = shadows[i];
+
+                const tokenCard = figma.createFrame();
+                tokenCard.name = `${i}`;
+                tokenCard.layoutMode = "VERTICAL";
+                tokenCard.primaryAxisSizingMode = "AUTO";
+                tokenCard.counterAxisSizingMode = "FIXED";
+                tokenCard.resize(160, 156);
+                tokenCard.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                // Preview Frame
+                const previewFrame = figma.createFrame();
+                previewFrame.name = "Preview Frame";
+                previewFrame.layoutMode = "HORIZONTAL";
+                previewFrame.primaryAxisSizingMode = "FIXED";
+                previewFrame.counterAxisSizingMode = "FIXED";
+                previewFrame.resize(160, 100);
+                previewFrame.primaryAxisAlignItems = "CENTER";
+                previewFrame.counterAxisAlignItems = "CENTER";
+                previewFrame.paddingTop = 16;
+                previewFrame.paddingBottom = 16;
+                previewFrame.paddingLeft = 16;
+                previewFrame.paddingRight = 16;
+                previewFrame.fills = [{ type: 'SOLID', color: hexToRgb('#F5F5F5') }];
+
+                // Create rectangle with shadow effect
+                const shadowBox = figma.createFrame();
+                shadowBox.name = "Shadow Box";
+                shadowBox.resize(68, 68);
+                shadowBox.fills = [{ type: 'SOLID', color: hexToRgb('#FFFFFF') }];
+                shadowBox.cornerRadius = 8;
+                shadowBox.effects = [shadow.effect];
+
+                previewFrame.appendChild(shadowBox);
+
+                // Token Info
+                const tokenInfo = figma.createFrame();
+                tokenInfo.name = "Token Info";
+                tokenInfo.layoutMode = "VERTICAL";
+                tokenInfo.primaryAxisSizingMode = "AUTO";
+                tokenInfo.counterAxisSizingMode = "FIXED";
+                tokenInfo.resize(160, 56);
+                tokenInfo.itemSpacing = 6;
+                tokenInfo.paddingTop = 12;
+                tokenInfo.paddingBottom = 12;
+                tokenInfo.paddingLeft = 12;
+                tokenInfo.paddingRight = 12;
+                tokenInfo.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                // Token name
+                const tokenName = figma.createText();
+                tokenName.characters = shadow.name;
+                tokenName.fontSize = 12;
+                tokenName.fontName = { family: "Inter", style: "Medium" };
+                tokenName.fills = [{ type: 'SOLID', color: hexToRgb('#2D3339') }];
+
+                // Token value
+                const tokenValue = figma.createText();
+                tokenValue.characters = shadow.description;
+                tokenValue.fontSize = 9;
+                tokenValue.fontName = { family: "Inter", style: "Regular" };
+                tokenValue.fills = [{ type: 'SOLID', color: hexToRgb('#7F7F7F') }];
+
+                tokenInfo.appendChild(tokenName);
+                tokenInfo.appendChild(tokenValue);
+
+                tokenCard.appendChild(previewFrame);
+                tokenCard.appendChild(tokenInfo);
+                tokenGrid.appendChild(tokenCard);
             }
 
-            // Create responsive variable collections (spacing, padding, radius, stroke)
-            const responsiveCollections = [
-                { name: 'Spacing', data: msg.spacing },
-                { name: 'Padding', data: msg.padding },
-                { name: 'Radius', data: msg.radius },
-                { name: 'Stroke', data: msg.strokes }
+            frame.appendChild(tokenGrid);
+
+            // Add footer
+            const footer = figma.createFrame();
+            footer.name = "Footer Section";
+            footer.layoutMode = "VERTICAL";
+            footer.primaryAxisSizingMode = "AUTO";
+            footer.counterAxisSizingMode = "AUTO";
+            footer.primaryAxisAlignItems = "MIN";
+            footer.itemSpacing = 8;
+            footer.fills = [];
+
+            const createdBy = figma.createText();
+            createdBy.characters = "Created By";
+            createdBy.fontSize = 12;
+            createdBy.fontName = { family: "Inter", style: "Regular" };
+            createdBy.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+            createdBy.textAlignHorizontal = "CENTER";
+
+            const website = figma.createText();
+            website.characters = "Slate.Design";
+            website.fontSize = 16;
+            website.fontName = { family: "Inter", style: "Bold" };
+            website.fills = [{ type: 'SOLID', color: hexToRgb('#121212') }];
+            website.textAlignHorizontal = "CENTER";
+
+            footer.appendChild(createdBy);
+            footer.appendChild(website);
+            frame.appendChild(footer);
+
+            // Select and zoom to the created frame
+            figma.currentPage.selection = [frame];
+            figma.viewport.scrollAndZoomIntoView([frame]);
+
+            figma.notify('Shadow Token Documentation created successfully!');
+        } catch (error) {
+            figma.notify('Error creating shadow doc: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    if (msg.type === "create-grid-styles") {
+        try {
+            const grids = msg.grids;
+
+            // Desktop Grid Style
+            let desktopStyle = figma.getLocalGridStyles().find(s => s.name === "Desktop Grid");
+            if (!desktopStyle) {
+                desktopStyle = figma.createGridStyle();
+                desktopStyle.name = "Desktop Grid";
+            }
+            desktopStyle.layoutGrids = [
+                {
+                    pattern: 'COLUMNS',
+                    alignment: 'STRETCH',
+                    gutterSize: grids.desktop.gutter,
+                    count: grids.desktop.columns,
+                    offset: grids.desktop.margin,
+                    visible: true,
+                    color: { r: 1, g: 0, b: 0, a: 0.1 }
+                }
             ];
 
-            let spacingCount = 0, paddingCount = 0, radiusCount = 0, strokeCount = 0;
-
-            for (const rc of responsiveCollections) {
-                if (rc.data && Object.keys(rc.data).length > 0) {
-                    let coll = (await figma.variables.getLocalVariableCollectionsAsync()).find(c => c.name === rc.name);
-
-                    if (!coll) {
-                        coll = figma.variables.createVariableCollection(rc.name);
-                        coll.renameMode(coll.modes[0].modeId, 'Desktop');
-                        coll.addMode('Tablet');
-                        coll.addMode('Mobile');
-                    } else {
-                        if (!coll.modes.some(m => m.name === 'Desktop')) coll.renameMode(coll.modes[0].modeId, 'Desktop');
-                        if (!coll.modes.some(m => m.name === 'Tablet')) coll.addMode('Tablet');
-                        if (!coll.modes.some(m => m.name === 'Mobile')) coll.addMode('Mobile');
-                    }
-
-                    const desktopId = coll.modes.find(m => m.name === 'Desktop').modeId;
-                    const tabletId = coll.modes.find(m => m.name === 'Tablet').modeId;
-                    const mobileId = coll.modes.find(m => m.name === 'Mobile').modeId;
-
-                    for (const [name, valueData] of Object.entries(rc.data)) {
-                        const existingVars = await figma.variables.getLocalVariablesAsync('FLOAT');
-
-                        const desktopVal = typeof valueData === 'object' ? valueData.desktop : valueData;
-                        const tabletVal = typeof valueData === 'object' ? valueData.tablet : valueData;
-                        const mobileVal = typeof valueData === 'object' ? valueData.mobile : valueData;
-
-                        // Create name with pixel value (e.g., "padding-8px" instead of "padding-2")
-                        const baseName = name.split('-')[0]; // Get "padding", "spacing", etc.
-                        const newName = `${baseName}-${desktopVal}px`;
-
-                        const existingVar = existingVars.find(v => v.name === newName && v.variableCollectionId === coll.id);
-
-                        if (existingVar) {
-                            existingVar.setValueForMode(desktopId, desktopVal);
-                            existingVar.setValueForMode(tabletId, tabletVal);
-                            existingVar.setValueForMode(mobileId, mobileVal);
-                        } else {
-                            const variable = figma.variables.createVariable(newName, coll, 'FLOAT');
-                            variable.setValueForMode(desktopId, desktopVal);
-                            variable.setValueForMode(tabletId, tabletVal);
-                            variable.setValueForMode(mobileId, mobileVal);
-                        }
-
-                        if (rc.name.includes('Spacing')) spacingCount++;
-                        else if (rc.name.includes('Padding')) paddingCount++;
-                        else if (rc.name.includes('Radius')) radiusCount++;
-                        else if (rc.name.includes('Stroke')) strokeCount++;
-                    }
+            // Tablet Grid Style
+            let tabletStyle = figma.getLocalGridStyles().find(s => s.name === "Tablet Grid");
+            if (!tabletStyle) {
+                tabletStyle = figma.createGridStyle();
+                tabletStyle.name = "Tablet Grid";
+            }
+            tabletStyle.layoutGrids = [
+                {
+                    pattern: 'COLUMNS',
+                    alignment: 'STRETCH',
+                    gutterSize: grids.tablet.gutter,
+                    count: grids.tablet.columns,
+                    offset: grids.tablet.margin,
+                    visible: true,
+                    color: { r: 1, g: 0, b: 0, a: 0.1 }
                 }
+            ];
+
+            // Mobile Grid Style
+            let mobileStyle = figma.getLocalGridStyles().find(s => s.name === "Mobile Grid");
+            if (!mobileStyle) {
+                mobileStyle = figma.createGridStyle();
+                mobileStyle.name = "Mobile Grid";
             }
-
-            // Create shadow styles
-            let shadowCount = 0;
-            if (msg.shadows && Object.keys(msg.shadows).length > 0) {
-                for (const [name, value] of Object.entries(msg.shadows)) {
-                    if (value === 'none') continue;
-
-                    const shadowMatch = value.match(/(-?\d+)(?:px)?\s+(-?\d+)(?:px)?\s+(-?\d+)(?:px)?\s+rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
-                    if (shadowMatch) {
-                        const [, x, y, blur, r, g, b, a] = shadowMatch;
-                        const groupedName = `Shadow/${name.replace('shadow-', '')}`;
-                        const existingStyles = await figma.getLocalEffectStylesAsync();
-                        let style = existingStyles.find(s => s.name === groupedName);
-
-                        if (!style) {
-                            style = figma.createEffectStyle();
-                            style.name = groupedName;
-                        }
-
-                        style.effects = [{
-                            type: 'DROP_SHADOW',
-                            color: { r: parseInt(r) / 255, g: parseInt(g) / 255, b: parseInt(b) / 255, a: parseFloat(a) },
-                            offset: { x: parseInt(x), y: parseInt(y) },
-                            radius: parseInt(blur),
-                            visible: true,
-                            blendMode: 'NORMAL',
-                            spread: 0
-                        }];
-                        shadowCount++;
-                    }
+            mobileStyle.layoutGrids = [
+                {
+                    pattern: 'COLUMNS',
+                    alignment: 'STRETCH',
+                    gutterSize: grids.mobile.gutter,
+                    count: grids.mobile.columns,
+                    offset: grids.mobile.margin,
+                    visible: true,
+                    color: { r: 1, g: 0, b: 0, a: 0.1 }
                 }
-            }
+            ];
 
-            // Create Layout Grid styles
-            let gridCount = 0;
-            if (msg.grids) {
-                gridCount = await createLayoutGridStyles(msg.grids);
-            }
-
-            const totalVars = createdCount + spacingCount + paddingCount + radiusCount + strokeCount;
-            if (totalVars === 0 && shadowCount === 0 && gridCount === 0) {
-                figma.notify('⚠️ No data found to create variables.');
-                figma.ui.postMessage({ type: 'loading-complete' });
-                return;
-            }
-
-            // Create documentation frame
-            try {
-                await createTokenDocumentation(colors, msg, createdCount, spacingCount, paddingCount, radiusCount, strokeCount, shadowCount, gridCount);
-            } catch (docError) {
-                console.error('Error creating documentation:', docError);
-                figma.notify(`⚠️ Variables created but documentation failed: ${docError.message}`);
-            }
-
-            figma.notify(`✅ Created ${totalVars} variables, ${shadowCount} shadows, ${gridCount} grid styles!`);
-            figma.ui.postMessage({ type: 'loading-complete' });
-            figma.ui.postMessage({ type: 'show-success', title: 'Variables Created!', message: `Created ${totalVars} variables and ${gridCount} grid styles successfully.` });
-
+            notifyUI('grid', true, 'Grid styles created successfully!');
         } catch (error) {
-            figma.notify(`❌ Error creating variables: ${error.message}`);
-            figma.ui.postMessage({ type: 'loading-complete' });
+            notifyUI('grid', false, 'Error creating grid styles', error.message);
         }
     }
 
-    // ----------------------------------------
-    // TYPOGRAPHY MESSAGES
-    // ----------------------------------------
-
-    if (msg.type === 'create-text-styles') {
+    if (msg.type === "create-grid-doc") {
         try {
-            await createTypographySystem(msg.typography);
-            figma.ui.postMessage({ type: 'loading-complete' });
-            figma.ui.postMessage({ type: 'show-success', title: 'Typography Created!', message: 'Typography system created successfully.' });
-        } catch (error) {
-            figma.notify(`❌ Error creating typography: ${error.message}`);
-            figma.ui.postMessage({ type: 'loading-complete' });
-        }
-    }
-
-    // ----------------------------------------
-    // ICON LIBRARY MESSAGES
-    // ----------------------------------------
-
-    if (msg.type === 'generate-icon-library') {
-        (async () => {
-            try {
-                const result = await generateIconLibrary(msg.libraryId, msg.categoryId, msg.iconList);
-                figma.notify(`✅ Created ${result.successCount} icons!`);
-                figma.ui.postMessage({ type: 'generation-complete' });
-                figma.ui.postMessage({ type: 'loading-complete' });
-                figma.ui.postMessage({ type: 'show-success', title: 'Icons Created!', message: `Created ${result.successCount} icons successfully.` });
-            } catch (error) {
-                figma.notify(`❌ Error: ${error.message}`);
-                figma.ui.postMessage({ type: 'generation-complete' });
-                figma.ui.postMessage({ type: 'loading-complete' });
-            }
-        })();
-    }
-
-    if (msg.type === 'generate-all-library-icons') {
-        (async () => {
-            try {
-                const result = await generateAllLibraryIcons(msg.libraryId, msg.categories);
-                figma.notify(`✅ Created ${result.totalSuccess} icons in ${result.categoriesCreated} categories!`);
-                figma.ui.postMessage({ type: 'generation-complete' });
-                figma.ui.postMessage({ type: 'loading-complete' });
-                figma.ui.postMessage({ type: 'show-success', title: 'Icons Created!', message: `Created ${result.totalSuccess} icons in ${result.categoriesCreated} categories.` });
-            } catch (error) {
-                figma.notify(`❌ Error: ${error.message}`);
-                figma.ui.postMessage({ type: 'generation-complete' });
-                figma.ui.postMessage({ type: 'loading-complete' });
-            }
-        })();
-    }
-
-    if (msg.type === 'insert-single-icon') {
-        (async () => {
-            try {
-                const result = await generateIconLibrary(msg.libraryId, msg.categoryId, [msg.iconName]);
-                figma.notify(result.successCount > 0 ? `✅ Icon inserted!` : `❌ Failed to insert icon`);
-            } catch (error) {
-                figma.notify(`❌ Error: ${error.message}`);
-            }
-        })();
-    }
-};
-
-// ============================================
-// MESSAGE HANDLER - END
-// ============================================
-
-
-// ============================================
-// TOKEN DOCUMENTATION - START
-// ============================================
-
-async function createTokenDocumentation(colors, msg, createdCount, spacingCount, paddingCount, radiusCount, strokeCount, shadowCount, gridCount = 0) {
-    // Load Fonts - Loading both to ensure internal functions don't crash
-    await Promise.all([
-        figma.loadFontAsync({ family: "Poppins", style: "Bold" }),
-        figma.loadFontAsync({ family: "Poppins", style: "Medium" }),
-        figma.loadFontAsync({ family: "Poppins", style: "Regular" }),
-        figma.loadFontAsync({ family: "Roboto", style: "Bold" }),
-        figma.loadFontAsync({ family: "Roboto", style: "Medium" }),
-        figma.loadFontAsync({ family: "Roboto", style: "Regular" })
-    ]);
-
-    // Main Documentation Frame
-    const frame = figma.createFrame();
-    frame.name = "Colors System";
-    frame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-    frame.layoutMode = 'VERTICAL';
-    frame.primaryAxisSizingMode = 'AUTO';
-    frame.counterAxisSizingMode = 'AUTO';
-
-    // --- PREMIUM CENTERED HEADER ---
-    const header = figma.createFrame();
-    header.name = "Header";
-    header.layoutMode = 'VERTICAL';
-    header.layoutAlign = 'STRETCH';
-    header.primaryAxisSizingMode = 'AUTO';
-    header.paddingLeft = 80; header.paddingRight = 80; header.paddingTop = 80; header.paddingBottom = 100;
-    header.itemSpacing = 40;
-    header.counterAxisAlignItems = 'CENTER'; // Center everything
-    header.fills = [{
-        type: 'GRADIENT_LINEAR',
-        gradientStops: [
-            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
-            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
-        ],
-        gradientTransform: [[1, 0, 0], [0, 1, 0]]
-    }];
-
-    // Logo & Title Group
-    const headerMain = figma.createFrame();
-    headerMain.layoutMode = 'VERTICAL';
-    headerMain.primaryAxisSizingMode = 'AUTO';
-    headerMain.counterAxisSizingMode = 'AUTO';
-    headerMain.counterAxisAlignItems = 'CENTER';
-    headerMain.itemSpacing = 24;
-    headerMain.fills = [];
-    header.appendChild(headerMain);
-
-    const title = figma.createText();
-    title.fontName = { family: "Poppins", style: "Bold" };
-    title.characters = "Slate Design Tokens";
-    title.fontSize = 56;
-    title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
-    title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    headerMain.appendChild(title);
-
-    const sysDesc = figma.createText();
-    sysDesc.fontName = { family: "Poppins", style: "Regular" };
-    sysDesc.characters = "The atomic foundation of Slate. A comprehensive collection of colors, spacing, and utility tokens to ensure pixel-perfect consistency.";
-    sysDesc.fontSize = 18;
-    sysDesc.opacity = 0.6;
-    sysDesc.textAlignHorizontal = 'CENTER';
-    sysDesc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    headerMain.appendChild(sysDesc);
-
-    // STATS ROW (Glassmorphism)
-    const statsRow = figma.createFrame();
-    statsRow.layoutMode = 'HORIZONTAL';
-    statsRow.primaryAxisSizingMode = 'AUTO';
-    statsRow.counterAxisSizingMode = 'AUTO';
-    statsRow.itemSpacing = 16;
-    statsRow.fills = [];
-
-    function createStatBadge(label, value) {
-        const sBadge = figma.createFrame();
-        sBadge.layoutMode = 'HORIZONTAL';
-        sBadge.primaryAxisSizingMode = 'AUTO';
-        sBadge.counterAxisSizingMode = 'AUTO';
-        sBadge.paddingLeft = 20; sBadge.paddingRight = 20; sBadge.paddingTop = 12; sBadge.paddingBottom = 12;
-        sBadge.cornerRadius = 100;
-        sBadge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
-        sBadge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
-        sBadge.itemSpacing = 10;
-        sBadge.counterAxisAlignItems = 'CENTER';
-        sBadge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
-
-        const lText = figma.createText();
-        lText.fontName = { family: "Poppins", style: "Medium" };
-        lText.fontSize = 13;
-        lText.characters = label;
-        lText.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
-        sBadge.appendChild(lText);
-
-        const vText = figma.createText();
-        vText.fontName = { family: "Poppins", style: "Bold" };
-        vText.fontSize = 13;
-        vText.characters = value;
-        vText.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        sBadge.appendChild(vText);
-
-        return sBadge;
-    }
-
-    statsRow.appendChild(createStatBadge("Colors", String(createdCount)));
-    statsRow.appendChild(createStatBadge("Spacing", String(spacingCount)));
-    statsRow.appendChild(createStatBadge("Radius", String(radiusCount)));
-    statsRow.appendChild(createStatBadge("Date", new Date().toLocaleDateString()));
-    header.appendChild(statsRow);
-    frame.appendChild(header);
-
-    // --- CONTENT BODY ---
-    const content = figma.createFrame();
-    content.name = "Content";
-    content.layoutMode = 'VERTICAL';
-    content.layoutAlign = 'STRETCH';
-    content.primaryAxisSizingMode = 'AUTO';
-    content.itemSpacing = 48;
-    content.paddingLeft = 80;
-    content.paddingRight = 80;
-    content.paddingTop = 40; // Spacing after header
-    content.paddingBottom = 80;
-    content.fills = [];
-    frame.appendChild(content);
-
-    // Color Rows
-    const colorCategories = [
-        { key: 'primary', title: 'Primary Colors', desc: 'Main brand and interactive colors.' },
-        { key: 'secondary', title: 'Secondary Colors', desc: 'Supporting brand colors.' },
-        { key: 'neutral', title: 'Neutral Colors', desc: 'Grays for text, borders, and backgrounds.' },
-        { key: 'success', title: 'Success', desc: 'Positive feedback states.' },
-        { key: 'warning', title: 'Warning', desc: 'Cautionary states.' },
-        { key: 'error', title: 'Error', desc: 'Critical alerts and errors.' },
-        { key: 'info', title: 'Info', desc: 'Informational elements.' },
-        { key: 'brand', title: 'Brand Colors', desc: 'Primary identity colors.' },
-    ];
-
-    for (const cat of colorCategories) {
-        let colorData = null;
-        if (colors[cat.key]) {
-            colorData = colors[cat.key].light || colors[cat.key];
-        }
-
-        if (colorData && Object.keys(colorData).length > 0) {
-            createDetailedColorRow(cat.title, cat.desc, colorData, content);
-        }
-    }
-    figma.currentPage.appendChild(frame);
-
-    // ============================================
-    // CREATE TOKENS FRAME (Side by Side)
-    // ============================================
-
-    const tokensFrame = figma.createFrame();
-    tokensFrame.name = "Tokens";
-    tokensFrame.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-    tokensFrame.layoutMode = 'VERTICAL';
-    tokensFrame.primaryAxisSizingMode = 'AUTO';
-    tokensFrame.counterAxisSizingMode = 'AUTO';
-    tokensFrame.paddingBottom = 0;
-
-    // --- TOKENS HEADER WITH LOGO ---
-    const tokensHeader = figma.createFrame();
-    tokensHeader.name = "Tokens Header";
-    tokensHeader.layoutMode = 'VERTICAL';
-    tokensHeader.layoutAlign = 'STRETCH';
-    tokensHeader.primaryAxisSizingMode = 'AUTO';
-    tokensHeader.counterAxisAlignItems = 'CENTER';
-    tokensHeader.paddingLeft = 80;
-    tokensHeader.paddingRight = 80;
-    tokensHeader.paddingTop = 64;
-    tokensHeader.paddingBottom = 80;
-    tokensHeader.itemSpacing = 56;
-
-    // Premium Dark Gradient Background (same as main header)
-    tokensHeader.fills = [{
-        type: 'GRADIENT_LINEAR',
-        gradientStops: [
-            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
-            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
-        ],
-        gradientTransform: [[1, 0, 0], [0, 1, 0]]
-    }];
-
-    // 1. HEADER TOP BAR (Logo + Brand)
-    const tokensTopBar = figma.createFrame();
-    tokensTopBar.layoutMode = 'HORIZONTAL';
-    tokensTopBar.counterAxisAlignItems = 'CENTER';
-    tokensTopBar.primaryAxisAlignItems = 'CENTER'; // Center the top bar content if any
-    tokensTopBar.layoutAlign = 'STRETCH';
-    tokensTopBar.fills = [];
-
-    //     // Left side - Slate.Design Logo
-    //     const tokensLeftBrand = figma.createFrame();
-    //     tokensLeftBrand.layoutMode = 'HORIZONTAL';
-    //     tokensLeftBrand.counterAxisAlignItems = 'CENTER';
-    //     tokensLeftBrand.itemSpacing = 16;
-    //     tokensLeftBrand.fills = [];
-
-    //     // Logo SVG
-    //     const tokensLogoSvg = `<svg width="224" height="41" viewBox="0 0 224 41" fill="none" xmlns="http://www.w3.org/2000/svg">
-    // <path d="M20.3636 36.6678C20.3636 37.6519 19.5638 38.4588 18.5847 38.3606C15.6891 38.0701 12.899 37.0735 10.4643 35.4467C7.53415 33.4888 5.25036 30.706 3.90175 27.4501C2.55313 24.1943 2.20027 20.6117 2.88779 17.1553C3.57531 13.6989 5.27232 10.524 7.76426 8.03208C10.2561 5.54014 13.4311 3.84313 16.8874 3.15561C20.3438 2.46809 23.9265 2.82095 27.1823 4.16957C30.4382 5.51819 33.221 7.80197 35.1789 10.7322C36.8057 13.1669 37.8023 15.9569 38.0928 18.8525C38.191 19.8317 37.3841 20.6314 36.4 20.6314C35.4159 20.6314 34.6296 19.8306 34.5069 18.8542C34.2318 16.6647 33.4508 14.5604 32.2158 12.712C30.6495 10.3679 28.4233 8.54081 25.8186 7.46194C23.2139 6.38307 20.3478 6.10076 17.5827 6.65076C14.8176 7.2008 12.2776 8.55839 10.2841 10.5519C8.29057 12.5455 6.93298 15.0854 6.38294 17.8505C5.83294 20.6156 6.11524 23.4817 7.19412 26.0864C8.27299 28.6911 10.1001 30.9174 12.4442 32.4836C14.2925 33.7186 16.3968 34.4996 18.5864 34.7748C19.5628 34.8974 20.3636 35.6837 20.3636 36.6678Z" fill="#1350FF"/>
-    // <path fill-rule="evenodd" clip-rule="evenodd" d="M31.3782 22.0784C30.8619 19.7816 27.6308 19.796 27.1342 22.0972L27.1153 22.185L27.0784 22.3554C26.5368 24.8151 24.5864 26.7026 22.1364 27.1348C19.7727 27.5519 19.7727 30.9933 22.1364 31.4104C24.595 31.8442 26.5504 33.7434 27.084 36.2157L27.1342 36.448C27.6308 38.7493 30.8619 38.7636 31.3782 36.4668L31.4392 36.1961C31.993 33.7326 33.9515 31.8473 36.406 31.4142C38.7737 30.9964 38.7737 27.5488 36.406 27.131C33.9645 26.7003 32.0139 24.8326 31.4481 22.3883C31.4323 22.32 31.4176 22.2547 31.4018 22.1836L31.3782 22.0784Z" fill="url(#paint0_linear_278_1424)"/>
-    // <path d="M212.443 28.9857V16.3765H216.051V18.6735H216.198C216.344 18.3151 216.523 17.9811 216.734 17.6716C216.945 17.3621 217.197 17.0933 217.49 16.8652C217.799 16.6209 218.148 16.4335 218.538 16.3032C218.945 16.1566 219.4 16.0833 219.904 16.0833C220.505 16.0833 221.058 16.1891 221.562 16.4009C222.066 16.5964 222.497 16.8978 222.854 17.3051C223.211 17.7123 223.488 18.2092 223.683 18.7957C223.894 19.3822 224 20.0582 224 20.8239V28.9857H220.392V21.3126C220.392 19.6835 219.684 18.869 218.27 18.869C217.994 18.869 217.717 18.9097 217.441 18.9912C217.181 19.0563 216.945 19.1704 216.734 19.3333C216.523 19.4799 216.352 19.6673 216.222 19.8953C216.108 20.1234 216.051 20.3922 216.051 20.7017V28.9857H212.443Z" fill="white"/>
-    // <path d="M210.453 30.2561C210.453 31.5919 209.892 32.5775 208.771 33.2129C207.649 33.8482 205.886 34.1659 203.48 34.1659C202.277 34.1659 201.285 34.0926 200.505 33.946C199.725 33.8156 199.099 33.6202 198.628 33.3595C198.173 33.0988 197.847 32.7893 197.652 32.4309C197.474 32.0725 197.384 31.6815 197.384 31.258C197.384 30.5412 197.595 29.9954 198.018 29.6207C198.441 29.2623 199.034 28.9854 199.798 28.7899V28.6433C199.262 28.4804 198.831 28.2523 198.505 27.9591C198.197 27.6495 198.042 27.2178 198.042 26.6639C198.042 26.0449 198.246 25.5887 198.652 25.2955C199.075 25.0023 199.627 24.7742 200.31 24.6113V24.4647C199.562 24.1063 198.977 23.6012 198.555 22.9496C198.148 22.298 197.945 21.5079 197.945 20.5793C197.945 19.8462 198.075 19.2027 198.335 18.6488C198.595 18.0786 198.961 17.6062 199.432 17.2315C199.92 16.8568 200.497 16.5717 201.163 16.3762C201.83 16.1807 202.577 16.083 203.406 16.083C204.203 16.083 204.943 16.1726 205.625 16.3518V15.6676C205.625 15.1789 205.796 14.7716 206.137 14.4458C206.479 14.1199 206.95 13.957 207.551 13.957H209.77V16.5962H206.747V16.8161C207.43 17.1745 207.958 17.6714 208.332 18.3067C208.722 18.9258 208.917 19.6833 208.917 20.5793C208.917 21.3124 208.787 21.9559 208.527 22.5098C208.267 23.0636 207.893 23.5361 207.405 23.9271C206.917 24.3018 206.332 24.5869 205.65 24.7823C204.983 24.9778 204.236 25.0756 203.406 25.0756C203.033 25.0756 202.675 25.0593 202.334 25.0267C201.993 24.9778 201.667 24.9127 201.359 24.8312C201.18 24.929 201.025 25.0511 200.895 25.1978C200.781 25.3444 200.725 25.5317 200.725 25.7598C200.725 25.9553 200.773 26.11 200.871 26.2241C200.968 26.3381 201.098 26.4277 201.261 26.4929C201.44 26.5418 201.643 26.5743 201.87 26.5906C202.098 26.6069 202.334 26.6151 202.577 26.6151H205.455C206.349 26.6151 207.113 26.7047 207.747 26.8839C208.381 27.0631 208.901 27.3156 209.307 27.6414C209.713 27.9672 210.006 28.35 210.185 28.7899C210.364 29.2298 210.453 29.7185 210.453 30.2561ZM207.04 30.5249C207.04 30.1991 206.909 29.9384 206.649 29.7429C206.389 29.5637 205.893 29.4741 205.162 29.4741H200.846C200.521 29.7511 200.359 30.0932 200.359 30.5005C200.359 30.8914 200.521 31.2091 200.846 31.4535C201.188 31.7141 201.757 31.8444 202.553 31.8444H204.674C205.503 31.8444 206.105 31.7304 206.479 31.5023C206.852 31.2743 207.04 30.9485 207.04 30.5249ZM203.406 22.7786C204.138 22.7786 204.666 22.5994 204.991 22.241C205.333 21.8826 205.503 21.4264 205.503 20.8725V20.286C205.503 19.7322 205.333 19.276 204.991 18.9176C204.666 18.5592 204.138 18.38 203.406 18.38C202.691 18.38 202.171 18.5592 201.846 18.9176C201.521 19.276 201.359 19.7322 201.359 20.286V20.8725C201.359 21.4264 201.521 21.8826 201.846 22.241C202.171 22.5994 202.691 22.7786 203.406 22.7786Z" fill="white"/>
-    // <path d="M189.714 14.7638C188.901 14.7638 188.332 14.6009 188.007 14.2751C187.698 13.9329 187.543 13.5257 187.543 13.0532V12.3446C187.543 11.8559 187.698 11.4486 188.007 11.1228C188.332 10.7969 188.901 10.634 189.714 10.634C190.526 10.634 191.087 10.7969 191.396 11.1228C191.721 11.4486 191.884 11.8559 191.884 12.3446V13.0532C191.884 13.5257 191.721 13.9329 191.396 14.2751C191.087 14.6009 190.526 14.7638 189.714 14.7638ZM183.911 26.1756H187.909V19.1868H183.911V16.3766H191.518V26.1756H195.224V28.9857H183.911V26.1756Z" fill="white"/>
-    // <path d="M174.167 29.2789C172.769 29.2789 171.55 29.0671 170.509 28.6435C169.486 28.22 168.714 27.6417 168.193 26.9086L170.217 25.027C170.705 25.5646 171.274 25.9881 171.924 26.2977C172.59 26.5909 173.346 26.7375 174.191 26.7375C174.907 26.7375 175.467 26.6316 175.874 26.4198C176.28 26.1918 176.483 25.8497 176.483 25.3935C176.483 25.0351 176.345 24.7907 176.069 24.6604C175.793 24.5138 175.41 24.3998 174.923 24.3183L172.899 24.0006C172.33 23.9192 171.802 23.797 171.314 23.6341C170.826 23.4549 170.404 23.2187 170.046 22.9254C169.689 22.6322 169.405 22.2738 169.193 21.8502C168.982 21.4267 168.876 20.9135 168.876 20.3107C168.876 18.9912 169.38 17.9567 170.388 17.2073C171.396 16.4579 172.81 16.0833 174.63 16.0833C175.866 16.0833 176.914 16.2543 177.776 16.5964C178.653 16.9222 179.352 17.3947 179.872 18.0137L178.068 20.0664C177.694 19.6591 177.215 19.317 176.63 19.0401C176.044 18.7631 175.337 18.6246 174.508 18.6246C173.11 18.6246 172.411 19.0482 172.411 19.8953C172.411 20.27 172.55 20.5307 172.826 20.6773C173.102 20.8076 173.484 20.9135 173.972 20.995L175.971 21.3126C176.54 21.3941 177.068 21.5244 177.556 21.7036C178.044 21.8665 178.466 22.0946 178.824 22.3878C179.198 22.6811 179.49 23.0395 179.702 23.463C179.913 23.8866 180.019 24.3998 180.019 25.0025C180.019 26.3221 179.507 27.3647 178.483 28.1304C177.475 28.8961 176.036 29.2789 174.167 29.2789Z" fill="white"/>
-    // <path d="M160.035 29.2789C157.922 29.2789 156.321 28.6924 155.232 27.5195C154.143 26.3465 153.598 24.75 153.598 22.7299C153.598 21.7036 153.736 20.7832 154.013 19.9686C154.305 19.1378 154.712 18.4373 155.232 17.8671C155.768 17.2806 156.41 16.8408 157.158 16.5475C157.922 16.238 158.775 16.0833 159.718 16.0833C160.661 16.0833 161.506 16.238 162.254 16.5475C163.002 16.8408 163.636 17.2643 164.156 17.8182C164.676 18.3721 165.074 19.0482 165.35 19.8465C165.643 20.6284 165.789 21.5081 165.789 22.4856V23.5608H157.182V23.7807C157.182 24.5953 157.435 25.255 157.938 25.7601C158.442 26.2488 159.182 26.4931 160.157 26.4931C160.905 26.4931 161.547 26.3547 162.083 26.0777C162.62 25.7845 163.083 25.4017 163.473 24.9292L165.424 27.0552C164.936 27.6579 164.253 28.1793 163.375 28.6191C162.498 29.059 161.384 29.2789 160.035 29.2789ZM159.743 18.6735C158.962 18.6735 158.336 18.9179 157.865 19.4066C157.41 19.879 157.182 20.5225 157.182 21.3371V21.5326H162.254V21.3371C162.254 20.5062 162.027 19.8546 161.571 19.3822C161.132 18.9097 160.523 18.6735 159.743 18.6735Z" fill="white"/>
-    // <path d="M139.32 11.929H144.806C147.098 11.929 148.796 12.662 149.902 14.1282C151.007 15.5944 151.56 17.7041 151.56 20.4572C151.56 23.2104 151.007 25.3201 149.902 26.7863C148.796 28.2524 147.098 28.9855 144.806 28.9855H139.32V11.929ZM144.562 26.102C145.651 26.102 146.447 25.7518 146.951 25.0513C147.455 24.3508 147.707 23.3326 147.707 21.9967V18.8933C147.707 17.5738 147.455 16.5637 146.951 15.8632C146.447 15.1627 145.651 14.8124 144.562 14.8124H142.928V26.102H144.562Z" fill="white"/>
-    // <path d="M130.454 29.2789C129.544 29.2789 128.885 29.0834 128.479 28.6924C128.089 28.2852 127.894 27.8046 127.894 27.2507V26.3954C127.894 25.8415 128.089 25.3691 128.479 24.9781C128.885 24.5708 129.544 24.3672 130.454 24.3672C131.364 24.3672 132.014 24.5708 132.404 24.9781C132.811 25.3691 133.014 25.8415 133.014 26.3954V27.2507C133.014 27.8046 132.811 28.2852 132.404 28.6924C132.014 29.0834 131.364 29.2789 130.454 29.2789Z" fill="white"/>
-    // <path d="M116.176 29.2789C114.063 29.2789 112.461 28.6924 111.372 27.5195C110.283 26.3465 109.739 24.75 109.739 22.7299C109.739 21.7036 109.877 20.7832 110.153 19.9686C110.446 19.1378 110.852 18.4373 111.372 17.8671C111.909 17.2806 112.551 16.8408 113.299 16.5475C114.063 16.238 114.916 16.0833 115.859 16.0833C116.802 16.0833 117.647 16.238 118.394 16.5475C119.142 16.8408 119.776 17.2643 120.296 17.8182C120.816 18.3721 121.215 19.0482 121.491 19.8465C121.784 20.6284 121.93 21.5081 121.93 22.4856V23.5608H113.323V23.7807C113.323 24.5953 113.575 25.255 114.079 25.7601C114.583 26.2488 115.323 26.4931 116.298 26.4931C117.045 26.4931 117.687 26.3547 118.224 26.0777C118.76 25.7845 119.223 25.4017 119.613 24.9292L121.564 27.0552C121.077 27.6579 120.394 28.1793 119.516 28.6191C118.638 29.059 117.525 29.2789 116.176 29.2789ZM115.883 18.6735C115.103 18.6735 114.477 18.9179 114.006 19.4066C113.55 19.879 113.323 20.5225 113.323 21.3371V21.5326H118.394V21.3371C118.394 20.5062 118.167 19.8546 117.712 19.3822C117.273 18.9097 116.663 18.6735 115.883 18.6735Z" fill="white"/>
-    // <path d="M102.19 28.9855C100.889 28.9855 99.9222 28.6434 99.2883 27.9592C98.6544 27.275 98.3374 26.4034 98.3374 25.3445V19.1866H94.9238V16.3764H97.1426C97.6791 16.3764 98.0612 16.2705 98.2887 16.0587C98.5162 15.8469 98.63 15.4559 98.63 14.8858V11.929H101.946V16.3764H106.847V19.1866H101.946V26.1754H106.847V28.9855H102.19Z" fill="white"/>
-    // <path d="M91.1545 28.9857C90.4068 28.9857 89.8051 28.7983 89.3501 28.4236C88.895 28.0326 88.6267 27.4787 88.5453 26.7619H88.4235C88.196 27.5928 87.7409 28.22 87.0583 28.6435C86.3916 29.0671 85.5708 29.2789 84.5956 29.2789C83.3764 29.2789 82.3928 28.9531 81.6451 28.3014C80.9138 27.6335 80.5481 26.7049 80.5481 25.5157C80.5481 24.1961 81.0275 23.2187 81.9864 22.5833C82.9457 21.948 84.3517 21.6303 86.2048 21.6303H88.2283V20.995C88.2283 20.2456 88.0494 19.6835 87.6922 19.3089C87.3509 18.9179 86.7656 18.7224 85.9365 18.7224C85.1724 18.7224 84.5549 18.869 84.0834 19.1622C83.6119 19.4555 83.2056 19.8383 82.8642 20.3107L80.8894 18.5513C81.3122 17.8345 81.9705 17.2481 82.8642 16.7919C83.7749 16.3195 84.9369 16.0833 86.3508 16.0833C88.0742 16.0833 89.4151 16.4824 90.374 17.2806C91.3492 18.0626 91.8371 19.2518 91.8371 20.8483V26.371H93.2267V28.9857H91.1545ZM85.9608 26.9086C86.5948 26.9086 87.1313 26.7538 87.57 26.4443C88.0092 26.1347 88.2283 25.6867 88.2283 25.1003V23.5852H86.3022C84.8231 23.5852 84.0834 24.0821 84.0834 25.0758V25.5646C84.0834 26.0044 84.2543 26.3384 84.5956 26.5665C84.9369 26.7945 85.392 26.9086 85.9608 26.9086Z" fill="white"/>
-    // <path d="M66.3181 26.1753H70.1704V13.7128H66.3181V10.9026H73.7792V26.1753H77.6314V28.9855H66.3181V26.1753Z" fill="white"/>
-    // <path d="M57.0869 29.2786C55.6565 29.2786 54.413 29.0423 53.3563 28.5699C52.3001 28.0975 51.4466 27.454 50.7963 26.6394L52.9176 24.2935C53.5352 24.9778 54.2098 25.4828 54.9411 25.8086C55.6888 26.1344 56.445 26.2973 57.209 26.2973C58.0864 26.2973 58.7531 26.1018 59.2082 25.7108C59.6633 25.3199 59.8908 24.7578 59.8908 24.0247C59.8908 23.422 59.712 22.9658 59.3543 22.6563C59.013 22.3468 58.4282 22.1268 57.599 21.9965L55.819 21.7033C54.2913 21.4426 53.1859 20.8806 52.5033 20.0172C51.8202 19.1375 51.4789 18.0704 51.4789 16.816C51.4789 15.1706 52.0154 13.8999 53.0885 13.0039C54.1611 12.0916 55.6645 11.6355 57.599 11.6355C58.9156 11.6355 60.0617 11.8391 61.037 12.2464C62.0122 12.6537 62.8006 13.2076 63.4018 13.9081L61.3296 16.2295C60.8745 15.7245 60.338 15.3335 59.7204 15.0566C59.1024 14.7634 58.4034 14.6167 57.6234 14.6167C55.9815 14.6167 55.1607 15.2928 55.1607 16.645C55.1607 17.2314 55.3396 17.6713 55.6973 17.9645C56.0709 18.2578 56.6725 18.4777 57.5017 18.6243L59.2813 18.942C60.6629 19.1863 61.7276 19.7076 62.4753 20.5059C63.2229 21.3042 63.597 22.3794 63.597 23.7315C63.597 24.5298 63.4589 25.271 63.1827 25.9552C62.906 26.6231 62.4916 27.2096 61.9392 27.7146C61.3862 28.2034 60.7036 28.5862 59.8908 28.8631C59.0944 29.1401 58.1599 29.2786 57.0869 29.2786Z" fill="white"/>
-    // <defs>
-    // <linearGradient id="paint0_linear_278_1424" x1="29.2727" y1="18.3171" x2="29.2727" y2="40.2281" gradientUnits="userSpaceOnUse">
-    // <stop stop-color="#D54BF6"/>
-    // <stop offset="1" stop-color="#4B10D1"/>
-    // </linearGradient>
-    // </defs>
-    // </svg>
-    // `;
-
-    //     const tokensLogoIcon = figma.createNodeFromSvg(tokensLogoSvg);
-    //     tokensLogoIcon.name = "Logo Icon";
-    //     tokensLogoIcon.resize(224, 38);
-    //     tokensLeftBrand.appendChild(tokensLogoIcon);
-
-    //     // const tokensLogoText = figma.createText();
-    //     // tokensLogoText.fontName = { family: "Roboto", style: "Bold" };
-    //     // tokensLogoText.fontSize = 28;
-    //     // tokensLogoText.characters = "Slate.Design";
-    //     // tokensLogoText.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    //     // tokensLeftBrand.appendChild(tokensLogoText);
-
-    //     tokensTopBar.appendChild(tokensLeftBrand);
-
-    //     // Right side - CODETHEOREM Logo
-    //     const tokensRightBrand = figma.createFrame();
-    //     tokensRightBrand.layoutMode = 'HORIZONTAL';
-    //     tokensRightBrand.counterAxisAlignItems = 'CENTER';
-    //     tokensRightBrand.itemSpacing = 12;
-    //     tokensRightBrand.fills = [];
-
-    //     // "Created by" text
-    //     const tokensCreatedByText = figma.createText();
-    //     tokensCreatedByText.fontName = { family: "Roboto", style: "Regular" };
-    //     tokensCreatedByText.fontSize = 13;
-    //     tokensCreatedByText.characters = "Created by";
-    //     tokensCreatedByText.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.75, b: 0.85 }, opacity: 0.8 }];
-    //     tokensRightBrand.appendChild(tokensCreatedByText);
-
-    //     // CODETHEOREM Logo SVG
-    //     const tokensCodetheoremSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    // <g clip-path="url(#clip0_278_1439)">
-    // <path d="M48.0094 22.9611C46.7649 22.2683 45.7825 21.3116 45.062 20.124C44.3416 18.9034 43.9813 17.5508 43.9813 16.0333C43.9813 14.5158 44.3416 13.1632 45.062 11.9426C45.7825 10.7219 46.7649 9.79823 48.0094 9.10544C49.2538 8.41266 50.662 8.08276 52.234 8.08276C53.4784 8.08276 54.6573 8.31369 55.6725 8.74256C56.7205 9.17142 57.6047 9.83122 58.3252 10.656L56.4913 12.4044C55.3778 11.1838 54.0024 10.59 52.3649 10.59C51.317 10.59 50.3673 10.8209 49.5158 11.2828C48.6644 11.7446 48.0421 12.4044 47.5509 13.2292C47.0924 14.0539 46.8632 14.9776 46.8632 16.0333C46.8632 17.0889 47.0924 18.0127 47.5509 18.8374C48.0094 19.6621 48.6644 20.3219 49.5158 20.7838C50.3673 21.2456 51.2842 21.4766 52.3649 21.4766C54.0024 21.4766 55.3778 20.8498 56.4913 19.6292L58.3252 21.4106C57.6047 22.2683 56.7205 22.8951 55.6725 23.324C54.6246 23.7529 53.4784 23.9838 52.2012 23.9838C50.662 23.9838 49.2538 23.6209 48.0094 22.9611Z" fill="white"/>
-    // <path d="M63.6959 22.9609C62.4515 22.2681 61.4363 21.3114 60.7158 20.0908C59.9954 18.8702 59.6351 17.5176 59.6351 16.0001C59.6351 14.4826 59.9954 13.13 60.7158 11.9094C61.4363 10.6888 62.4188 9.73207 63.6959 9.03928C64.9404 8.3465 66.3813 8.0166 67.9533 8.0166C69.5252 8.0166 70.9334 8.3465 72.2106 9.03928C73.455 9.73207 74.4702 10.6888 75.1907 11.8764C75.9112 13.097 76.2714 14.4496 76.2714 15.9671C76.2714 17.4846 75.9112 18.8372 75.1907 20.0578C74.4702 21.2785 73.4878 22.2022 72.2106 22.895C70.9661 23.5877 69.5252 23.9176 67.9533 23.9176C66.3813 23.9836 64.9404 23.6207 63.6959 22.9609ZM70.7041 20.7506C71.5228 20.2888 72.1778 19.629 72.6363 18.8042C73.0948 17.9795 73.324 17.0228 73.324 16.0001C73.324 14.9774 73.0948 14.0207 72.6363 13.196C72.1778 12.3712 71.5228 11.7114 70.7041 11.2496C69.8854 10.7877 68.9685 10.5568 67.9205 10.5568C66.9053 10.5568 65.9556 10.7877 65.1369 11.2496C64.3182 11.7114 63.6632 12.3712 63.2047 13.196C62.7462 14.0207 62.517 14.9774 62.517 16.0001C62.517 17.0228 62.7462 17.9795 63.2047 18.8042C63.6632 19.629 64.3182 20.2888 65.1369 20.7506C65.9556 21.2125 66.8726 21.4434 67.9205 21.4434C68.9685 21.4434 69.8854 21.2125 70.7041 20.7506Z" fill="white"/>
-    // <path d="M79.2515 8.24756H85.9649C87.6023 8.24756 89.076 8.57746 90.3532 9.20426C91.6304 9.83106 92.6129 10.7548 93.3333 11.9424C94.0211 13.13 94.3813 14.4826 94.3813 16.0001C94.3813 17.5507 94.0211 18.9032 93.3333 20.0579C92.6456 21.2455 91.6304 22.1362 90.3532 22.796C89.076 23.4228 87.6351 23.7527 85.9977 23.7527H79.2515V8.24756ZM85.8339 21.3115C86.9474 21.3115 87.9626 21.0805 88.814 20.6517C89.6655 20.2228 90.3205 19.596 90.779 18.8043C91.2374 18.0125 91.4667 17.0558 91.4667 16.0001C91.4667 14.9445 91.2374 13.9878 90.779 13.196C90.3205 12.4043 89.6655 11.7775 88.814 11.3486C87.9626 10.9197 86.9474 10.6888 85.8339 10.6888H82.1006V21.3115H85.8339Z" fill="white"/>
-    // <path d="M108.954 21.3445V23.7527H97.4269V8.24756H108.66V10.6558H100.276V14.6805H107.71V17.0558H100.276V21.3445H108.954Z" fill="white"/>
-    // <path d="M115.275 10.6888H110.166V8.24756H123.233V10.6888H118.124V23.7527H115.275V10.6888Z" fill="white"/>
-    // <path d="M139.05 8.24756V23.7527H136.201V17.1218H128.243V23.7527H125.394V8.24756H128.243V14.6476H136.201V8.24756H139.05Z" fill="white"/>
-    // <path d="M154.704 21.3445V23.7527H143.177V8.24756H154.41V10.6558H146.026V14.6805H153.46V17.0558H146.026V21.3445H154.704Z" fill="white"/>
-    // <path d="M160.795 22.9609C159.551 22.2681 158.536 21.3114 157.815 20.0908C157.095 18.8702 156.735 17.5176 156.735 16.0001C156.735 14.4826 157.095 13.13 157.815 11.9094C158.536 10.6888 159.518 9.73207 160.795 9.03928C162.073 8.3465 163.481 8.0166 165.053 8.0166C166.625 8.0166 168.033 8.3465 169.31 9.03928C170.554 9.73207 171.57 10.6888 172.29 11.8764C173.011 13.097 173.371 14.4496 173.371 15.9671C173.371 17.4846 173.011 18.8372 172.29 20.0578C171.57 21.2785 170.587 22.2022 169.31 22.895C168.066 23.5877 166.625 23.9176 165.053 23.9176C163.448 23.9836 162.04 23.6207 160.795 22.9609ZM167.804 20.7506C168.622 20.2888 169.277 19.629 169.736 18.8042C170.194 17.9795 170.423 17.0228 170.423 16.0001C170.423 14.9774 170.194 14.0207 169.736 13.196C169.277 12.3712 168.622 11.7114 167.804 11.2496C166.985 10.7877 166.068 10.5568 165.02 10.5568C164.005 10.5568 163.055 10.7877 162.236 11.2496C161.418 11.7114 160.763 12.3712 160.304 13.196C159.846 14.0207 159.616 14.9774 159.616 16.0001C159.616 17.0228 159.846 17.9795 160.304 18.8042C160.763 19.629 161.418 20.2888 162.236 20.7506C163.055 21.2125 163.972 21.4434 165.02 21.4434C166.068 21.4434 166.985 21.2125 167.804 20.7506Z" fill="white"/>
-    // <path d="M186.405 23.7527L183.261 19.2001C183.13 19.2001 182.933 19.2331 182.671 19.2331H179.2V23.7527H176.351V8.24756H182.671C184.014 8.24756 185.16 8.47849 186.143 8.90735C187.125 9.33622 187.878 9.99601 188.402 10.8208C188.926 11.6455 189.188 12.6352 189.188 13.7568C189.188 14.9115 188.894 15.9342 188.337 16.7589C187.78 17.6166 186.961 18.2434 185.913 18.6393L189.483 23.7527H186.405ZM185.389 11.4805C184.734 10.9527 183.785 10.6888 182.54 10.6888H179.2V16.8579H182.54C183.785 16.8579 184.734 16.594 185.389 16.0331C186.044 15.5053 186.372 14.7465 186.372 13.7568C186.339 12.7671 186.044 12.0084 185.389 11.4805Z" fill="white"/>
-    // <path d="M203.958 21.3445V23.7527H192.43V8.24756H203.663V10.6558H195.279V14.6805H202.713V17.0558H195.279V21.3445H203.958Z" fill="white"/>
-    // <path d="M221.282 23.7527L221.249 13.4929L216.206 22.0043H214.929L209.885 13.6249V23.7527H207.167V8.24756H209.525L215.649 18.5074L221.609 8.24756H223.967L224 23.7527H221.282Z" fill="white"/>
-    // <path d="M34.1895 24.7424H1.83395C0.327519 24.7424 -0.523943 23.0269 0.393016 21.8063L16.0141 1.02282C17.062 -0.362749 19.1252 -0.362749 20.1404 1.02282L35.6632 21.7733C36.5474 22.994 35.6959 24.7424 34.1895 24.7424Z" fill="url(#paint0_linear_278_1439)"/>
-    // <path d="M4.15898 28.7672L16.7672 12.0415C17.5859 10.9528 19.1906 10.9858 19.9765 12.0415L32.4865 28.7672C33.4689 30.1198 32.552 32.0002 30.8818 32.0002H5.76366C4.09348 32.0002 3.14378 30.0868 4.15898 28.7672Z" fill="url(#paint1_linear_278_1439)"/>
-    // <path d="M29.4408 24.7426L19.9765 12.0416C19.1578 10.9529 17.5859 10.9529 16.7672 12.0416L7.20459 24.7426H29.4408Z" fill="#6699FF"/>
-    // </g>
-    // <defs>
-    // <linearGradient id="paint0_linear_278_1439" x1="0.0141602" y1="12.363" x2="36.0214" y2="12.363" gradientUnits="userSpaceOnUse">
-    // <stop stop-color="#3F71FF"/>
-    // <stop offset="1" stop-color="#6A73FF"/>
-    // </linearGradient>
-    // <linearGradient id="paint1_linear_278_1439" x1="3.74097" y1="21.6188" x2="32.8902" y2="21.6188" gradientUnits="userSpaceOnUse">
-    // <stop stop-color="#3F71FF"/>
-    // <stop offset="1" stop-color="#6A73FF"/>
-    // </linearGradient>
-    // <clipPath id="clip0_278_1439">
-    // <rect width="224" height="32" fill="white"/>
-    // </clipPath>
-    // </defs>
-    // </svg>
-    // `;
-
-    //     const tokensCodetheoremIcon = figma.createNodeFromSvg(tokensCodetheoremSvg);
-    //     tokensCodetheoremIcon.name = "CODETHEOREM Icon";
-    //     tokensCodetheoremIcon.resize(224, 38);
-    //     tokensRightBrand.appendChild(tokensCodetheoremIcon);
-
-    //     // // CODETHEOREM Text
-    //     // const tokensCodetheoremText = figma.createText();
-    //     // tokensCodetheoremText.fontName = { family: "Roboto", style: "Bold" };
-    //     // tokensCodetheoremText.fontSize = 18;
-    //     // tokensCodetheoremText.characters = "CODETHEOREM";
-    //     // tokensCodetheoremText.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    //     // tokensCodetheoremText.letterSpacing = { value: 1, unit: 'PIXELS' };
-    //     // tokensRightBrand.appendChild(tokensCodetheoremText);
-
-    //     tokensTopBar.appendChild(tokensRightBrand);
-
-    //     tokensHeader.appendChild(tokensTopBar);
-
-    // 2. HERO TITLE SECTION
-    const tokensTitleGroup = figma.createFrame();
-    tokensTitleGroup.layoutMode = 'VERTICAL';
-    tokensTitleGroup.primaryAxisSizingMode = 'AUTO';
-    tokensTitleGroup.counterAxisSizingMode = 'AUTO';
-    tokensTitleGroup.counterAxisAlignItems = 'CENTER';
-    tokensTitleGroup.itemSpacing = 24;
-    tokensTitleGroup.fills = [];
-
-    const tokensTitle = figma.createText();
-    tokensTitle.fontName = { family: "Poppins", style: "Bold" };
-    tokensTitle.fontSize = 64;
-    tokensTitle.letterSpacing = { value: -1.5, unit: 'PIXELS' };
-    tokensTitle.characters = "Design Tokens";
-    tokensTitle.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    tokensTitle.textAlignHorizontal = 'CENTER';
-    tokensTitleGroup.appendChild(tokensTitle);
-
-    const tokensDesc = figma.createText();
-    tokensDesc.fontName = { family: "Poppins", style: "Regular" };
-    tokensDesc.fontSize = 18;
-    tokensDesc.lineHeight = { value: 160, unit: 'PERCENT' };
-    tokensDesc.characters = "Spacing, padding, radius, stroke, and shadow values for consistent design.";
-    tokensDesc.textAlignHorizontal = 'CENTER';
-    tokensDesc.fills = [{ type: 'SOLID', color: { r: 0.75, g: 0.8, b: 0.9 } }];
-    tokensTitleGroup.appendChild(tokensDesc);
-
-    tokensHeader.appendChild(tokensTitleGroup);
-
-    // 3. STATS ROW (Glassmorphism)
-    const tokensStatsRow = figma.createFrame();
-    tokensStatsRow.layoutMode = 'HORIZONTAL';
-    tokensStatsRow.primaryAxisSizingMode = 'AUTO';
-    tokensStatsRow.counterAxisSizingMode = 'AUTO';
-    tokensStatsRow.primaryAxisAlignItems = 'CENTER';
-    tokensStatsRow.itemSpacing = 16;
-    tokensStatsRow.fills = [];
-
-    // Calculate token counts
-    const spacingTokens = (msg.spacing && Object.keys(msg.spacing).length) || 0;
-    const paddingTokens = (msg.padding && Object.keys(msg.padding).length) || 0;
-    const radiusTokens = (msg.radius && Object.keys(msg.radius).length) || 0;
-    const strokeTokens = (msg.strokes && Object.keys(msg.strokes).length) || 0;
-    const shadowTokens = (msg.shadows && Object.keys(msg.shadows).length) || 0;
-    const totalTokens = spacingTokens + paddingTokens + radiusTokens + strokeTokens + shadowTokens;
-
-    // Create stats badges
-    function createTokensDarkStat(label, value) {
-        const badge = figma.createFrame();
-        badge.layoutMode = 'HORIZONTAL';
-        badge.primaryAxisSizingMode = 'AUTO';
-        badge.counterAxisSizingMode = 'AUTO';
-        badge.paddingLeft = 20;
-        badge.paddingRight = 20;
-        badge.paddingTop = 10;
-        badge.paddingBottom = 10;
-        badge.cornerRadius = 100;
-        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
-        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
-        badge.strokeWeight = 1;
-        badge.itemSpacing = 10;
-        badge.counterAxisAlignItems = 'CENTER';
-
-        const tLabel = figma.createText();
-        tLabel.fontName = { family: "Poppins", style: "Medium" };
-        tLabel.fontSize = 13;
-        tLabel.characters = label;
-        tLabel.fills = [{ type: 'SOLID', color: { r: 0.75, g: 0.8, b: 0.9 } }];
-        badge.appendChild(tLabel);
-
-        const tValue = figma.createText();
-        tValue.fontName = { family: "Poppins", style: "Bold" };
-        tValue.fontSize = 13;
-        tValue.characters = value;
-        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        badge.appendChild(tValue);
-
-        return badge;
-    }
-
-    tokensStatsRow.appendChild(createTokensDarkStat("Total Tokens", String(totalTokens)));
-    tokensStatsRow.appendChild(createTokensDarkStat("Last Updated", new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })));
-
-    tokensHeader.appendChild(tokensStatsRow);
-    tokensFrame.appendChild(tokensHeader);
-
-    // Tokens Content
-    const tokensContent = figma.createFrame();
-    tokensContent.name = "Tokens Content";
-    tokensContent.layoutMode = 'VERTICAL';
-    tokensContent.primaryAxisSizingMode = 'AUTO';
-    tokensContent.counterAxisSizingMode = 'AUTO';
-    tokensContent.itemSpacing = 48;
-    tokensContent.paddingLeft = 80;
-    tokensContent.paddingRight = 80;
-    tokensContent.paddingTop = 80;
-    tokensContent.paddingBottom = 80;
-    tokensContent.fills = [];
-
-    // Add token sections
-    if (msg.spacing && Object.keys(msg.spacing).length > 0) {
-        createDetailedSystemTokenRow("Spacing Scale", "Consistent spacing values for layout and component sizing.", msg.spacing, "spacing", tokensContent);
-    }
-    if (msg.padding && Object.keys(msg.padding).length > 0) {
-        createDetailedSystemTokenRow("Padding Scale", "Internal spacing for containers and components.", msg.padding, "padding", tokensContent);
-    }
-    if (msg.radius && Object.keys(msg.radius).length > 0) {
-        createDetailedSystemTokenRow("Corner Radius", "Rounding values for creating organic shapes.", msg.radius, "radius", tokensContent);
-    }
-    if (msg.strokes && Object.keys(msg.strokes).length > 0) {
-        createDetailedSystemTokenRow("Stroke Widths", "Border thickness values for definition and hierarchy.", msg.strokes, "stroke", tokensContent);
-    }
-    if (msg.shadows && Object.keys(msg.shadows).length > 0) {
-        createDetailedShadowRow("Shadow Effects", "Depth and elevation values using drop shadows.", msg.shadows, tokensContent);
-    }
-
-    tokensFrame.appendChild(tokensContent);
-    figma.currentPage.appendChild(tokensFrame);
-
-    // Position Tokens frame side by side with Design System Documentation
-    tokensFrame.x = frame.x + frame.width + 80;
-    tokensFrame.y = frame.y;
-
-    figma.viewport.scrollAndZoomIntoView([frame, tokensFrame]);
-}
-
-function hexToRgbValues(hex) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return { r: 0, g: 0, b: 0 };
-    return {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-    };
-}
-
-function rgbToHsl(r, g, b) {
-    r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-
-    if (max === min) {
-        h = s = 0;
-    } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-            case g: h = ((b - r) / d + 2) / 6; break;
-            case b: h = ((r - g) / d + 4) / 6; break;
-        }
-    }
-
-    return {
-        h: Math.round(h * 360),
-        s: Math.round(s * 100),
-        l: Math.round(l * 100)
-    };
-}
-
-function createDetailedColorRow(title, description, data, parent) {
-    const row = figma.createFrame();
-    row.name = `Section - ${title}`;
-    row.layoutMode = 'VERTICAL';
-    row.primaryAxisSizingMode = 'AUTO';
-    row.counterAxisSizingMode = 'AUTO';
-    row.itemSpacing = 24;
-    row.fills = [];
-
-    // Section Header
-    const header = figma.createFrame();
-    header.layoutMode = 'VERTICAL';
-    header.primaryAxisSizingMode = 'AUTO';
-    header.counterAxisSizingMode = 'AUTO';
-    header.itemSpacing = 8;
-    header.fills = [];
-
-    const h3 = figma.createText();
-    h3.fontName = { family: "Poppins", style: "Bold" };
-    h3.fontSize = 20;
-    h3.characters = title;
-    h3.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
-    header.appendChild(h3);
-
-    const p = figma.createText();
-    p.fontName = { family: "Poppins", style: "Regular" };
-    p.fontSize = 14;
-    p.characters = description;
-    p.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.47, b: 0.53 } }];
-    header.appendChild(p);
-
-    row.appendChild(header);
-
-    // Cards Grid
-    const grid = figma.createFrame();
-    grid.layoutMode = 'HORIZONTAL';
-    grid.layoutWrap = 'WRAP';
-    grid.primaryAxisSizingMode = 'AUTO';
-    grid.counterAxisSizingMode = 'AUTO';
-    grid.itemSpacing = 4;
-    grid.counterAxisSpacing = 16;
-    grid.fills = [];
-
-    const entries = Object.entries(data).sort((a, b) => {
-        const numA = parseInt(a[0].match(/\d+/) || 0);
-        const numB = parseInt(b[0].match(/\d+/) || 0);
-        return numA - numB;
-    });
-
-    for (const [key, hex] of entries) {
-        // Map common naming patterns to numeric shades
-        let shade;
-        if (key.match(/\d+/)) {
-            shade = key.match(/\d+/)[0];
-        } else if (key.includes('light')) {
-            shade = '100';
-        } else if (key.includes('default') || key.includes('main')) {
-            shade = '200';
-        } else if (key.includes('dark')) {
-            shade = '300';
-        } else {
-            shade = '200'; // default
-        }
-
-        const colorName = title.split(' ')[0];
-
-        const card = figma.createFrame();
-        card.name = `${colorName}-${shade}`;
-        card.layoutMode = 'VERTICAL';
-        card.primaryAxisSizingMode = 'AUTO';
-        card.counterAxisSizingMode = 'AUTO';
-        card.cornerRadius = 4;
-        card.itemSpacing = 0;
-        card.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        card.effects = [{
-            type: 'DROP_SHADOW',
-            color: { r: 0, g: 0, b: 0, a: 0.04 },
-            offset: { x: 0, y: 1 },
-            radius: 3,
-            visible: true,
-            blendMode: 'NORMAL'
-        }];
-        card.strokes = [{ type: 'SOLID', color: { r: 0.93, g: 0.94, b: 0.95 } }];
-        card.strokeWeight = 1;
-
-        // Color Swatch Area
-        const swatch = figma.createRectangle();
-        swatch.name = "Color Swatch";
-        swatch.resize(240, 120);
-        const rgb = hexToRgb(hex);
-        swatch.fills = [{ type: 'SOLID', color: rgb }];
-        swatch.topLeftRadius = 4;
-        swatch.topRightRadius = 4;
-        swatch.bottomLeftRadius = 0;
-        swatch.bottomRightRadius = 0;
-        card.appendChild(swatch);
-
-        // Info Area
-        const info = figma.createFrame();
-        info.name = "Info";
-        info.layoutMode = 'HORIZONTAL';
-        info.layoutAlign = 'STRETCH';
-        info.primaryAxisSizingMode = 'AUTO';
-        info.counterAxisSizingMode = 'AUTO';
-        info.primaryAxisAlignItems = 'SPACE_BETWEEN';
-        info.resize(218, 59);
-        info.paddingLeft = 12;
-        info.paddingRight = 12;
-        info.paddingTop = 12;
-        info.paddingBottom = 12;
-        info.fills = [];
-
-        // Left side - Name and Hex
-        const leftInfo = figma.createFrame();
-        leftInfo.name = "Left Info";
-        leftInfo.layoutMode = 'VERTICAL';
-        leftInfo.primaryAxisSizingMode = 'AUTO';
-        leftInfo.counterAxisSizingMode = 'AUTO';
-        leftInfo.itemSpacing = 4;
-        leftInfo.fills = [];
-
-        const tShade = figma.createText();
-        tShade.fontName = { family: "Poppins", style: "Medium" };
-        tShade.fontSize = 14;
-        tShade.characters = `${colorName}-${shade}`;
-        tShade.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
-        leftInfo.appendChild(tShade);
-
-        const tHex = figma.createText();
-        tHex.fontName = { family: "Poppins", style: "Regular" };
-        tHex.fontSize = 13;
-        tHex.characters = hex.toUpperCase();
-        tHex.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.57, b: 0.63 } }];
-        leftInfo.appendChild(tHex);
-
-        info.appendChild(leftInfo);
-
-        // Right side - RGB and HSL
-        const rightInfo = figma.createFrame();
-        rightInfo.name = "Right Info";
-        rightInfo.layoutMode = 'VERTICAL';
-        rightInfo.primaryAxisSizingMode = 'AUTO';
-        rightInfo.counterAxisSizingMode = 'AUTO';
-        rightInfo.counterAxisAlignItems = 'MAX';
-        rightInfo.itemSpacing = 4;
-        rightInfo.fills = [];
-
-        const rgbValues = hexToRgbValues(hex);
-        const hslValues = rgbToHsl(rgbValues.r, rgbValues.g, rgbValues.b);
-
-        const tRgb = figma.createText();
-        tRgb.fontName = { family: "Poppins", style: "Regular" };
-        tRgb.fontSize = 13;
-        tRgb.characters = `RGB(${rgbValues.r}, ${rgbValues.g}, ${rgbValues.b})`;
-        tRgb.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.57, b: 0.63 } }];
-        tRgb.textAlignHorizontal = 'RIGHT';
-        rightInfo.appendChild(tRgb);
-
-        const tHsl = figma.createText();
-        tHsl.fontName = { family: "Poppins", style: "Regular" };
-        tHsl.fontSize = 13;
-        tHsl.characters = `HSL(${hslValues.h}, ${hslValues.s}%, ${hslValues.l}%)`;
-        tHsl.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.57, b: 0.63 } }];
-        tHsl.textAlignHorizontal = 'RIGHT';
-        rightInfo.appendChild(tHsl);
-
-        info.appendChild(rightInfo);
-
-        card.appendChild(info);
-        grid.appendChild(card);
-    }
-    row.appendChild(grid);
-    parent.appendChild(row);
-}
-
-function createDetailedSystemTokenRow(title, description, data, type, parent) {
-    const row = figma.createFrame();
-    row.name = `Section - ${title}`;
-    row.resize(2272, 100);
-    row.layoutMode = 'VERTICAL';
-    row.primaryAxisSizingMode = 'AUTO';
-    row.itemSpacing = 24;
-    row.fills = [];
-
-    // Header
-    const header = figma.createFrame();
-    header.layoutMode = 'VERTICAL';
-    header.primaryAxisSizingMode = 'AUTO';
-    header.counterAxisSizingMode = 'AUTO';
-    header.itemSpacing = 8;
-    header.fills = [];
-
-    const h3 = figma.createText();
-    h3.fontName = { family: "Poppins", style: "Bold" };
-    h3.fontSize = 20;
-    h3.characters = title;
-    h3.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
-    header.appendChild(h3);
-
-    const p = figma.createText();
-    p.fontName = { family: "Poppins", style: "Regular" };
-    p.fontSize = 14;
-    p.characters = description;
-    p.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.47, b: 0.53 } }];
-    header.appendChild(p);
-
-    row.appendChild(header);
-
-    const grid = figma.createFrame();
-    grid.layoutMode = 'HORIZONTAL';
-    grid.layoutWrap = 'WRAP';
-    grid.primaryAxisSizingMode = 'AUTO';
-    grid.counterAxisSizingMode = 'AUTO';
-    grid.itemSpacing = 16;
-    grid.counterAxisSpacing = 16;
-    grid.fills = [];
-
-    for (const [key, val] of Object.entries(data)) {
-        // Safe value retrieval/parsing
-        let rawVal = val;
-        if (typeof val === 'object' && val !== null) {
-            rawVal = val.desktop !== undefined ? val.desktop : (val.value !== undefined ? val.value : 0);
-        }
-        const displayVal = rawVal !== undefined ? rawVal : 0;
-        const floatVal = parseFloat(displayVal) || 0;
-
-        const card = figma.createFrame();
-        card.name = key;
-        card.layoutMode = 'VERTICAL';
-        card.primaryAxisSizingMode = 'AUTO';
-        card.counterAxisSizingMode = 'AUTO';
-        card.cornerRadius = 8;
-        card.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        card.strokes = [{ type: 'SOLID', color: { r: 0.9, g: 0.91, b: 0.93 } }];
-        card.strokeWeight = 1;
-        card.paddingLeft = 16;
-        card.paddingRight = 16;
-        card.paddingTop = 16;
-        card.paddingBottom = 16;
-        card.itemSpacing = 12;
-
-        // Visual Preview Area
-        const preview = figma.createFrame();
-        preview.layoutMode = 'HORIZONTAL';
-        preview.layoutAlign = 'STRETCH';
-        preview.resize(preview.width, 60);
-        preview.primaryAxisSizingMode = 'FIXED';
-        preview.primaryAxisAlignItems = 'CENTER';
-        preview.counterAxisAlignItems = 'CENTER';
-        preview.fills = [];
-
-        // Visualization Logic
-        if (type === 'spacing') {
-            const spacer = figma.createRectangle();
-            const width = Math.max(2, Math.min(100, floatVal));
-            spacer.resize(width, 20);
-            spacer.cornerRadius = 2;
-            spacer.fills = [{ type: 'SOLID', color: { r: 0.04, g: 0.36, b: 0.96 } }];
-            preview.appendChild(spacer);
-        } else if (type === 'padding') {
-            const container = figma.createFrame();
-            container.resize(56, 56);
-            container.cornerRadius = 4;
-            container.fills = [];
-            container.strokes = [{ type: 'SOLID', color: { r: 0.8, g: 0.82, b: 0.88 } }];
-
-            const content = figma.createRectangle();
-            const vizPadding = Math.min(20, floatVal);
-            const contentSize = 56 - (vizPadding * 2);
-            content.resize(Math.max(4, contentSize), Math.max(4, contentSize));
-            content.cornerRadius = 2;
-            content.fills = [{ type: 'SOLID', color: { r: 0.04, g: 0.36, b: 0.96 }, opacity: 0.2 }];
-
-            content.x = (56 - content.width) / 2;
-            content.y = (56 - content.height) / 2;
-            container.appendChild(content);
-            preview.appendChild(container);
-        } else if (type === 'radius') {
-            const shape = figma.createRectangle();
-            shape.resize(48, 48);
-            shape.cornerRadius = Math.min(24, floatVal);
-            shape.fills = [];
-            shape.strokes = [{ type: 'SOLID', color: { r: 0.04, g: 0.36, b: 0.96 } }];
-            shape.strokeWeight = 2;
-            preview.appendChild(shape);
-        } else if (type === 'stroke') {
-            const line = figma.createRectangle();
-            line.resize(64, Math.max(1, floatVal));
-            line.fills = [{ type: 'SOLID', color: { r: 0.04, g: 0.36, b: 0.96 } }];
-            preview.appendChild(line);
-        }
-
-        card.appendChild(preview);
-
-        // Info
-        const info = figma.createFrame();
-        info.layoutMode = 'VERTICAL';
-        info.primaryAxisSizingMode = 'AUTO';
-        info.counterAxisSizingMode = 'AUTO';
-        info.itemSpacing = 2;
-        info.fills = [];
-
-        const t1 = figma.createText();
-        t1.fontName = { family: "Poppins", style: "Medium" };
-        t1.fontSize = 14;
-        t1.characters = key;
-        t1.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.12, b: 0.16 } }];
-        info.appendChild(t1);
-
-        const t2 = figma.createText();
-        t2.fontName = { family: "Poppins", style: "Regular" };
-        t2.fontSize = 12;
-        t2.characters = `${floatVal}px`;
-        t2.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.52, b: 0.58 } }];
-        info.appendChild(t2);
-
-        card.appendChild(info);
-        grid.appendChild(card);
-    }
-    row.appendChild(grid);
-    parent.appendChild(row);
-}
-
-function createDetailedShadowRow(title, description, data, parent) {
-    const row = figma.createFrame();
-    row.name = `Section - ${title}`;
-    row.resize(2272, 100);
-    row.layoutMode = 'VERTICAL';
-    row.primaryAxisSizingMode = 'AUTO';
-    row.itemSpacing = 24;
-    row.fills = [];
-
-    // Header
-    const header = figma.createFrame();
-    header.layoutMode = 'VERTICAL';
-    header.primaryAxisSizingMode = 'AUTO';
-    header.counterAxisSizingMode = 'AUTO';
-    header.itemSpacing = 8;
-    header.fills = [];
-
-    const h3 = figma.createText();
-    h3.fontName = { family: "Poppins", style: "Bold" };
-    h3.fontSize = 20;
-    h3.characters = title;
-    h3.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
-    header.appendChild(h3);
-
-    const p = figma.createText();
-    p.fontName = { family: "Poppins", style: "Regular" };
-    p.fontSize = 14;
-    p.characters = description;
-    p.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.47, b: 0.53 } }];
-    header.appendChild(p);
-
-    row.appendChild(header);
-
-    const grid = figma.createFrame();
-    grid.layoutMode = 'HORIZONTAL';
-    grid.layoutWrap = 'WRAP';
-    grid.primaryAxisSizingMode = 'AUTO';
-    grid.counterAxisSizingMode = 'AUTO';
-    grid.itemSpacing = 16;
-    grid.counterAxisSpacing = 16;
-    grid.fills = [];
-
-    for (const [key, val] of Object.entries(data)) {
-        if (val === 'none') continue;
-
-        const card = figma.createFrame();
-        card.name = key;
-        card.layoutMode = 'VERTICAL';
-        card.primaryAxisSizingMode = 'AUTO';
-        card.counterAxisSizingMode = 'AUTO';
-        card.cornerRadius = 12;
-        card.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        card.strokes = [{ type: 'SOLID', color: { r: 0.93, g: 0.94, b: 0.95 } }];
-        card.strokeWeight = 1;
-        card.paddingLeft = 16;
-        card.paddingRight = 16;
-        card.paddingTop = 16;
-        card.paddingBottom = 16;
-        card.itemSpacing = 12;
-
-        // Visual Preview
-        const preview = figma.createFrame();
-        preview.layoutMode = 'HORIZONTAL';
-        preview.primaryAxisSizingMode = 'FIXED';
-        preview.counterAxisSizingMode = 'FIXED';
-        preview.resize(148, 80);
-        preview.primaryAxisAlignItems = 'CENTER';
-        preview.counterAxisAlignItems = 'CENTER';
-        preview.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-        preview.cornerRadius = 8;
-
-        const shape = figma.createRectangle();
-        shape.resize(48, 48);
-        shape.cornerRadius = 8;
-        shape.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-
-        // Parse shadow
-        const shadowMatch = val.match(/(-?\d+)(?:px)?\s+(-?\d+)(?:px)?\s+(-?\d+)(?:px)?\s+rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
-        if (shadowMatch) {
-            const [, x, y, blur, r, g, b, a] = shadowMatch;
-            shape.effects = [{
-                type: 'DROP_SHADOW',
-                color: { r: parseInt(r) / 255, g: parseInt(g) / 255, b: parseInt(b) / 255, a: parseFloat(a) },
-                offset: { x: parseInt(x), y: parseInt(y) },
-                radius: parseInt(blur),
-                visible: true,
-                blendMode: 'NORMAL'
-            }];
-        } else {
-            shape.strokes = [{ type: 'SOLID', color: { r: 0.9, g: 0.9, b: 0.9 } }];
-        }
-
-        preview.appendChild(shape);
-        card.appendChild(preview);
-
-        // Info
-        const info = figma.createFrame();
-        info.layoutMode = 'VERTICAL';
-        info.primaryAxisSizingMode = 'AUTO';
-        info.counterAxisSizingMode = 'AUTO';
-        info.itemSpacing = 4;
-        info.fills = [];
-
-        const t1 = figma.createText();
-        t1.fontName = { family: "Poppins", style: "Medium" };
-        t1.fontSize = 14;
-        t1.characters = key;
-        t1.fills = [{ type: 'SOLID', color: { r: 0.03, g: 0.06, b: 0.23 } }];
-        info.appendChild(t1);
-
-        const t2 = figma.createText();
-        t2.fontName = { family: "Poppins", style: "Regular" };
-        t2.fontSize = 11;
-        t2.characters = val;
-        t2.textAutoResize = 'HEIGHT';
-        t2.resize(148, t2.height);
-        t2.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.57, b: 0.63 } }];
-        info.appendChild(t2);
-
-        card.appendChild(info);
-        grid.appendChild(card);
-    }
-
-    row.appendChild(grid);
-    parent.appendChild(row);
-}
-
-// ============================================
-// TOKEN DOCUMENTATION - END
-// ============================================
-
-
-// ============================================
-// TYPOGRAPHY SYSTEM - START
-// ============================================
-
-async function createTypographySystem(typography) {
-    // Validate typography data
-    if (!typography || !typography.primaryFont || !typography.styles) {
-        throw new Error('Invalid typography data. Please ensure primaryFont and styles are defined.');
-    }
-
-    // Try to load fonts with fallback options
-    let fallbackFont = { family: "Roboto", style: "Regular" };
-    try {
-        // Try Inter first (most common in Figma)
-        await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-        await figma.loadFontAsync({ family: "Inter", style: "Medium" });
-        await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
-        await figma.loadFontAsync({ family: "Inter", style: "Bold" });
-        fallbackFont = { family: "Inter", style: "Regular" };
-    } catch (interError) {
-        try {
-            // Try Roboto as fallback
-            await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
-            await figma.loadFontAsync({ family: "Roboto", style: "Medium" });
-            await figma.loadFontAsync({ family: "Roboto", style: "Bold" });
-            fallbackFont = { family: "Roboto", style: "Regular" };
-        } catch (robotoError) {
-            try {
-                // Try Arial as last resort (always available)
-                await figma.loadFontAsync({ family: "Arial", style: "Regular" });
-                await figma.loadFontAsync({ family: "Arial", style: "Bold" });
-                fallbackFont = { family: "Arial", style: "Regular" };
-            } catch (arialError) {
-                console.error('No suitable fonts available');
-                throw new Error('Failed to load any fonts. Please ensure Inter, Roboto, or Arial fonts are available.');
-            }
-        }
-    }
-
-    // Create font name variables
-    const collections = await figma.variables.getLocalVariableCollectionsAsync();
-    let fontCollection = collections.find(c => c.name === 'Typography/Font Names');
-
-    if (!fontCollection) {
-        fontCollection = figma.variables.createVariableCollection('Typography/Font Names');
-    }
-
-    const existingVars = await figma.variables.getLocalVariablesAsync('STRING');
-    let primaryFontVar = existingVars.find(v => v.name === 'font/primary' && v.variableCollectionId === fontCollection.id);
-
-    if (!primaryFontVar) {
-        primaryFontVar = figma.variables.createVariable('font/primary', fontCollection, 'STRING');
-    }
-    primaryFontVar.setValueForMode(fontCollection.modes[0].modeId, typography.primaryFont);
-
-    let secondaryFontVar = null;
-    if (typography.secondaryEnabled && typography.secondaryFont) {
-        secondaryFontVar = existingVars.find(v => v.name === 'font/secondary' && v.variableCollectionId === fontCollection.id);
-        if (!secondaryFontVar) {
-            secondaryFontVar = figma.variables.createVariable('font/secondary', fontCollection, 'STRING');
-        }
-        secondaryFontVar.setValueForMode(fontCollection.modes[0].modeId, typography.secondaryFont);
-    }
-
-    // Create typography size variables
-    let typographyCollection = collections.find(c => c.name === 'Typography/Sizes');
-
-    if (!typographyCollection) {
-        typographyCollection = figma.variables.createVariableCollection('Typography/Sizes');
-        typographyCollection.renameMode(typographyCollection.modes[0].modeId, 'Desktop');
-        typographyCollection.addMode('Mobile');
-    } else {
-        if (!typographyCollection.modes.some(mode => mode.name === 'Mobile')) {
-            typographyCollection.addMode('Mobile');
-        }
-    }
-
-    const desktopModeId = typographyCollection.modes.find(m => m.name === 'Desktop').modeId;
-    const mobileModeId = typographyCollection.modes.find(m => m.name === 'Mobile').modeId;
-
-    const existingFloatVars = await figma.variables.getLocalVariablesAsync('FLOAT');
-    const typographyVariables = {};
-
-    // Validate styles exist
-    if (!typography.styles || Object.keys(typography.styles).length === 0) {
-        throw new Error('No typography styles found. Please define at least one style.');
-    }
-
-    for (const [key, style] of Object.entries(typography.styles)) {
-        // Validate style properties
-        if (!style || typeof style.size !== 'number') {
-            console.warn(`Invalid style data for ${key}, skipping...`);
-            continue;
-        }
-
-        const mobileSize = Math.round(style.size * 0.85);
-
-        // 1. TEXT SIZE VARIABLE
-        const sizeVarName = `typography/${key}/size`;
-        let sizeVar = existingFloatVars.find(v => v.name === sizeVarName && v.variableCollectionId === typographyCollection.id);
-        if (!sizeVar) {
-            sizeVar = figma.variables.createVariable(sizeVarName, typographyCollection, 'FLOAT');
-        }
-        sizeVar.setValueForMode(desktopModeId, style.size);
-        sizeVar.setValueForMode(mobileModeId, mobileSize);
-
-        // 2. TEXT LINE HEIGHT VARIABLE (Stored as decimal multiplier e.g. 1.5)
-        const lineHeightVarName = `typography/${key}/lineHeight`;
-        let lineHeightVar = existingFloatVars.find(v => v.name === lineHeightVarName && v.variableCollectionId === typographyCollection.id);
-        if (!lineHeightVar) {
-            lineHeightVar = figma.variables.createVariable(lineHeightVarName, typographyCollection, 'FLOAT');
-        }
-        const lhValue = style.lineHeight || 1.5;
-        lineHeightVar.setValueForMode(desktopModeId, lhValue);
-        lineHeightVar.setValueForMode(mobileModeId, lhValue);
-
-        // 3. LETTER SPACING VARIABLE
-        const letterSpacingVarName = `typography/${key}/letterSpacing`;
-        let letterSpacingVar = existingFloatVars.find(v => v.name === letterSpacingVarName && v.variableCollectionId === typographyCollection.id);
-        if (!letterSpacingVar) {
-            letterSpacingVar = figma.variables.createVariable(letterSpacingVarName, typographyCollection, 'FLOAT');
-        }
-        const letterSpacingValue = style.letterSpacing || 0;
-        letterSpacingVar.setValueForMode(desktopModeId, letterSpacingValue);
-        letterSpacingVar.setValueForMode(mobileModeId, letterSpacingValue);
-
-        typographyVariables[key] = { size: sizeVar, letterSpacing: letterSpacingVar, lineHeight: lineHeightVar };
-    }
-
-    // 4. FONT WEIGHTS VARIABLES
-    let weightCollection = collections.find(c => c.name === 'Typography/Font Weights');
-    if (!weightCollection) {
-        weightCollection = figma.variables.createVariableCollection('Typography/Font Weights');
-    }
-    const weightVars = {};
-    const weightList = [
-        { name: 'Regular', value: 400 },
-        { name: 'Medium', value: 500 },
-        { name: 'Semibold', value: 600 },
-        { name: 'Bold', value: 700 }
-    ];
-
-    const currentWeightVars = await figma.variables.getLocalVariablesAsync('FLOAT');
-    for (const w of weightList) {
-        const wVarName = `weight/${w.name.toLowerCase()}`;
-        let wVar = currentWeightVars.find(v => v.name === wVarName && v.variableCollectionId === weightCollection.id);
-        if (!wVar) {
-            wVar = figma.variables.createVariable(wVarName, weightCollection, 'FLOAT');
-        }
-        if (wVar && weightCollection.modes.length > 0) {
-            wVar.setValueForMode(weightCollection.modes[0].modeId, w.value);
-            weightVars[w.name] = wVar;
-        }
-    }
-
-    // Find best matching font
-    const availableFonts = await figma.listAvailableFontsAsync();
-
-    function findBestFont(fontFamily, weight) {
-        let matchingFonts = availableFonts.filter(f => f.fontName.family === fontFamily);
-        if (matchingFonts.length === 0) {
-            matchingFonts = availableFonts.filter(f => f.fontName.family.toLowerCase() === fontFamily.toLowerCase());
-        }
-        if (matchingFonts.length === 0) {
-            // Try fallback fonts in order
-            const fallbackFamilies = [fallbackFont.family, 'Inter', 'Roboto', 'Arial'];
-            for (const fallbackFamily of fallbackFamilies) {
-                matchingFonts = availableFonts.filter(f => f.fontName.family === fallbackFamily);
-                if (matchingFonts.length > 0) break;
-            }
-        }
-
-        const weightMap = { 100: 'Thin', 200: 'Extra Light', 300: 'Light', 400: 'Regular', 500: 'Medium', 600: 'Semi Bold', 700: 'Bold', 800: 'Extra Bold', 900: 'Black' };
-        const styleName = weightMap[weight] || 'Regular';
-        let font = matchingFonts.find(f => f.fontName.style === styleName);
-
-        if (!font) {
-            const altNames = { 'Semi Bold': ['Semibold', 'SemiBold', 'Semi-Bold'], 'Extra Light': ['ExtraLight', 'Extra-Light'], 'Extra Bold': ['ExtraBold', 'Extra-Bold'] };
-            if (altNames[styleName]) {
-                for (const altName of altNames[styleName]) {
-                    font = matchingFonts.find(f => f.fontName.style === altName);
-                    if (font) break;
+            const grids = msg.grids;
+
+            // Load fonts
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+
+            // Helper function to convert hex to RGB
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
                 }
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+                return { r, g, b };
             }
-        }
 
-        if (!font && matchingFonts.length > 0) font = matchingFonts[0];
-        return font ? font.fontName : fallbackFont;
+            // Create main frame
+            const frame = figma.createFrame();
+            frame.name = "Token Grid";
+            frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            frame.paddingTop = 40;
+            frame.paddingBottom = 40;
+            frame.paddingLeft = 40;
+            frame.paddingRight = 40;
+            frame.layoutMode = "VERTICAL";
+            frame.primaryAxisSizingMode = "AUTO";
+            frame.counterAxisSizingMode = "AUTO";
+            frame.itemSpacing = 40;
+
+            // Add top border
+            const borderColor = hexToRgb('#1350FF');
+            frame.strokes = [{ type: 'SOLID', color: borderColor }];
+            frame.strokeWeight = 8;
+            frame.strokeAlign = "INSIDE";
+            frame.strokeTopWeight = 8;
+            frame.strokeBottomWeight = 0;
+            frame.strokeLeftWeight = 0;
+            frame.strokeRightWeight = 0;
+
+            // Title section
+            const titleSection = figma.createFrame();
+            titleSection.name = "Title Section";
+            titleSection.layoutMode = "VERTICAL";
+            titleSection.primaryAxisSizingMode = "AUTO";
+            titleSection.counterAxisSizingMode = "AUTO";
+            titleSection.itemSpacing = 34;
+            titleSection.fills = [];
+
+            // Create logo from SVG
+            const logoSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_466_1736)"><g clip-path="url(#clip1_466_1736)"><path d="M47.9502 22.765C46.7073 22.0781 45.7261 21.1295 45.0065 19.952C44.2869 18.7418 43.9271 17.4008 43.9271 15.8962C43.9271 14.3916 44.2869 13.0506 45.0065 11.8404C45.7261 10.6302 46.7073 9.71438 47.9502 9.0275C49.1931 8.34063 50.5996 8.01355 52.1696 8.01355C53.4125 8.01355 54.59 8.24251 55.604 8.66771C56.6506 9.09292 57.5337 9.74708 58.2533 10.5648L56.4217 12.2983C55.3096 11.0881 53.9358 10.4994 52.3004 10.4994C51.2538 10.4994 50.3052 10.7283 49.4548 11.1862C48.6044 11.6442 47.9829 12.2983 47.4923 13.116C47.0344 13.9337 46.8054 14.8496 46.8054 15.8962C46.8054 16.9429 47.0344 17.8587 47.4923 18.6764C47.9502 19.4941 48.6044 20.1483 49.4548 20.6062C50.3052 21.0641 51.2211 21.2931 52.3004 21.2931C53.9358 21.2931 55.3096 20.6716 56.4217 19.4614L58.2533 21.2277C57.5337 22.0781 56.6506 22.6995 55.604 23.1247C54.5573 23.5499 53.4125 23.7789 52.1369 23.7789C50.5996 23.7789 49.1931 23.4191 47.9502 22.765Z" fill="black"/><path d="M63.6175 22.7649C62.3745 22.0781 61.3606 21.1295 60.641 19.9193C59.9214 18.7091 59.5616 17.3681 59.5616 15.8635C59.5616 14.3589 59.9214 13.0179 60.641 11.8077C61.3606 10.5975 62.3418 9.64895 63.6175 8.96207C64.8604 8.2752 66.2995 7.94812 67.8695 7.94812C69.4395 7.94812 70.846 8.2752 72.1216 8.96207C73.3645 9.64895 74.3785 10.5975 75.098 11.775C75.8176 12.9852 76.1774 14.3262 76.1774 15.8308C76.1774 17.3354 75.8176 18.6764 75.098 19.8866C74.3785 21.0968 73.3972 22.0126 72.1216 22.6995C70.8787 23.3864 69.4395 23.7135 67.8695 23.7135C66.2995 23.7789 64.8604 23.4191 63.6175 22.7649ZM70.617 20.5735C71.4347 20.1156 72.0889 19.4614 72.5468 18.6437C73.0047 17.826 73.2337 16.8775 73.2337 15.8635C73.2337 14.8496 73.0047 13.901 72.5468 13.0833C72.0889 12.2656 71.4347 11.6114 70.617 11.1535C69.7993 10.6956 68.8835 10.4667 67.8368 10.4667C66.8229 10.4667 65.8743 10.6956 65.0566 11.1535C64.2389 11.6114 63.5848 12.2656 63.1268 13.0833C62.6689 13.901 62.44 14.8496 62.44 15.8635C62.44 16.8775 62.6689 17.826 63.1268 18.6437C63.5848 19.4614 64.2389 20.1156 65.0566 20.5735C65.8743 21.0314 66.7902 21.2604 67.8368 21.2604C68.8835 21.2604 69.7993 21.0314 70.617 20.5735Z" fill="black"/><path d="M79.1539 8.17706H85.8591C87.4945 8.17706 88.9663 8.50414 90.242 9.1256C91.5176 9.74706 92.4988 10.6629 93.2184 11.8404C93.9053 13.0179 94.2651 14.3589 94.2651 15.8635C94.2651 17.4008 93.9053 18.7418 93.2184 19.8866C92.5315 21.0641 91.5176 21.9472 90.242 22.6014C88.9663 23.2228 87.5272 23.5499 85.8918 23.5499H79.1539V8.17706ZM85.7282 21.1295C86.8403 21.1295 87.8543 20.9006 88.7047 20.4753C89.5551 20.0501 90.2093 19.4287 90.6672 18.6437C91.1251 17.8587 91.354 16.9102 91.354 15.8635C91.354 14.8168 91.1251 13.8683 90.6672 13.0833C90.2093 12.2983 89.5551 11.6768 88.7047 11.2516C87.8543 10.8264 86.8403 10.5975 85.7282 10.5975H81.9995V21.1295H85.7282Z" fill="black"/><path d="M108.82 21.1622V23.5499H97.3069V8.17706H108.526V10.5648H100.153V14.5552H107.577V16.9102H100.153V21.1622H108.82Z" fill="black"/><path d="M115.133 10.5975H110.03V8.17706H123.081V10.5975H117.978V23.5499H115.133V10.5975Z" fill="black"/><path d="M138.879 8.17706V23.5499H136.033V16.9756H128.085V23.5499H125.24V8.17706H128.085V14.5225H136.033V8.17706H138.879Z" fill="black"/><path d="M154.514 21.1622V23.5499H143V8.17706H154.219V10.5648H145.846V14.5552H153.271V16.9102H145.846V21.1622H154.514Z" fill="black"/><path d="M160.597 22.7649C159.354 22.0781 158.34 21.1295 157.621 19.9193C156.901 18.7091 156.542 17.3681 156.542 15.8635C156.542 14.3589 156.901 13.0179 157.621 11.8077C158.34 10.5975 159.322 9.64895 160.597 8.96207C161.873 8.2752 163.279 7.94812 164.849 7.94812C166.419 7.94812 167.826 8.2752 169.101 8.96207C170.344 9.64895 171.358 10.5975 172.078 11.775C172.797 12.9852 173.157 14.3262 173.157 15.8308C173.157 17.3354 172.797 18.6764 172.078 19.8866C171.358 21.0968 170.377 22.0126 169.101 22.6995C167.859 23.3864 166.419 23.7135 164.849 23.7135C163.247 23.7789 161.84 23.4191 160.597 22.7649ZM167.597 20.5735C168.415 20.1156 169.069 19.4614 169.527 18.6437C169.985 17.826 170.214 16.8775 170.214 15.8635C170.214 14.8496 169.985 13.901 169.527 13.0833C169.069 12.2656 168.415 11.6114 167.597 11.1535C166.779 10.6956 165.863 10.4667 164.817 10.4667C163.803 10.4667 162.854 10.6956 162.036 11.1535C161.219 11.6114 160.565 12.2656 160.107 13.0833C159.649 13.901 159.42 14.8496 159.42 15.8635C159.42 16.8775 159.649 17.826 160.107 18.6437C160.565 19.4614 161.219 20.1156 162.036 20.5735C162.854 21.0314 163.77 21.2604 164.817 21.2604C165.863 21.2604 166.779 21.0314 167.597 20.5735Z" fill="black"/><path d="M186.175 23.5499L183.035 19.0362C182.904 19.0362 182.708 19.0689 182.446 19.0689H178.979V23.5499H176.134V8.17706H182.446C183.787 8.17706 184.932 8.40602 185.913 8.83123C186.895 9.25643 187.647 9.9106 188.17 10.7283C188.694 11.546 188.955 12.5273 188.955 13.6393C188.955 14.7841 188.661 15.7981 188.105 16.6158C187.549 17.4662 186.731 18.0877 185.685 18.4801L189.25 23.5499H186.175ZM185.161 11.3825C184.507 10.8591 183.558 10.5975 182.316 10.5975H178.979V16.7139H182.316C183.558 16.7139 184.507 16.4522 185.161 15.8962C185.815 15.3729 186.142 14.6206 186.142 13.6393C186.11 12.6581 185.815 11.9058 185.161 11.3825Z" fill="black"/><path d="M203.707 21.1622V23.5499H192.193V8.17706H203.412V10.5648H195.039V14.5552H202.464V16.9102H195.039V21.1622H203.707Z" fill="black"/><path d="M221.009 23.5499L220.977 13.3777L215.94 21.8164H214.664L209.627 13.5085V23.5499H206.912V8.17706H209.267L215.384 18.3493L221.336 8.17706H223.691L223.724 23.5499H221.009Z" fill="black"/><path d="M34.1474 24.5312H1.83165C0.327072 24.5312 -0.523342 22.8303 0.392488 21.6201L15.9943 1.01395C17.041 -0.359794 19.1016 -0.359794 20.1155 1.01395L35.6192 21.5874C36.5023 22.7976 35.6519 24.5312 34.1474 24.5312Z" fill="url(#paint0_linear_466_1736)"/><path d="M4.15395 28.5215L16.7466 11.9385C17.5643 10.8591 19.167 10.8918 19.952 11.9385L32.4465 28.5215C33.4278 29.8626 32.512 31.727 30.8438 31.727H5.75665C4.08853 31.727 3.14 29.8299 4.15395 28.5215Z" fill="url(#paint1_linear_466_1736)"/><path d="M29.4047 24.5312L19.952 11.9385C19.1343 10.8591 17.5643 10.8591 16.7466 11.9385L7.1958 24.5312H29.4047Z" fill="#6699FF"/></g></g><defs><linearGradient id="paint0_linear_466_1736" x1="0.0140991" y1="12.2574" x2="35.977" y2="12.2574" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><linearGradient id="paint1_linear_466_1736" x1="3.73645" y1="21.4341" x2="32.8498" y2="21.4341" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><clipPath id="clip0_466_1736"><rect width="224" height="31.727" fill="white"/></clipPath><clipPath id="clip1_466_1736"><rect width="223.724" height="31.727" fill="white"/></clipPath></defs></svg>`;
+
+            const logo = figma.createNodeFromSvg(logoSvg);
+            logo.name = "logo - Horizontal";
+            logo.resize(224, 31.73);
+
+            // Header Section frame
+            const headerSection = figma.createFrame();
+            headerSection.name = "Header Section";
+            headerSection.layoutMode = "VERTICAL";
+            headerSection.primaryAxisSizingMode = "AUTO";
+            headerSection.counterAxisSizingMode = "AUTO";
+            headerSection.itemSpacing = 6;
+            headerSection.fills = [];
+
+            // Title text
+            const titleText = figma.createText();
+            titleText.characters = "Grid";
+            titleText.fontSize = 40;
+            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+            titleText.lineHeight = { value: 150, unit: "PERCENT" };
+
+            // Subtitle text
+            const subtitleText = figma.createText();
+            subtitleText.characters = "Responsive grid layouts for Desktop, Tablet, and Mobile.";
+            subtitleText.fontSize = 16;
+            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+            subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
+            subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
+
+            headerSection.appendChild(titleText);
+            headerSection.appendChild(subtitleText);
+
+            titleSection.appendChild(logo);
+            titleSection.appendChild(headerSection);
+            frame.appendChild(titleSection);
+
+            const tokenGrid = figma.createFrame();
+            tokenGrid.name = "Token Grid";
+            tokenGrid.layoutMode = "VERTICAL";
+            tokenGrid.primaryAxisSizingMode = "AUTO";
+            tokenGrid.counterAxisSizingMode = "AUTO";
+            tokenGrid.itemSpacing = 24;
+            tokenGrid.fills = [];
+
+            // Grid configurations
+            const gridConfigs = [
+                { name: 'Desktop Grid', width: 1920, height: 300, columns: grids.desktop.columns, margin: grids.desktop.margin, gutter: grids.desktop.gutter },
+                { name: 'Tablet Grid', width: 800, height: 300, columns: grids.tablet.columns, margin: grids.tablet.margin, gutter: grids.tablet.gutter },
+                { name: 'Mobile Grid', width: 342, height: 300, columns: grids.mobile.columns, margin: grids.mobile.margin, gutter: grids.mobile.gutter }
+            ];
+
+            // Generate grid cards
+            for (const config of gridConfigs) {
+                const gridCard = figma.createFrame();
+                gridCard.name = config.name;
+                gridCard.layoutMode = "VERTICAL";
+                gridCard.primaryAxisSizingMode = "AUTO";
+                gridCard.counterAxisSizingMode = "AUTO";
+                gridCard.itemSpacing = 12;
+                gridCard.fills = [];
+
+                // Grid title
+                const gridTitle = figma.createText();
+                gridTitle.characters = config.name;
+                gridTitle.fontSize = 18;
+                gridTitle.fontName = { family: "Inter", style: "Bold" };
+                gridTitle.fills = [{ type: 'SOLID', color: hexToRgb('#2D3339') }];
+
+                gridCard.appendChild(gridTitle);
+
+                // Grid preview container
+                const gridPreviewContainer = figma.createFrame();
+                gridPreviewContainer.name = "Grid Preview Container";
+                gridPreviewContainer.layoutMode = "VERTICAL";
+                gridPreviewContainer.primaryAxisSizingMode = "AUTO";
+                gridPreviewContainer.counterAxisSizingMode = "AUTO";
+                gridPreviewContainer.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                gridPreviewContainer.strokes = [{ type: 'SOLID', color: hexToRgb('#D5D5D6') }];
+                gridPreviewContainer.strokeWeight = 1;
+                gridPreviewContainer.cornerRadius = 8;
+                gridPreviewContainer.clipsContent = false;
+
+                // Grid preview frame (scaled down to fit)
+                const scale = Math.min(1200 / config.width, 1);
+                const scaledWidth = config.width * scale;
+                const scaledHeight = config.height * scale;
+
+                const gridPreview = figma.createFrame();
+                gridPreview.name = "Grid Preview";
+                gridPreview.resize(scaledWidth, scaledHeight);
+                gridPreview.fills = [{ type: 'SOLID', color: hexToRgb('#F5F5F5') }];
+
+                // Calculate column width
+                const totalMargin = config.margin * 2;
+                const totalGutters = (config.columns - 1) * config.gutter;
+                const availableWidth = config.width - totalMargin - totalGutters;
+                const columnWidth = availableWidth / config.columns;
+
+                // Create columns
+                for (let i = 0; i < config.columns; i++) {
+                    const column = figma.createFrame();
+                    column.name = `Column ${i + 1}`;
+                    const xPos = config.margin + (i * (columnWidth + config.gutter));
+                    column.x = xPos * scale;
+                    column.y = 0;
+                    column.resize(columnWidth * scale, scaledHeight);
+                    column.fills = [{ type: 'SOLID', color: hexToRgb('#1350FF'), opacity: 0.1 }];
+                    column.strokes = [{ type: 'SOLID', color: hexToRgb('#1350FF') }];
+                    column.strokeWeight = 1;
+                    column.dashPattern = [4, 4];
+
+                    gridPreview.appendChild(column);
+                }
+
+                gridPreviewContainer.appendChild(gridPreview);
+                gridCard.appendChild(gridPreviewContainer);
+
+                // Grid info
+                const gridInfo = figma.createFrame();
+                gridInfo.name = "Grid Info";
+                gridInfo.layoutMode = "HORIZONTAL";
+                gridInfo.primaryAxisSizingMode = "AUTO";
+                gridInfo.counterAxisSizingMode = "AUTO";
+                gridInfo.itemSpacing = 24;
+                gridInfo.fills = [];
+
+                const infoItems = [
+                    { label: 'Columns', value: `${config.columns}` },
+                    { label: 'Margin', value: `${config.margin}px` },
+                    { label: 'Gutter', value: `${config.gutter}px` },
+                    { label: 'Width', value: `${config.width}px` }
+                ];
+
+                for (const item of infoItems) {
+                    const infoItem = figma.createFrame();
+                    infoItem.name = item.label;
+                    infoItem.layoutMode = "VERTICAL";
+                    infoItem.primaryAxisSizingMode = "AUTO";
+                    infoItem.counterAxisSizingMode = "AUTO";
+                    infoItem.itemSpacing = 4;
+                    infoItem.fills = [];
+
+                    const label = figma.createText();
+                    label.characters = item.label;
+                    label.fontSize = 10;
+                    label.fontName = { family: "Inter", style: "Regular" };
+                    label.fills = [{ type: 'SOLID', color: hexToRgb('#7F7F7F') }];
+
+                    const value = figma.createText();
+                    value.characters = item.value;
+                    value.fontSize = 12;
+                    value.fontName = { family: "Inter", style: "Medium" };
+                    value.fills = [{ type: 'SOLID', color: hexToRgb('#2D3339') }];
+
+                    infoItem.appendChild(label);
+                    infoItem.appendChild(value);
+                    gridInfo.appendChild(infoItem);
+                }
+
+                gridCard.appendChild(gridInfo);
+                tokenGrid.appendChild(gridCard);
+            }
+
+            frame.appendChild(tokenGrid);
+
+            // Add footer
+            const footer = figma.createFrame();
+            footer.name = "Footer Section";
+            footer.layoutMode = "VERTICAL";
+            footer.primaryAxisSizingMode = "AUTO";
+            footer.counterAxisSizingMode = "AUTO";
+            footer.primaryAxisAlignItems = "MIN";
+            footer.itemSpacing = 8;
+            footer.fills = [];
+
+            const createdBy = figma.createText();
+            createdBy.characters = "Created By";
+            createdBy.fontSize = 12;
+            createdBy.fontName = { family: "Inter", style: "Regular" };
+            createdBy.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+            createdBy.textAlignHorizontal = "CENTER";
+
+            const website = figma.createText();
+            website.characters = "Slate.Design";
+            website.fontSize = 16;
+            website.fontName = { family: "Inter", style: "Bold" };
+            website.fills = [{ type: 'SOLID', color: hexToRgb('#121212') }];
+            website.textAlignHorizontal = "CENTER";
+
+            footer.appendChild(createdBy);
+            footer.appendChild(website);
+            frame.appendChild(footer);
+
+            // Select and zoom to the created frame
+            figma.currentPage.selection = [frame];
+            figma.viewport.scrollAndZoomIntoView([frame]);
+
+            figma.notify('Grid Token Documentation created successfully!');
+        } catch (error) {
+            figma.notify('Error creating grid doc: ' + error.message);
+            console.error(error);
+        }
     }
 
-    let createdStylesCount = 0;
-    const weights = [
-        { name: 'Regular', value: 400 },
-        { name: 'Medium', value: 500 },
-        { name: 'Semibold', value: 600 },
-        { name: 'Bold', value: 700 }
-    ];
+    if (msg.type === "create-typography-styles") {
+        try {
+            const baseFontSize = msg.baseFontSize;
+            const scale = msg.scale || 1.25; // Default scale if not provided
+            const primaryFont = msg.primaryFont;
 
-    // Create text styles for PRIMARY font
-    for (const [key, style] of Object.entries(typography.styles)) {
-        // Skip invalid styles
-        if (!style || typeof style.size !== 'number') {
-            continue;
-        }
+            const typographyLevels = [
+                { name: 'H1', multiplier: Math.pow(scale, 5) },
+                { name: 'H2', multiplier: Math.pow(scale, 4) },
+                { name: 'H3', multiplier: Math.pow(scale, 3) },
+                { name: 'H4', multiplier: Math.pow(scale, 2) },
+                { name: 'H5', multiplier: scale },
+                { name: 'H6', multiplier: 1 },
+                { name: 'BODY1', multiplier: 1 },
+                { name: 'BODY2', multiplier: 0.875 },
+                { name: 'CAPTION', multiplier: 0.75 }
+            ];
 
-        for (const weight of weightList) {
-            try {
-                const fontName = findBestFont(typography.primaryFont, weight.value);
-                await figma.loadFontAsync(fontName);
+            let createdCount = 0;
 
-                // Update Naming logic: h1 -> H1-48px, b1 -> B1-18px
-                const baseKey = key.toUpperCase().replace('BODY', 'B');
-                const styleName = `Primary/${baseKey}-${style.size}px/${weight.name}`;
+            for (const level of typographyLevels) {
+                const fontSize = Math.round(baseFontSize * level.multiplier);
+                const styleName = `Typography/${level.name}`;
 
-                const existingStyles = await figma.getLocalTextStylesAsync();
-                let textStyle = existingStyles.find(s => s.name === styleName);
+                // Check if style already exists
+                let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
 
                 if (!textStyle) {
                     textStyle = figma.createTextStyle();
                     textStyle.name = styleName;
                 }
 
-                textStyle.fontName = fontName;
-                textStyle.fontSize = style.size;
-                // Set lineHeight as PERCENT (e.g. 150%) value for the style visually
-                textStyle.lineHeight = { value: (style.lineHeight || 1.5) * 100, unit: 'PERCENT' };
-                textStyle.letterSpacing = { value: style.letterSpacing || 0, unit: 'PIXELS' };
+                // Load font before setting it
+                await figma.loadFontAsync({ family: primaryFont, style: "Regular" });
 
-                if (typographyVariables[key]) {
-                    try {
-                        textStyle.setBoundVariable('fontSize', typographyVariables[key].size);
-                        textStyle.setBoundVariable('letterSpacing', typographyVariables[key].letterSpacing);
-                        textStyle.setBoundVariable('lineHeight', typographyVariables[key].lineHeight);
-                    } catch (e) {
-                        console.warn(`Could not bind variables for ${styleName}:`, e);
-                    }
-                }
+                // Set font properties
+                textStyle.fontSize = fontSize;
+                textStyle.fontName = { family: primaryFont, style: "Regular" };
+                textStyle.lineHeight = { value: 150, unit: "PERCENT" };
 
-                // Bind Font Family and Font Weight variables
-                try {
-                    if (typeof primaryFontVar !== 'undefined' && primaryFontVar) textStyle.setBoundVariable('fontFamily', primaryFontVar);
-                    if (weightVars[weight.name]) textStyle.setBoundVariable('fontWeight', weightVars[weight.name]);
-                } catch (e) {
-                    console.warn(`Could not bind font family/weight for ${styleName}:`, e);
-                }
-
-                createdStylesCount++;
-            } catch (styleError) {
-                console.error(`Error creating style ${key} with weight ${weight.name}:`, styleError);
+                createdCount++;
             }
+
+            notifyUI('typography-styles', true, `Created ${createdCount} typography styles!`);
+        } catch (error) {
+            notifyUI('typography-styles', false, 'Error creating typography styles', error.message);
         }
     }
 
-    // Create text styles for SECONDARY font
-    if (typography.secondaryEnabled && typography.secondaryFont) {
-        for (const [key, style] of Object.entries(typography.styles)) {
-            // Skip invalid styles
-            if (!style || typeof style.size !== 'number') {
-                continue;
+    if (msg.type === "create-typography-doc") {
+        try {
+            const baseFontSize = msg.baseFontSize;
+            let primaryFont = msg.primaryFont;
+
+            // Load fonts with fallback
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
+            await figma.loadFontAsync({ family: "Roboto", style: "Bold" });
+            await figma.loadFontAsync({ family: "Plus Jakarta Sans", style: "SemiBold" });
+
+            // Try to load the primary font with different styles
+            let primaryFontStyle = "Bold";
+            try {
+                await figma.loadFontAsync({ family: primaryFont, style: "Bold" });
+            } catch (e) {
+                try {
+                    await figma.loadFontAsync({ family: primaryFont, style: "SemiBold" });
+                    primaryFontStyle = "SemiBold";
+                } catch (e2) {
+                    try {
+                        await figma.loadFontAsync({ family: primaryFont, style: "Regular" });
+                        primaryFontStyle = "Regular";
+                    } catch (e3) {
+                        console.error(`Could not load font ${primaryFont}, using Poppins as fallback`);
+                        await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
+                        primaryFont = "Poppins";
+                        primaryFontStyle = "Bold";
+                    }
+                }
             }
 
-            for (const weight of weightList) {
-                try {
-                    const fontName = findBestFont(typography.secondaryFont, weight.value);
-                    await figma.loadFontAsync(fontName);
+            // Helper function to convert hex to RGB
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                }
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+                return { r, g, b };
+            }
 
-                    const baseKey = key.toUpperCase().replace('BODY', 'B');
-                    const styleName = `Secondary/${baseKey}-${style.size}px/${weight.name}`;
+            // Use the same multipliers as the preview (based on 12px base font)
+            const typographyLevels = [
+                { name: 'H1', multiplier: 56 / 12, lineHeight: 1.2 },
+                { name: 'H2', multiplier: 48 / 12, lineHeight: 1.2 },
+                { name: 'H3', multiplier: 34 / 12, lineHeight: 1.3 },
+                { name: 'H4', multiplier: 28 / 12, lineHeight: 1.4 },
+                { name: 'H5', multiplier: 24 / 12, lineHeight: 1.5 },
+                { name: 'H6', multiplier: 20 / 12, lineHeight: 1.5 },
+                { name: 'B1', multiplier: 18 / 12, lineHeight: 1.6 },
+                { name: 'B2', multiplier: 16 / 12, lineHeight: 1.6 },
+                { name: 'B3', multiplier: 14 / 12, lineHeight: 1.5 },
+                { name: 'B4', multiplier: 12 / 12, lineHeight: 1.5 }
+            ];
 
-                    const existingStyles = await figma.getLocalTextStylesAsync();
-                    let textStyle = existingStyles.find(s => s.name === styleName);
+            // Create main frame
+            const frame = figma.createFrame();
+            frame.name = "Token Typography";
+            frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            frame.paddingTop = 40;
+            frame.paddingBottom = 40;
+            frame.paddingLeft = 40;
+            frame.paddingRight = 40;
+            frame.layoutMode = "VERTICAL";
+            frame.primaryAxisSizingMode = "AUTO";
+            frame.counterAxisSizingMode = "AUTO";
+            frame.itemSpacing = 40;
 
+            // Add top border
+            const borderColor = hexToRgb('#1350FF');
+            frame.strokes = [{ type: 'SOLID', color: borderColor }];
+            frame.strokeWeight = 8;
+            frame.strokeAlign = "INSIDE";
+            frame.strokeTopWeight = 8;
+            frame.strokeBottomWeight = 0;
+            frame.strokeLeftWeight = 0;
+            frame.strokeRightWeight = 0;
+
+            // Title section
+            const titleSection = figma.createFrame();
+            titleSection.name = "Title Section";
+            titleSection.layoutMode = "VERTICAL";
+            titleSection.primaryAxisSizingMode = "AUTO";
+            titleSection.counterAxisSizingMode = "AUTO";
+            titleSection.itemSpacing = 34;
+            titleSection.fills = [];
+
+            // Create logo from SVG
+            const logoSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_466_1736)"><g clip-path="url(#clip1_466_1736)"><path d="M47.9502 22.765C46.7073 22.0781 45.7261 21.1295 45.0065 19.952C44.2869 18.7418 43.9271 17.4008 43.9271 15.8962C43.9271 14.3916 44.2869 13.0506 45.0065 11.8404C45.7261 10.6302 46.7073 9.71438 47.9502 9.0275C49.1931 8.34063 50.5996 8.01355 52.1696 8.01355C53.4125 8.01355 54.59 8.24251 55.604 8.66771C56.6506 9.09292 57.5337 9.74708 58.2533 10.5648L56.4217 12.2983C55.3096 11.0881 53.9358 10.4994 52.3004 10.4994C51.2538 10.4994 50.3052 10.7283 49.4548 11.1862C48.6044 11.6442 47.9829 12.2983 47.4923 13.116C47.0344 13.9337 46.8054 14.8496 46.8054 15.8962C46.8054 16.9429 47.0344 17.8587 47.4923 18.6764C47.9502 19.4941 48.6044 20.1483 49.4548 20.6062C50.3052 21.0641 51.2211 21.2931 52.3004 21.2931C53.9358 21.2931 55.3096 20.6716 56.4217 19.4614L58.2533 21.2277C57.5337 22.0781 56.6506 22.6995 55.604 23.1247C54.5573 23.5499 53.4125 23.7789 52.1369 23.7789C50.5996 23.7789 49.1931 23.4191 47.9502 22.765Z" fill="black"/><path d="M63.6175 22.7649C62.3745 22.0781 61.3606 21.1295 60.641 19.9193C59.9214 18.7091 59.5616 17.3681 59.5616 15.8635C59.5616 14.3589 59.9214 13.0179 60.641 11.8077C61.3606 10.5975 62.3418 9.64895 63.6175 8.96207C64.8604 8.2752 66.2995 7.94812 67.8695 7.94812C69.4395 7.94812 70.846 8.2752 72.1216 8.96207C73.3645 9.64895 74.3785 10.5975 75.098 11.775C75.8176 12.9852 76.1774 14.3262 76.1774 15.8308C76.1774 17.3354 75.8176 18.6764 75.098 19.8866C74.3785 21.0968 73.3972 22.0126 72.1216 22.6995C70.8787 23.3864 69.4395 23.7135 67.8695 23.7135C66.2995 23.7789 64.8604 23.4191 63.6175 22.7649ZM70.617 20.5735C71.4347 20.1156 72.0889 19.4614 72.5468 18.6437C73.0047 17.826 73.2337 16.8775 73.2337 15.8635C73.2337 14.8496 73.0047 13.901 72.5468 13.0833C72.0889 12.2656 71.4347 11.6114 70.617 11.1535C69.7993 10.6956 68.8835 10.4667 67.8368 10.4667C66.8229 10.4667 65.8743 10.6956 65.0566 11.1535C64.2389 11.6114 63.5848 12.2656 63.1268 13.0833C62.6689 13.901 62.44 14.8496 62.44 15.8635C62.44 16.8775 62.6689 17.826 63.1268 18.6437C63.5848 19.4614 64.2389 20.1156 65.0566 20.5735C65.8743 21.0314 66.7902 21.2604 67.8368 21.2604C68.8835 21.2604 69.7993 21.0314 70.617 20.5735Z" fill="black"/><path d="M79.1539 8.17706H85.8591C87.4945 8.17706 88.9663 8.50414 90.242 9.1256C91.5176 9.74706 92.4988 10.6629 93.2184 11.8404C93.9053 13.0179 94.2651 14.3589 94.2651 15.8635C94.2651 17.4008 93.9053 18.7418 93.2184 19.8866C92.5315 21.0641 91.5176 21.9472 90.242 22.6014C88.9663 23.2228 87.5272 23.5499 85.8918 23.5499H79.1539V8.17706ZM85.7282 21.1295C86.8403 21.1295 87.8543 20.9006 88.7047 20.4753C89.5551 20.0501 90.2093 19.4287 90.6672 18.6437C91.1251 17.8587 91.354 16.9102 91.354 15.8635C91.354 14.8168 91.1251 13.8683 90.6672 13.0833C90.2093 12.2983 89.5551 11.6768 88.7047 11.2516C87.8543 10.8264 86.8403 10.5975 85.7282 10.5975H81.9995V21.1295H85.7282Z" fill="black"/><path d="M108.82 21.1622V23.5499H97.3069V8.17706H108.526V10.5648H100.153V14.5552H107.577V16.9102H100.153V21.1622H108.82Z" fill="black"/><path d="M115.133 10.5975H110.03V8.17706H123.081V10.5975H117.978V23.5499H115.133V10.5975Z" fill="black"/><path d="M138.879 8.17706V23.5499H136.033V16.9756H128.085V23.5499H125.24V8.17706H128.085V14.5225H136.033V8.17706H138.879Z" fill="black"/><path d="M154.514 21.1622V23.5499H143V8.17706H154.219V10.5648H145.846V14.5552H153.271V16.9102H145.846V21.1622H154.514Z" fill="black"/><path d="M160.597 22.7649C159.354 22.0781 158.34 21.1295 157.621 19.9193C156.901 18.7091 156.542 17.3681 156.542 15.8635C156.542 14.3589 156.901 13.0179 157.621 11.8077C158.34 10.5975 159.322 9.64895 160.597 8.96207C161.873 8.2752 163.279 7.94812 164.849 7.94812C166.419 7.94812 167.826 8.2752 169.101 8.96207C170.344 9.64895 171.358 10.5975 172.078 11.775C172.797 12.9852 173.157 14.3262 173.157 15.8308C173.157 17.3354 172.797 18.6764 172.078 19.8866C171.358 21.0968 170.377 22.0126 169.101 22.6995C167.859 23.3864 166.419 23.7135 164.849 23.7135C163.247 23.7789 161.84 23.4191 160.597 22.7649ZM167.597 20.5735C168.415 20.1156 169.069 19.4614 169.527 18.6437C169.985 17.826 170.214 16.8775 170.214 15.8635C170.214 14.8496 169.985 13.901 169.527 13.0833C169.069 12.2656 168.415 11.6114 167.597 11.1535C166.779 10.6956 165.863 10.4667 164.817 10.4667C163.803 10.4667 162.854 10.6956 162.036 11.1535C161.219 11.6114 160.565 12.2656 160.107 13.0833C159.649 13.901 159.42 14.8496 159.42 15.8635C159.42 16.8775 159.649 17.826 160.107 18.6437C160.565 19.4614 161.219 20.1156 162.036 20.5735C162.854 21.0314 163.77 21.2604 164.817 21.2604C165.863 21.2604 166.779 21.0314 167.597 20.5735Z" fill="black"/><path d="M186.175 23.5499L183.035 19.0362C182.904 19.0362 182.708 19.0689 182.446 19.0689H178.979V23.5499H176.134V8.17706H182.446C183.787 8.17706 184.932 8.40602 185.913 8.83123C186.895 9.25643 187.647 9.9106 188.17 10.7283C188.694 11.546 188.955 12.5273 188.955 13.6393C188.955 14.7841 188.661 15.7981 188.105 16.6158C187.549 17.4662 186.731 18.0877 185.685 18.4801L189.25 23.5499H186.175ZM185.161 11.3825C184.507 10.8591 183.558 10.5975 182.316 10.5975H178.979V16.7139H182.316C183.558 16.7139 184.507 16.4522 185.161 15.8962C185.815 15.3729 186.142 14.6206 186.142 13.6393C186.11 12.6581 185.815 11.9058 185.161 11.3825Z" fill="black"/><path d="M203.707 21.1622V23.5499H192.193V8.17706H203.412V10.5648H195.039V14.5552H202.464V16.9102H195.039V21.1622H203.707Z" fill="black"/><path d="M221.009 23.5499L220.977 13.3777L215.94 21.8164H214.664L209.627 13.5085V23.5499H206.912V8.17706H209.267L215.384 18.3493L221.336 8.17706H223.691L223.724 23.5499H221.009Z" fill="black"/><path d="M34.1474 24.5312H1.83165C0.327072 24.5312 -0.523342 22.8303 0.392488 21.6201L15.9943 1.01395C17.041 -0.359794 19.1016 -0.359794 20.1155 1.01395L35.6192 21.5874C36.5023 22.7976 35.6519 24.5312 34.1474 24.5312Z" fill="url(#paint0_linear_466_1736)"/><path d="M4.15395 28.5215L16.7466 11.9385C17.5643 10.8591 19.167 10.8918 19.952 11.9385L32.4465 28.5215C33.4278 29.8626 32.512 31.727 30.8438 31.727H5.75665C4.08853 31.727 3.14 29.8299 4.15395 28.5215Z" fill="url(#paint1_linear_466_1736)"/><path d="M29.4047 24.5312L19.952 11.9385C19.1343 10.8591 17.5643 10.8591 16.7466 11.9385L7.1958 24.5312H29.4047Z" fill="#6699FF"/></g></g><defs><linearGradient id="paint0_linear_466_1736" x1="0.0140991" y1="12.2574" x2="35.977" y2="12.2574" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><linearGradient id="paint1_linear_466_1736" x1="3.73645" y1="21.4341" x2="32.8498" y2="21.4341" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><clipPath id="clip0_466_1736"><rect width="224" height="31.727" fill="white"/></clipPath><clipPath id="clip1_466_1736"><rect width="223.724" height="31.727" fill="white"/></clipPath></defs></svg>`;
+
+            const logo = figma.createNodeFromSvg(logoSvg);
+            logo.name = "logo - Horizontal";
+            logo.resize(224, 31.73);
+
+            // Header Section frame
+            const headerSection = figma.createFrame();
+            headerSection.name = "Header Section";
+            headerSection.layoutMode = "VERTICAL";
+            headerSection.primaryAxisSizingMode = "AUTO";
+            headerSection.counterAxisSizingMode = "AUTO";
+            headerSection.itemSpacing = 6;
+            headerSection.fills = [];
+
+            // Title text
+            const titleText = figma.createText();
+            titleText.characters = "Typography";
+            titleText.fontSize = 40;
+            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+            titleText.lineHeight = { value: 150, unit: "PERCENT" };
+
+            // Subtitle text
+            const subtitleText = figma.createText();
+            subtitleText.characters = "Typography is vital in interface design unreadable content quickly drives users away.";
+            subtitleText.fontSize = 16;
+            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+            subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
+            subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
+
+            headerSection.appendChild(titleText);
+            headerSection.appendChild(subtitleText);
+
+            titleSection.appendChild(logo);
+            titleSection.appendChild(headerSection);
+            frame.appendChild(titleSection);
+
+            // Typography cards container
+            const typoContainer = figma.createFrame();
+            typoContainer.name = "Typography Container";
+            typoContainer.layoutMode = "VERTICAL";
+            typoContainer.primaryAxisSizingMode = "AUTO";
+            typoContainer.counterAxisSizingMode = "AUTO";
+            typoContainer.itemSpacing = 24;
+            typoContainer.fills = [];
+
+            // Generate typography cards
+            for (const level of typographyLevels) {
+                // Calculate font size based on base font (same as preview)
+                let fontSize = Math.round(baseFontSize * level.multiplier);
+
+                // Round to nearest even number
+                if (fontSize % 2 !== 0) {
+                    fontSize = fontSize + 1;
+                }
+
+                const lineHeight = Math.round(fontSize * level.lineHeight);
+
+                const typoCard = figma.createFrame();
+                typoCard.name = `${level.name}-${fontSize}px`;
+                typoCard.layoutMode = "VERTICAL";
+                typoCard.primaryAxisSizingMode = "AUTO";
+                typoCard.counterAxisSizingMode = "AUTO";
+                typoCard.itemSpacing = 16;
+                typoCard.paddingTop = 16;
+                typoCard.paddingBottom = 16;
+                typoCard.paddingLeft = 16;
+                typoCard.paddingRight = 16;
+                typoCard.fills = [{ type: 'SOLID', color: hexToRgb('#FAFAFA') }];
+                typoCard.strokes = [{ type: 'SOLID', color: hexToRgb('#D5D5D6') }];
+                typoCard.strokeWeight = 1;
+                typoCard.cornerRadius = 14;
+
+                // Label
+                const label = figma.createText();
+                label.characters = `HEADINGS/${level.name}-${fontSize}PX`;
+                label.fontSize = 12;
+                label.fontName = { family: "Plus Jakarta Sans", style: "SemiBold" };
+                label.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+                label.lineHeight = { value: 15, unit: "PIXELS" };
+                label.textCase = "UPPER";
+
+                // Sample text
+                const sampleText = figma.createText();
+                sampleText.characters = "AaBbCc";
+                sampleText.fontSize = fontSize;
+                sampleText.fontName = { family: primaryFont, style: primaryFontStyle };
+                sampleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+                sampleText.lineHeight = { value: lineHeight, unit: "PIXELS" };
+
+                // Info container
+                const infoContainer = figma.createFrame();
+                infoContainer.name = "Info";
+                infoContainer.layoutMode = "HORIZONTAL";
+                infoContainer.primaryAxisSizingMode = "FIXED";
+                infoContainer.counterAxisSizingMode = "FIXED";
+                infoContainer.resize(668, 14);
+                infoContainer.itemSpacing = 28;
+                infoContainer.fills = [];
+
+                const infoItems = [
+                    { label: `Font Family: ${primaryFont} ${primaryFontStyle}` },
+                    { label: `Font Size: ${fontSize}px` },
+                    { label: `Line Height: ${lineHeight}px` },
+                    { label: `Letter Spacing: 0px` }
+                ];
+
+                for (const item of infoItems) {
+                    const infoText = figma.createText();
+                    infoText.characters = item.label;
+                    infoText.fontSize = 12;
+                    infoText.fontName = { family: "Roboto", style: "Bold" };
+                    infoText.fills = [{ type: 'SOLID', color: hexToRgb('#5E5E5E') }];
+                    infoText.lineHeight = { value: 14, unit: "PIXELS" };
+
+                    infoContainer.appendChild(infoText);
+                }
+
+                typoCard.appendChild(label);
+                typoCard.appendChild(sampleText);
+                typoCard.appendChild(infoContainer);
+                typoContainer.appendChild(typoCard);
+            }
+
+            frame.appendChild(typoContainer);
+
+            // Add footer
+            const footer = figma.createFrame();
+            footer.name = "Footer Section";
+            footer.layoutMode = "VERTICAL";
+            footer.primaryAxisSizingMode = "AUTO";
+            footer.counterAxisSizingMode = "AUTO";
+            footer.primaryAxisAlignItems = "MIN";
+            footer.itemSpacing = 8;
+            footer.fills = [];
+
+            const createdBy = figma.createText();
+            createdBy.characters = "Created By";
+            createdBy.fontSize = 12;
+            createdBy.fontName = { family: "Inter", style: "Regular" };
+            createdBy.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+            createdBy.textAlignHorizontal = "CENTER";
+
+            const website = figma.createText();
+            website.characters = "Slate.Design";
+            website.fontSize = 16;
+            website.fontName = { family: "Inter", style: "Bold" };
+            website.fills = [{ type: 'SOLID', color: hexToRgb('#121212') }];
+            website.textAlignHorizontal = "CENTER";
+
+            footer.appendChild(createdBy);
+            footer.appendChild(website);
+            frame.appendChild(footer);
+
+            // Select and zoom to the created frame
+            figma.currentPage.selection = [frame];
+            figma.viewport.scrollAndZoomIntoView([frame]);
+
+            notifyUI('typography-doc', true, 'Typography Documentation created!');
+        } catch (error) {
+            notifyUI('typography-doc', false, 'Error creating typography doc', error.message);
+            console.error(error);
+        }
+    }
+
+    if (msg.type === "create-typography-tokens") {
+        try {
+            const typographyData = msg.typographyData;
+            const fontWeights = msg.fontWeights;
+            const primaryFont = msg.primaryFont;
+
+            // Get or create Typography collection
+            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Typography");
+            if (!collection) {
+                collection = figma.variables.createVariableCollection("Typography");
+            }
+
+            const modeId = collection.modes[0].modeId;
+
+            // Step 1: Create Font Family variable
+            let fontFamilyVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/primary");
+            if (!fontFamilyVar) {
+                fontFamilyVar = figma.variables.createVariable("font-family/primary", collection, "STRING");
+            }
+            fontFamilyVar.setValueForMode(modeId, primaryFont);
+            fontFamilyVar.description = "Primary font family for typography system";
+
+            // Step 2: Create Font Weight variables
+            for (const weight of fontWeights) {
+                const weightVarName = `font-weight/${weight.name.toLowerCase()}`;
+                let weightVar = figma.variables.getLocalVariables().find(v => v.name === weightVarName);
+                if (!weightVar) {
+                    weightVar = figma.variables.createVariable(weightVarName, collection, "FLOAT");
+                }
+                weightVar.setValueForMode(modeId, weight.weight);
+                weightVar.description = `Font weight value for ${weight.name} (${weight.weight})`;
+            }
+
+            // Step 3: Create Font Size, Line Height, and Letter Spacing varia
+            // les for each level
+            for (const typo of typographyData) {
+                // Font Size
+                const fontSizeVarName = `font-size/${typo.name.toLowerCase()}`;
+                let fontSizeVar = figma.variables.getLocalVariables().find(v => v.name === fontSizeVarName);
+                if (!fontSizeVar) {
+                    fontSizeVar = figma.variables.createVariable(fontSizeVarName, collection, "FLOAT");
+                }
+                fontSizeVar.setValueForMode(modeId, typo.fontSize);
+                fontSizeVar.description = `Font size for ${typo.name} (${typo.fontSize}px)`;
+
+                // Line Height (in pixels, not percentage)
+                const lineHeightVarName = `line-height/${typo.name.toLowerCase()}`;
+                let lineHeightVar = figma.variables.getLocalVariables().find(v => v.name === lineHeightVarName);
+                if (!lineHeightVar) {
+                    lineHeightVar = figma.variables.createVariable(lineHeightVarName, collection, "FLOAT");
+                }
+                lineHeightVar.setValueForMode(modeId, typo.lineHeight);
+                lineHeightVar.description = `Line height for ${typo.name} (${typo.lineHeight}px)`;
+
+                // Letter Spacing
+                const letterSpacingVarName = `letter-spacing/${typo.name.toLowerCase()}`;
+                let letterSpacingVar = figma.variables.getLocalVariables().find(v => v.name === letterSpacingVarName);
+                if (!letterSpacingVar) {
+                    letterSpacingVar = figma.variables.createVariable(letterSpacingVarName, collection, "FLOAT");
+                }
+                letterSpacingVar.setValueForMode(modeId, typo.letterSpacing);
+                letterSpacingVar.description = `Letter spacing for ${typo.name} (${typo.letterSpacing}px)`;
+            }
+
+            // Step 4: Create Text Styles for each typography level with all font weights
+            let textStylesCreated = 0;
+
+            // Font style mapping for different weights
+            const fontStyleMap = {
+                'Regular': ['Regular', 'Normal'],
+                'Medium': ['Medium'],
+                'Semibold': ['SemiBold'],
+                'Bold': ['Bold']
+            };
+
+            for (const typo of typographyData) {
+                // Get the variables for this typography level
+                const fontSizeVar = figma.variables.getLocalVariables().find(v => v.name === `font-size/${typo.name.toLowerCase()}`);
+                const lineHeightVar = figma.variables.getLocalVariables().find(v => v.name === `line-height/${typo.name.toLowerCase()}`);
+                const letterSpacingVar = figma.variables.getLocalVariables().find(v => v.name === `letter-spacing/${typo.name.toLowerCase()}`);
+
+                for (const weight of fontWeights) {
+                    let fontLoaded = false;
+                    let loadedStyle = weight.name;
+
+                    // Try to load font with different style variations
+                    const stylesToTry = fontStyleMap[weight.name] || [weight.name];
+
+                    for (const style of stylesToTry) {
+                        try {
+                            await figma.loadFontAsync({ family: primaryFont, style: style });
+                            loadedStyle = style;
+                            fontLoaded = true;
+                            break;
+                        } catch (e) {
+                            // Continue to next style
+                            continue;
+                        }
+                    }
+
+                    if (!fontLoaded) {
+                        console.warn(`Could not load ${primaryFont} ${weight.name}, skipping...`);
+                        continue;
+                    }
+
+                    // Create text style name like "H1-56px/Regular"
+                    const styleName = `${typo.name}-${typo.fontSize}px/${weight.name}`;
+
+                    let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
                     if (!textStyle) {
                         textStyle = figma.createTextStyle();
                         textStyle.name = styleName;
                     }
 
-                    textStyle.fontName = fontName;
-                    textStyle.fontSize = style.size;
-                    textStyle.lineHeight = { value: (style.lineHeight || 1.5) * 100, unit: 'PERCENT' };
-                    textStyle.letterSpacing = { value: style.letterSpacing || 0, unit: 'PIXELS' };
+                    // Set font properties using the loaded style
+                    textStyle.fontName = { family: primaryFont, style: loadedStyle };
 
-                    if (typographyVariables[key]) {
+                    // Bind variables to text style properties
+                    const fontFamilyVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/primary");
+                    const fontWeightVar = figma.variables.getLocalVariables().find(v => v.name === `font-weight/${weight.name.toLowerCase()}`);
+
+                    if (fontFamilyVar) {
+                        textStyle.setBoundVariable('fontFamily', fontFamilyVar);
+                    }
+
+                    if (fontWeightVar) {
+                        textStyle.setBoundVariable('fontWeight', fontWeightVar);
+                    }
+
+                    if (fontSizeVar) {
+                        textStyle.setBoundVariable('fontSize', fontSizeVar);
+                    } else {
+                        textStyle.fontSize = typo.fontSize;
+                    }
+
+                    if (lineHeightVar) {
+                        textStyle.setBoundVariable('lineHeight', lineHeightVar);
+                    } else {
+                        textStyle.lineHeight = { value: typo.lineHeight, unit: "PIXELS" };
+                    }
+
+                    if (letterSpacingVar) {
+                        textStyle.setBoundVariable('letterSpacing', letterSpacingVar);
+                    } else {
+                        textStyle.letterSpacing = { value: typo.letterSpacing, unit: "PIXELS" };
+                    }
+
+                    textStylesCreated++;
+                }
+            }
+
+            notifyUI('typography-tokens', true, 'Typography system created successfully!');
+        } catch (error) {
+            notifyUI('typography-tokens', false, 'Error creating typography tokens', error.message);
+            console.error(error);
+        }
+    }
+
+    if (msg.type === "create-color-style-guide") {
+        try {
+            const colors = msg.colors;
+            const includeStatus = msg.includeStatus;
+            const includeNeutral = msg.includeNeutral;
+
+            // Helper function to convert hex to RGB
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                }
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+                return { r, g, b };
+            }
+
+            // Helper to calculate contrast ratio
+            function getContrastRatio(hex) {
+                const rgb = hexToRgb(hex);
+                const luminance = 0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b;
+                const whiteLuminance = 1;
+                const blackLuminance = 0;
+
+                const contrastWithWhite = (whiteLuminance + 0.05) / (luminance + 0.05);
+                const contrastWithBlack = (luminance + 0.05) / (blackLuminance + 0.05);
+
+                return {
+                    white: contrastWithWhite.toFixed(1),
+                    black: contrastWithBlack.toFixed(1)
+                };
+            }
+
+            // Helper to convert hex to HSL
+            function hexToHSL(hex) {
+                const rgb = hexToRgb(hex);
+                const r = rgb.r;
+                const g = rgb.g;
+                const b = rgb.b;
+
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+
+                if (max === min) {
+                    h = s = 0;
+                } else {
+                    const d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    switch (max) {
+                        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                        case g: h = ((b - r) / d + 2) / 6; break;
+                        case b: h = ((r - g) / d + 4) / 6; break;
+                    }
+                }
+
+                return {
+                    h: Math.round(h * 360),
+                    s: Math.round(s * 100),
+                    l: Math.round(l * 100)
+                };
+            }
+
+            // Create main frame
+            const frame = figma.createFrame();
+            frame.name = "Color Style Guide";
+            frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            frame.paddingTop = 40;
+            frame.paddingBottom = 40;
+            frame.paddingLeft = 40;
+            frame.paddingRight = 40;
+            frame.layoutMode = "VERTICAL";
+            frame.primaryAxisSizingMode = "AUTO";
+            frame.counterAxisSizingMode = "AUTO";
+            frame.itemSpacing = 40;
+
+            // Add top border
+            frame.strokes = [{ type: 'SOLID', color: hexToRgb('#1350FF') }];
+            frame.strokeWeight = 8;
+            frame.strokeAlign = "INSIDE";
+            frame.strokeTopWeight = 8;
+            frame.strokeBottomWeight = 0;
+            frame.strokeLeftWeight = 0;
+            frame.strokeRightWeight = 0;
+
+            // Load fonts
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+            await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Regular" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+
+            // Title section
+            const titleSection = figma.createFrame();
+            titleSection.name = "Title Section";
+            titleSection.layoutMode = "VERTICAL";
+            titleSection.primaryAxisSizingMode = "AUTO";
+            titleSection.counterAxisSizingMode = "AUTO";
+            titleSection.itemSpacing = 34;
+            titleSection.fills = [];
+
+            // Create logo from SVG
+            const logoSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_466_1736)"><g clip-path="url(#clip1_466_1736)"><path d="M47.9502 22.765C46.7073 22.0781 45.7261 21.1295 45.0065 19.952C44.2869 18.7418 43.9271 17.4008 43.9271 15.8962C43.9271 14.3916 44.2869 13.0506 45.0065 11.8404C45.7261 10.6302 46.7073 9.71438 47.9502 9.0275C49.1931 8.34063 50.5996 8.01355 52.1696 8.01355C53.4125 8.01355 54.59 8.24251 55.604 8.66771C56.6506 9.09292 57.5337 9.74708 58.2533 10.5648L56.4217 12.2983C55.3096 11.0881 53.9358 10.4994 52.3004 10.4994C51.2538 10.4994 50.3052 10.7283 49.4548 11.1862C48.6044 11.6442 47.9829 12.2983 47.4923 13.116C47.0344 13.9337 46.8054 14.8496 46.8054 15.8962C46.8054 16.9429 47.0344 17.8587 47.4923 18.6764C47.9502 19.4941 48.6044 20.1483 49.4548 20.6062C50.3052 21.0641 51.2211 21.2931 52.3004 21.2931C53.9358 21.2931 55.3096 20.6716 56.4217 19.4614L58.2533 21.2277C57.5337 22.0781 56.6506 22.6995 55.604 23.1247C54.5573 23.5499 53.4125 23.7789 52.1369 23.7789C50.5996 23.7789 49.1931 23.4191 47.9502 22.765Z" fill="black"/><path d="M63.6175 22.7649C62.3745 22.0781 61.3606 21.1295 60.641 19.9193C59.9214 18.7091 59.5616 17.3681 59.5616 15.8635C59.5616 14.3589 59.9214 13.0179 60.641 11.8077C61.3606 10.5975 62.3418 9.64895 63.6175 8.96207C64.8604 8.2752 66.2995 7.94812 67.8695 7.94812C69.4395 7.94812 70.846 8.2752 72.1216 8.96207C73.3645 9.64895 74.3785 10.5975 75.098 11.775C75.8176 12.9852 76.1774 14.3262 76.1774 15.8308C76.1774 17.3354 75.8176 18.6764 75.098 19.8866C74.3785 21.0968 73.3972 22.0126 72.1216 22.6995C70.8787 23.3864 69.4395 23.7135 67.8695 23.7135C66.2995 23.7789 64.8604 23.4191 63.6175 22.7649ZM70.617 20.5735C71.4347 20.1156 72.0889 19.4614 72.5468 18.6437C73.0047 17.826 73.2337 16.8775 73.2337 15.8635C73.2337 14.8496 73.0047 13.901 72.5468 13.0833C72.0889 12.2656 71.4347 11.6114 70.617 11.1535C69.7993 10.6956 68.8835 10.4667 67.8368 10.4667C66.8229 10.4667 65.8743 10.6956 65.0566 11.1535C64.2389 11.6114 63.5848 12.2656 63.1268 13.0833C62.6689 13.901 62.44 14.8496 62.44 15.8635C62.44 16.8775 62.6689 17.826 63.1268 18.6437C63.5848 19.4614 64.2389 20.1156 65.0566 20.5735C65.8743 21.0314 66.7902 21.2604 67.8368 21.2604C68.8835 21.2604 69.7993 21.0314 70.617 20.5735Z" fill="black"/><path d="M79.1539 8.17706H85.8591C87.4945 8.17706 88.9663 8.50414 90.242 9.1256C91.5176 9.74706 92.4988 10.6629 93.2184 11.8404C93.9053 13.0179 94.2651 14.3589 94.2651 15.8635C94.2651 17.4008 93.9053 18.7418 93.2184 19.8866C92.5315 21.0641 91.5176 21.9472 90.242 22.6014C88.9663 23.2228 87.5272 23.5499 85.8918 23.5499H79.1539V8.17706ZM85.7282 21.1295C86.8403 21.1295 87.8543 20.9006 88.7047 20.4753C89.5551 20.0501 90.2093 19.4287 90.6672 18.6437C91.1251 17.8587 91.354 16.9102 91.354 15.8635C91.354 14.8168 91.1251 13.8683 90.6672 13.0833C90.2093 12.2983 89.5551 11.6768 88.7047 11.2516C87.8543 10.8264 86.8403 10.5975 85.7282 10.5975H81.9995V21.1295H85.7282Z" fill="black"/><path d="M108.82 21.1622V23.5499H97.3069V8.17706H108.526V10.5648H100.153V14.5552H107.577V16.9102H100.153V21.1622H108.82Z" fill="black"/><path d="M115.133 10.5975H110.03V8.17706H123.081V10.5975H117.978V23.5499H115.133V10.5975Z" fill="black"/><path d="M138.879 8.17706V23.5499H136.033V16.9756H128.085V23.5499H125.24V8.17706H128.085V14.5225H136.033V8.17706H138.879Z" fill="black"/><path d="M154.514 21.1622V23.5499H143V8.17706H154.219V10.5648H145.846V14.5552H153.271V16.9102H145.846V21.1622H154.514Z" fill="black"/><path d="M160.597 22.7649C159.354 22.0781 158.34 21.1295 157.621 19.9193C156.901 18.7091 156.542 17.3681 156.542 15.8635C156.542 14.3589 156.901 13.0179 157.621 11.8077C158.34 10.5975 159.322 9.64895 160.597 8.96207C161.873 8.2752 163.279 7.94812 164.849 7.94812C166.419 7.94812 167.826 8.2752 169.101 8.96207C170.344 9.64895 171.358 10.5975 172.078 11.775C172.797 12.9852 173.157 14.3262 173.157 15.8308C173.157 17.3354 172.797 18.6764 172.078 19.8866C171.358 21.0968 170.377 22.0126 169.101 22.6995C167.859 23.3864 166.419 23.7135 164.849 23.7135C163.247 23.7789 161.84 23.4191 160.597 22.7649ZM167.597 20.5735C168.415 20.1156 169.069 19.4614 169.527 18.6437C169.985 17.826 170.214 16.8775 170.214 15.8635C170.214 14.8496 169.985 13.901 169.527 13.0833C169.069 12.2656 168.415 11.6114 167.597 11.1535C166.779 10.6956 165.863 10.4667 164.817 10.4667C163.803 10.4667 162.854 10.6956 162.036 11.1535C161.219 11.6114 160.565 12.2656 160.107 13.0833C159.649 13.901 159.42 14.8496 159.42 15.8635C159.42 16.8775 159.649 17.826 160.107 18.6437C160.565 19.4614 161.219 20.1156 162.036 20.5735C162.854 21.0314 163.77 21.2604 164.817 21.2604C165.863 21.2604 166.779 21.0314 167.597 20.5735Z" fill="black"/><path d="M186.175 23.5499L183.035 19.0362C182.904 19.0362 182.708 19.0689 182.446 19.0689H178.979V23.5499H176.134V8.17706H182.446C183.787 8.17706 184.932 8.40602 185.913 8.83123C186.895 9.25643 187.647 9.9106 188.17 10.7283C188.694 11.546 188.955 12.5273 188.955 13.6393C188.955 14.7841 188.661 15.7981 188.105 16.6158C187.549 17.4662 186.731 18.0877 185.685 18.4801L189.25 23.5499H186.175ZM185.161 11.3825C184.507 10.8591 183.558 10.5975 182.316 10.5975H178.979V16.7139H182.316C183.558 16.7139 184.507 16.4522 185.161 15.8962C185.815 15.3729 186.142 14.6206 186.142 13.6393C186.11 12.6581 185.815 11.9058 185.161 11.3825Z" fill="black"/><path d="M203.707 21.1622V23.5499H192.193V8.17706H203.412V10.5648H195.039V14.5552H202.464V16.9102H195.039V21.1622H203.707Z" fill="black"/><path d="M221.009 23.5499L220.977 13.3777L215.94 21.8164H214.664L209.627 13.5085V23.5499H206.912V8.17706H209.267L215.384 18.3493L221.336 8.17706H223.691L223.724 23.5499H221.009Z" fill="black"/><path d="M34.1474 24.5312H1.83165C0.327072 24.5312 -0.523342 22.8303 0.392488 21.6201L15.9943 1.01395C17.041 -0.359794 19.1016 -0.359794 20.1155 1.01395L35.6192 21.5874C36.5023 22.7976 35.6519 24.5312 34.1474 24.5312Z" fill="url(#paint0_linear_466_1736)"/><path d="M4.15395 28.5215L16.7466 11.9385C17.5643 10.8591 19.167 10.8918 19.952 11.9385L32.4465 28.5215C33.4278 29.8626 32.512 31.727 30.8438 31.727H5.75665C4.08853 31.727 3.14 29.8299 4.15395 28.5215Z" fill="url(#paint1_linear_466_1736)"/><path d="M29.4047 24.5312L19.952 11.9385C19.1343 10.8591 17.5643 10.8591 16.7466 11.9385L7.1958 24.5312H29.4047Z" fill="#6699FF"/></g></g><defs><linearGradient id="paint0_linear_466_1736" x1="0.0140991" y1="12.2574" x2="35.977" y2="12.2574" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><linearGradient id="paint1_linear_466_1736" x1="3.73645" y1="21.4341" x2="32.8498" y2="21.4341" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><clipPath id="clip0_466_1736"><rect width="224" height="31.727" fill="white"/></clipPath><clipPath id="clip1_466_1736"><rect width="223.724" height="31.727" fill="white"/></clipPath></defs></svg>`;
+
+            const logo = figma.createNodeFromSvg(logoSvg);
+            logo.name = "logo - Horizontal";
+            logo.resize(224, 31.73);
+
+            // Header Section frame
+            const headerSection = figma.createFrame();
+            headerSection.name = "Header Section";
+            headerSection.layoutMode = "VERTICAL";
+            headerSection.primaryAxisSizingMode = "AUTO";
+            headerSection.counterAxisSizingMode = "AUTO";
+            headerSection.itemSpacing = 6;
+            headerSection.fills = [];
+
+            // Title text
+            const titleText = figma.createText();
+            titleText.characters = "Color System";
+            titleText.fontSize = 40;
+            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+            titleText.lineHeight = { value: 150, unit: "PERCENT" };
+
+            // Subtitle text
+            const subtitleText = figma.createText();
+            subtitleText.characters = "A comprehensive color palette designed for accessibility and visual harmony.";
+            subtitleText.fontSize = 16;
+            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+            subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
+            subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
+
+            headerSection.appendChild(titleText);
+            headerSection.appendChild(subtitleText);
+
+            titleSection.appendChild(logo);
+            titleSection.appendChild(headerSection);
+            frame.appendChild(titleSection);
+
+            // Create color sections for each color
+            for (const color of colors) {
+                const colorSection = figma.createFrame();
+                colorSection.name = `${color.name} Section`;
+                colorSection.layoutMode = "VERTICAL";
+                colorSection.primaryAxisSizingMode = "AUTO";
+                colorSection.counterAxisSizingMode = "AUTO";
+                colorSection.itemSpacing = 12;
+                colorSection.fills = [];
+
+                // Section header
+                const sectionHeader = figma.createFrame();
+                sectionHeader.name = "Section Header";
+                sectionHeader.resize(600, 59);
+                sectionHeader.layoutMode = "VERTICAL";
+                sectionHeader.primaryAxisSizingMode = "AUTO";
+                sectionHeader.counterAxisSizingMode = "FIXED";
+                sectionHeader.itemSpacing = 6;
+                sectionHeader.fills = [];
+
+                const colorTitle = figma.createText();
+                colorTitle.characters = color.name;
+                colorTitle.fontSize = 20;
+                colorTitle.fontName = { family: "Poppins", style: "SemiBold" };
+                colorTitle.fills = [{ type: 'SOLID', color: hexToRgb('#151515') }];
+
+                const colorDesc = figma.createText();
+                colorDesc.characters = "A carefully crafted color that enhances your design system";
+                colorDesc.fontSize = 14;
+                colorDesc.fontName = { family: "Montserrat", style: "Medium" };
+                colorDesc.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+                colorDesc.resize(600, 23);
+
+                sectionHeader.appendChild(colorTitle);
+                sectionHeader.appendChild(colorDesc);
+                colorSection.appendChild(sectionHeader);
+
+                // Color grid
+                const colorGrid = figma.createFrame();
+                colorGrid.name = "Color Grid";
+                colorGrid.layoutMode = "HORIZONTAL";
+                colorGrid.primaryAxisSizingMode = "AUTO";
+                colorGrid.counterAxisSizingMode = "AUTO";
+                colorGrid.itemSpacing = 2;
+                colorGrid.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                colorGrid.strokes = [{ type: 'SOLID', color: hexToRgb('#D5D5D6') }];
+                colorGrid.strokeWeight = 1;
+                colorGrid.cornerRadius = 8;
+
+                // Create shade cards
+                const shadeCount = color.shades.length;
+                for (let i = 0; i < shadeCount; i++) {
+                    const shadeValue = Math.round((i + 1) * (1000 / shadeCount));
+                    const shadeHex = color.shades[i];
+                    const rgb = hexToRgb(shadeHex);
+                    const hsl = hexToHSL(shadeHex);
+                    const contrast = getContrastRatio(shadeHex);
+
+                    const shadeCard = figma.createFrame();
+                    shadeCard.name = `${color.name}-${shadeValue}`;
+                    shadeCard.layoutMode = "VERTICAL";
+                    shadeCard.primaryAxisSizingMode = "AUTO";
+                    shadeCard.counterAxisSizingMode = "AUTO";
+                    shadeCard.counterAxisAlignItems = "MIN";
+                    shadeCard.fills = [];
+
+                    // Color preview
+                    const colorPreview = figma.createFrame();
+                    colorPreview.name = "Color Preview";
+                    colorPreview.resize(160, 100);
+                    colorPreview.fills = [{ type: 'SOLID', color: rgb }];
+
+                    // Color info section
+                    const colorInfo = figma.createFrame();
+                    colorInfo.name = "Color Info";
+                    colorInfo.layoutMode = "VERTICAL";
+                    colorInfo.primaryAxisSizingMode = "AUTO";
+                    colorInfo.counterAxisSizingMode = "AUTO";
+                    colorInfo.itemSpacing = 6;
+                    colorInfo.paddingTop = 12;
+                    colorInfo.paddingBottom = 12;
+                    colorInfo.paddingLeft = 12;
+                    colorInfo.paddingRight = 12;
+                    colorInfo.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                    // Shade name
+                    const shadeName = figma.createText();
+                    shadeName.characters = `${color.name}-${shadeValue}`;
+                    shadeName.fontSize = 14;
+                    shadeName.fontName = { family: "Poppins", style: "Medium" };
+                    shadeName.fills = [{ type: 'SOLID', color: hexToRgb('#151515') }];
+
+                    // Hex value
+                    const hexText = figma.createText();
+                    hexText.characters = shadeHex.toUpperCase();
+                    hexText.fontSize = 10;
+                    hexText.fontName = { family: "Montserrat", style: "Regular" };
+                    hexText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+
+                    // RGB value
+                    const rgbText = figma.createText();
+                    rgbText.characters = `RGB(${Math.round(rgb.r * 255)}, ${Math.round(rgb.g * 255)}, ${Math.round(rgb.b * 255)})`;
+                    rgbText.fontSize = 10;
+                    rgbText.fontName = { family: "Montserrat", style: "Regular" };
+                    rgbText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+
+                    colorInfo.appendChild(shadeName);
+                    colorInfo.appendChild(hexText);
+                    colorInfo.appendChild(rgbText);
+
+                    shadeCard.appendChild(colorPreview);
+                    shadeCard.appendChild(colorInfo);
+                    colorGrid.appendChild(shadeCard);
+                }
+
+                colorSection.appendChild(colorGrid);
+                frame.appendChild(colorSection);
+            }
+
+            // Add Status Colors if toggle is on
+            if (includeStatus) {
+                const statusColors = {
+                    'Success': ['#ECFDF5', '#D1FAE5', '#A7F3D0', '#6EE7B7', '#34D399', '#10B981', '#059669', '#047857', '#065F46', '#064E3B'],
+                    'Warning': ['#FFFBEB', '#FEF3C7', '#FDE68A', '#FCD34D', '#FBBF24', '#F59E0B', '#D97706', '#B45309', '#92400E', '#78350F'],
+                    'Error': ['#FEF2F2', '#FEE2E2', '#FECACA', '#FCA5A5', '#F87171', '#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D'],
+                    'Info': ['#EFF6FF', '#DBEAFE', '#BFDBFE', '#93C5FD', '#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF', '#1E3A8A']
+                };
+
+                for (const [colorName, shades] of Object.entries(statusColors)) {
+                    const colorSection = figma.createFrame();
+                    colorSection.name = `${colorName} Section`;
+                    colorSection.layoutMode = "VERTICAL";
+                    colorSection.primaryAxisSizingMode = "AUTO";
+                    colorSection.counterAxisSizingMode = "AUTO";
+                    colorSection.itemSpacing = 12;
+                    colorSection.fills = [];
+
+                    // Section header
+                    const sectionHeader = figma.createFrame();
+                    sectionHeader.name = "Section Header";
+                    sectionHeader.layoutMode = "VERTICAL";
+                    sectionHeader.primaryAxisSizingMode = "AUTO";
+                    sectionHeader.counterAxisSizingMode = "AUTO";
+                    sectionHeader.itemSpacing = 6;
+                    sectionHeader.fills = [];
+
+                    const colorTitle = figma.createText();
+                    colorTitle.characters = colorName;
+                    colorTitle.fontSize = 20;
+                    colorTitle.fontName = { family: "Poppins", style: "SemiBold" };
+                    colorTitle.fills = [{ type: 'SOLID', color: hexToRgb('#151515') }];
+
+                    const colorDesc = figma.createText();
+                    colorDesc.characters = "Status color for feedback and notifications";
+                    colorDesc.fontSize = 14;
+                    colorDesc.fontName = { family: "Montserrat", style: "Medium" };
+                    colorDesc.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+
+                    sectionHeader.appendChild(colorTitle);
+                    sectionHeader.appendChild(colorDesc);
+                    colorSection.appendChild(sectionHeader);
+
+                    // Color grid
+                    const colorGrid = figma.createFrame();
+                    colorGrid.name = "Color Grid";
+                    colorGrid.layoutMode = "HORIZONTAL";
+                    colorGrid.primaryAxisSizingMode = "AUTO";
+                    colorGrid.counterAxisSizingMode = "AUTO";
+                    colorGrid.itemSpacing = 2;
+                    colorGrid.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                    colorGrid.strokes = [{ type: 'SOLID', color: hexToRgb('#D5D5D6') }];
+                    colorGrid.strokeWeight = 1;
+                    colorGrid.cornerRadius = 8;
+
+                    // Create shade cards
+                    for (let i = 0; i < shades.length; i++) {
+                        const shadeValue = (i + 1) * 100;
+                        const shadeHex = shades[i];
+                        const rgb = hexToRgb(shadeHex);
+
+                        const shadeCard = figma.createFrame();
+                        shadeCard.name = `${colorName}-${shadeValue}`;
+                        shadeCard.layoutMode = "VERTICAL";
+                        shadeCard.primaryAxisSizingMode = "AUTO";
+                        shadeCard.counterAxisSizingMode = "AUTO";
+                        shadeCard.fills = [];
+
+                        // Color preview
+                        const colorPreview = figma.createFrame();
+                        colorPreview.name = "Color Preview";
+                        colorPreview.resize(160, 100);
+                        colorPreview.fills = [{ type: 'SOLID', color: rgb }];
+
+                        // Color info section
+                        const colorInfo = figma.createFrame();
+                        colorInfo.name = "Color Info";
+                        colorInfo.layoutMode = "VERTICAL";
+                        colorInfo.primaryAxisSizingMode = "AUTO";
+                        colorInfo.counterAxisSizingMode = "AUTO";
+                        colorInfo.itemSpacing = 6;
+                        colorInfo.paddingTop = 12;
+                        colorInfo.paddingBottom = 12;
+                        colorInfo.paddingLeft = 12;
+                        colorInfo.paddingRight = 12;
+                        colorInfo.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                        // Shade name
+                        const shadeName = figma.createText();
+                        shadeName.characters = `${colorName}-${shadeValue}`;
+                        shadeName.fontSize = 14;
+                        shadeName.fontName = { family: "Poppins", style: "Medium" };
+                        shadeName.fills = [{ type: 'SOLID', color: hexToRgb('#151515') }];
+
+                        // Hex value
+                        const hexText = figma.createText();
+                        hexText.characters = shadeHex.toUpperCase();
+                        hexText.fontSize = 10;
+                        hexText.fontName = { family: "Montserrat", style: "Regular" };
+                        hexText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+
+                        // RGB value
+                        const rgbText = figma.createText();
+                        rgbText.characters = `RGB(${Math.round(rgb.r * 255)}, ${Math.round(rgb.g * 255)}, ${Math.round(rgb.b * 255)})`;
+                        rgbText.fontSize = 10;
+                        rgbText.fontName = { family: "Montserrat", style: "Regular" };
+                        rgbText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+
+                        colorInfo.appendChild(shadeName);
+                        colorInfo.appendChild(hexText);
+                        colorInfo.appendChild(rgbText);
+
+                        shadeCard.appendChild(colorPreview);
+                        shadeCard.appendChild(colorInfo);
+                        colorGrid.appendChild(shadeCard);
+                    }
+
+                    colorSection.appendChild(colorGrid);
+                    frame.appendChild(colorSection);
+                }
+            }
+
+            // Add Neutral Colors if toggle is on
+            if (includeNeutral) {
+                const neutralShades = [
+                    '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF',
+                    '#6B7280', '#4B5563', '#374151', '#1F2937', '#111827'
+                ];
+
+                const colorSection = figma.createFrame();
+                colorSection.name = "Neutral Section";
+                colorSection.layoutMode = "VERTICAL";
+                colorSection.primaryAxisSizingMode = "AUTO";
+                colorSection.counterAxisSizingMode = "AUTO";
+                colorSection.itemSpacing = 12;
+                colorSection.fills = [];
+
+                // Section header
+                const sectionHeader = figma.createFrame();
+                sectionHeader.name = "Section Header";
+                sectionHeader.layoutMode = "VERTICAL";
+                sectionHeader.primaryAxisSizingMode = "AUTO";
+                sectionHeader.counterAxisSizingMode = "AUTO";
+                sectionHeader.itemSpacing = 6;
+                sectionHeader.fills = [];
+
+                const colorTitle = figma.createText();
+                colorTitle.characters = "Neutral";
+                colorTitle.fontSize = 20;
+                colorTitle.fontName = { family: "Poppins", style: "SemiBold" };
+                colorTitle.fills = [{ type: 'SOLID', color: hexToRgb('#151515') }];
+
+                const colorDesc = figma.createText();
+                colorDesc.characters = "Neutral colors for backgrounds, borders, and text";
+                colorDesc.fontSize = 14;
+                colorDesc.fontName = { family: "Montserrat", style: "Medium" };
+                colorDesc.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+
+                sectionHeader.appendChild(colorTitle);
+                sectionHeader.appendChild(colorDesc);
+                colorSection.appendChild(sectionHeader);
+
+                // Color grid
+                const colorGrid = figma.createFrame();
+                colorGrid.name = "Color Grid";
+                colorGrid.layoutMode = "HORIZONTAL";
+                colorGrid.primaryAxisSizingMode = "AUTO";
+                colorGrid.counterAxisSizingMode = "AUTO";
+                colorGrid.itemSpacing = 2;
+                colorGrid.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                colorGrid.strokes = [{ type: 'SOLID', color: hexToRgb('#D5D5D6') }];
+                colorGrid.strokeWeight = 1;
+                colorGrid.cornerRadius = 8;
+
+                // Create shade cards
+                for (let i = 0; i < neutralShades.length; i++) {
+                    const shadeValue = (i + 1) * 100;
+                    const shadeHex = neutralShades[i];
+                    const rgb = hexToRgb(shadeHex);
+
+                    const shadeCard = figma.createFrame();
+                    shadeCard.name = `Neutral-${shadeValue}`;
+                    shadeCard.layoutMode = "VERTICAL";
+                    shadeCard.primaryAxisSizingMode = "AUTO";
+                    shadeCard.counterAxisSizingMode = "AUTO";
+                    shadeCard.counterAxisAlignItems = "MIN";
+                    shadeCard.fills = [];
+
+                    // Color preview
+                    const colorPreview = figma.createFrame();
+                    colorPreview.name = "Color Preview";
+                    colorPreview.resize(160, 100);
+                    colorPreview.fills = [{ type: 'SOLID', color: rgb }];
+
+                    // Color info section
+                    const colorInfo = figma.createFrame();
+                    colorInfo.name = "Color Info";
+                    colorInfo.layoutMode = "VERTICAL";
+                    colorInfo.primaryAxisSizingMode = "AUTO";
+                    colorInfo.counterAxisSizingMode = "AUTO";
+                    colorInfo.itemSpacing = 6;
+                    colorInfo.paddingTop = 12;
+                    colorInfo.paddingBottom = 12;
+                    colorInfo.paddingLeft = 12;
+                    colorInfo.paddingRight = 12;
+                    colorInfo.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+
+                    // Shade name
+                    const shadeName = figma.createText();
+                    shadeName.characters = `Neutral-${shadeValue}`;
+                    shadeName.fontSize = 14;
+                    shadeName.fontName = { family: "Poppins", style: "Medium" };
+                    shadeName.fills = [{ type: 'SOLID', color: hexToRgb('#151515') }];
+
+                    // Hex value
+                    const hexText = figma.createText();
+                    hexText.characters = shadeHex.toUpperCase();
+                    hexText.fontSize = 10;
+                    hexText.fontName = { family: "Montserrat", style: "Regular" };
+                    hexText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+
+                    // RGB value
+                    const rgbText = figma.createText();
+                    rgbText.characters = `RGB(${Math.round(rgb.r * 255)}, ${Math.round(rgb.g * 255)}, ${Math.round(rgb.b * 255)})`;
+                    rgbText.fontSize = 10;
+                    rgbText.fontName = { family: "Montserrat", style: "Regular" };
+                    rgbText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+
+                    colorInfo.appendChild(shadeName);
+                    colorInfo.appendChild(hexText);
+                    colorInfo.appendChild(rgbText);
+
+                    shadeCard.appendChild(colorPreview);
+                    shadeCard.appendChild(colorInfo);
+                    colorGrid.appendChild(shadeCard);
+                }
+
+                colorSection.appendChild(colorGrid);
+                frame.appendChild(colorSection);
+            }
+
+            // Add footer
+            const footer = figma.createFrame();
+            footer.name = "Footer Section";
+            footer.resize(141, 42);
+            footer.layoutMode = "VERTICAL";
+            footer.primaryAxisSizingMode = "AUTO";
+            footer.counterAxisSizingMode = "FIXED";
+            footer.primaryAxisAlignItems = "CENTER";
+            footer.itemSpacing = 8;
+            footer.fills = [];
+
+            const createdBy = figma.createText();
+            createdBy.characters = "Created By";
+            createdBy.fontSize = 12;
+            createdBy.fontName = { family: "Inter", style: "Regular" };
+            createdBy.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+            createdBy.textAlignHorizontal = "CENTER";
+
+            const website = figma.createText();
+            website.characters = "Slate.Design";
+            website.fontSize = 16;
+            website.fontName = { family: "Inter", style: "Bold" };
+            website.fills = [{ type: 'SOLID', color: hexToRgb('#121212') }];
+            website.textAlignHorizontal = "CENTER";
+
+            footer.appendChild(createdBy);
+            footer.appendChild(website);
+            frame.appendChild(footer);
+
+            // Select and zoom to the created frame
+            figma.currentPage.selection = [frame];
+            figma.viewport.scrollAndZoomIntoView([frame]);
+
+            figma.notify('Color Style Guide created successfully!');
+        } catch (error) {
+            figma.notify('Error creating color style guide: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    if (msg.type === "create-button-variables") {
+        try {
+            // Get or create a collection for button variables
+            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Button");
+            if (!collection) {
+                collection = figma.variables.createVariableCollection("Button");
+            }
+
+            // Get mode ID
+            let modeId = collection.modes[0].modeId;
+
+            // Helper function to convert hex to RGB
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                }
+                if (!/^[0-9A-Fa-f]{6}$/.test(hex)) {
+                    throw new Error(`Invalid hex color: ${hex}`);
+                }
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+                return { r, g, b };
+            }
+
+            // Helper function to darken a color
+            function darkenColor(hex, percent) {
+                const rgb = hexToRgb(hex);
+                const factor = 1 - (percent / 100);
+                const r = Math.round(rgb.r * 255 * factor);
+                const g = Math.round(rgb.g * 255 * factor);
+                const b = Math.round(rgb.b * 255 * factor);
+                return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+            }
+
+            // Helper function to lighten a color
+            function lightenColor(hex, percent) {
+                const rgb = hexToRgb(hex);
+                const factor = percent / 100;
+                const r = Math.round(rgb.r * 255 + (255 - rgb.r * 255) * factor);
+                const g = Math.round(rgb.g * 255 + (255 - rgb.g * 255) * factor);
+                const b = Math.round(rgb.b * 255 + (255 - rgb.b * 255) * factor);
+                return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+            }
+
+            // Define button types and states
+            const buttonTypes = ['primary', 'secondary', 'destructive', 'ghost', 'line', 'link'];
+            const buttonStates = ['default', 'hover', 'active', 'disabled'];
+            const properties = ['bg', 'text', 'border', 'icon'];
+
+            // Default color scheme (can be customized)
+            const primaryColor = '#1350FF';
+            const textColor = '#FFFFFF';
+            const destructiveColor = '#FF0000';
+            const neutralColor = '#000000';
+
+            // Create variables for each button type, state, and property
+            for (const type of buttonTypes) {
+                for (const state of buttonStates) {
+                    for (const property of properties) {
+                        const variableName = `button/${type}/${state}/${property}`;
+
+                        // Check if variable already exists
+                        let variable = figma.variables.getLocalVariables().find(v =>
+                            v.name === variableName && v.variableCollectionId === collection.id
+                        );
+
+                        if (!variable) {
+                            variable = figma.variables.createVariable(variableName, collection, "COLOR");
+                        }
+
+                        // Determine color based on type, state, and property
+                        let color;
+
+                        if (type === 'primary') {
+                            if (state === 'default') {
+                                if (property === 'bg') color = primaryColor;
+                                else if (property === 'text') color = textColor;
+                                else if (property === 'border') color = darkenColor(primaryColor, 20);
+                                else if (property === 'icon') color = textColor;
+                            } else if (state === 'hover') {
+                                if (property === 'bg') color = darkenColor(primaryColor, 10);
+                                else if (property === 'text') color = textColor;
+                                else if (property === 'border') color = darkenColor(primaryColor, 30);
+                                else if (property === 'icon') color = textColor;
+                            } else if (state === 'active') {
+                                if (property === 'bg') color = darkenColor(primaryColor, 20);
+                                else if (property === 'text') color = textColor;
+                                else if (property === 'border') color = darkenColor(primaryColor, 30);
+                                else if (property === 'icon') color = textColor;
+                            } else if (state === 'disabled') {
+                                if (property === 'bg') color = '#AAAAAA';
+                                else if (property === 'text') color = '#FFFFFF';
+                                else if (property === 'border') color = '#AAAAAA';
+                                else if (property === 'icon') color = '#FFFFFF';
+                            }
+                        } else if (type === 'secondary') {
+                            if (state === 'default') {
+                                if (property === 'bg') color = lightenColor(primaryColor, 20);
+                                else if (property === 'text') color = textColor;
+                                else if (property === 'border') color = primaryColor;
+                                else if (property === 'icon') color = textColor;
+                            } else if (state === 'hover') {
+                                if (property === 'bg') color = primaryColor;
+                                else if (property === 'text') color = textColor;
+                                else if (property === 'border') color = darkenColor(primaryColor, 20);
+                                else if (property === 'icon') color = textColor;
+                            } else if (state === 'active') {
+                                if (property === 'bg') color = darkenColor(primaryColor, 10);
+                                else if (property === 'text') color = textColor;
+                                else if (property === 'border') color = darkenColor(primaryColor, 20);
+                                else if (property === 'icon') color = textColor;
+                            } else if (state === 'disabled') {
+                                if (property === 'bg') color = '#AAAAAA';
+                                else if (property === 'text') color = '#FFFFFF';
+                                else if (property === 'border') color = '#AAAAAA';
+                                else if (property === 'icon') color = '#FFFFFF';
+                            }
+                        } else if (type === 'destructive') {
+                            if (state === 'default') {
+                                if (property === 'bg') color = destructiveColor;
+                                else if (property === 'text') color = '#FFFFFF';
+                                else if (property === 'border') color = '#CC0000';
+                                else if (property === 'icon') color = '#FFFFFF';
+                            } else if (state === 'hover') {
+                                if (property === 'bg') color = '#CC0000';
+                                else if (property === 'text') color = '#FFFFFF';
+                                else if (property === 'border') color = '#990000';
+                                else if (property === 'icon') color = '#FFFFFF';
+                            } else if (state === 'active') {
+                                if (property === 'bg') color = '#990000';
+                                else if (property === 'text') color = '#FFFFFF';
+                                else if (property === 'border') color = '#990000';
+                                else if (property === 'icon') color = '#FFFFFF';
+                            } else if (state === 'disabled') {
+                                if (property === 'bg') color = '#AAAAAA';
+                                else if (property === 'text') color = '#FFFFFF';
+                                else if (property === 'border') color = '#AAAAAA';
+                                else if (property === 'icon') color = '#FFFFFF';
+                            }
+                        } else if (type === 'ghost') {
+                            if (state === 'default') {
+                                if (property === 'bg') color = '#FFFFFF'; // Transparent represented as white
+                                else if (property === 'text') color = neutralColor;
+                                else if (property === 'border') color = '#FFFFFF'; // No border
+                                else if (property === 'icon') color = neutralColor;
+                            } else if (state === 'hover') {
+                                if (property === 'bg') color = '#E3E3E3';
+                                else if (property === 'text') color = neutralColor;
+                                else if (property === 'border') color = '#E3E3E3';
+                                else if (property === 'icon') color = neutralColor;
+                            } else if (state === 'active') {
+                                if (property === 'bg') color = '#C6C6C6';
+                                else if (property === 'text') color = neutralColor;
+                                else if (property === 'border') color = '#C6C6C6';
+                                else if (property === 'icon') color = neutralColor;
+                            } else if (state === 'disabled') {
+                                if (property === 'bg') color = '#FFFFFF';
+                                else if (property === 'text') color = '#717171';
+                                else if (property === 'border') color = '#FFFFFF';
+                                else if (property === 'icon') color = '#717171';
+                            }
+                        } else if (type === 'line') {
+                            if (state === 'default') {
+                                if (property === 'bg') color = '#FFFFFF';
+                                else if (property === 'text') color = primaryColor;
+                                else if (property === 'border') color = primaryColor;
+                                else if (property === 'icon') color = primaryColor;
+                            } else if (state === 'hover') {
+                                if (property === 'bg') color = lightenColor(primaryColor, 90);
+                                else if (property === 'text') color = primaryColor;
+                                else if (property === 'border') color = primaryColor;
+                                else if (property === 'icon') color = primaryColor;
+                            } else if (state === 'active') {
+                                if (property === 'bg') color = lightenColor(primaryColor, 70);
+                                else if (property === 'text') color = primaryColor;
+                                else if (property === 'border') color = primaryColor;
+                                else if (property === 'icon') color = primaryColor;
+                            } else if (state === 'disabled') {
+                                if (property === 'bg') color = '#AAAAAA';
+                                else if (property === 'text') color = '#FFFFFF';
+                                else if (property === 'border') color = '#AAAAAA';
+                                else if (property === 'icon') color = '#FFFFFF';
+                            }
+                        } else if (type === 'link') {
+                            if (state === 'default') {
+                                if (property === 'bg') color = '#FFFFFF';
+                                else if (property === 'text') color = primaryColor;
+                                else if (property === 'border') color = '#FFFFFF';
+                                else if (property === 'icon') color = primaryColor;
+                            } else if (state === 'hover') {
+                                if (property === 'bg') color = '#FFFFFF';
+                                else if (property === 'text') color = darkenColor(primaryColor, 20);
+                                else if (property === 'border') color = '#FFFFFF';
+                                else if (property === 'icon') color = darkenColor(primaryColor, 20);
+                            } else if (state === 'active') {
+                                if (property === 'bg') color = '#FFFFFF';
+                                else if (property === 'text') color = neutralColor;
+                                else if (property === 'border') color = '#FFFFFF';
+                                else if (property === 'icon') color = neutralColor;
+                            } else if (state === 'disabled') {
+                                if (property === 'bg') color = '#FFFFFF';
+                                else if (property === 'text') color = '#8E8E8E';
+                                else if (property === 'border') color = '#FFFFFF';
+                                else if (property === 'icon') color = '#8E8E8E';
+                            }
+                        }
+
+                        // Set the color value
+                        const rgb = hexToRgb(color);
+                        variable.setValueForMode(modeId, rgb);
+                    }
+                }
+            }
+
+            figma.notify(`Created button variables for all types and states!`);
+        } catch (error) {
+            figma.notify('Error creating button variables: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    if (msg.type === "create-button-doc") {
+        try {
+            // Get user inputs
+            const buttonText = msg.buttonText || 'Button';
+            const userRadius = msg.radius || 24;
+            const userPrimaryColor = msg.primaryColor || '#1350FF';
+            const userTextColor = msg.textColor || '#FFFFFF';
+
+            // First, create button variables
+            try {
+                // Get or create a collection for button variables
+                let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Button");
+                if (!collection) {
+                    collection = figma.variables.createVariableCollection("Button");
+                }
+
+                // Get mode ID
+                let modeId = collection.modes[0].modeId;
+
+                // Helper function to convert hex to RGB for variables
+                function hexToRgbVar(hex) {
+                    hex = hex.replace('#', '');
+                    if (hex.length === 3) {
+                        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                    }
+                    if (!/^[0-9A-Fa-f]{6}$/.test(hex)) {
+                        throw new Error(`Invalid hex color: ${hex}`);
+                    }
+                    const r = parseInt(hex.substring(0, 2), 16) / 255;
+                    const g = parseInt(hex.substring(2, 4), 16) / 255;
+                    const b = parseInt(hex.substring(4, 6), 16) / 255;
+                    return { r, g, b };
+                }
+
+                // Helper function to darken a color for variables
+                function darkenColorVar(hex, percent) {
+                    const rgb = hexToRgbVar(hex);
+                    const factor = 1 - (percent / 100);
+                    const r = Math.round(rgb.r * 255 * factor);
+                    const g = Math.round(rgb.g * 255 * factor);
+                    const b = Math.round(rgb.b * 255 * factor);
+                    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+                }
+
+                // Helper function to lighten a color for variables
+                function lightenColorVar(hex, percent) {
+                    const rgb = hexToRgbVar(hex);
+                    const factor = percent / 100;
+                    const r = Math.round(rgb.r * 255 + (255 - rgb.r * 255) * factor);
+                    const g = Math.round(rgb.g * 255 + (255 - rgb.g * 255) * factor);
+                    const b = Math.round(rgb.b * 255 + (255 - rgb.b * 255) * factor);
+                    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+                }
+
+                // Define button types and states
+                const buttonTypes = ['primary', 'secondary', 'destructive', 'ghost', 'line', 'link'];
+                const buttonStates = ['default', 'hover', 'active', 'disabled'];
+                const properties = ['bg', 'text', 'border', 'icon'];
+
+                // Default color scheme
+                const primaryColor = userPrimaryColor;
+                const textColor = userTextColor;
+                const destructiveColor = '#FF0000';
+                const neutralColor = '#000000';
+
+                // Create variables for each button type, state, and property
+                for (const type of buttonTypes) {
+                    for (const state of buttonStates) {
+                        for (const property of properties) {
+                            const variableName = `button/${type}/${state}/${property}`;
+
+                            // Check if variable already exists
+                            let variable = figma.variables.getLocalVariables().find(v =>
+                                v.name === variableName && v.variableCollectionId === collection.id
+                            );
+
+                            if (!variable) {
+                                variable = figma.variables.createVariable(variableName, collection, "COLOR");
+                            }
+
+                            // Determine color based on type, state, and property
+                            let color;
+
+                            if (type === 'primary') {
+                                if (state === 'default') {
+                                    if (property === 'bg') color = primaryColor;
+                                    else if (property === 'text') color = textColor;
+                                    else if (property === 'border') color = darkenColorVar(primaryColor, 20);
+                                    else if (property === 'icon') color = textColor;
+                                } else if (state === 'hover') {
+                                    if (property === 'bg') color = darkenColorVar(primaryColor, 10);
+                                    else if (property === 'text') color = textColor;
+                                    else if (property === 'border') color = darkenColorVar(primaryColor, 30);
+                                    else if (property === 'icon') color = textColor;
+                                } else if (state === 'active') {
+                                    if (property === 'bg') color = darkenColorVar(primaryColor, 20);
+                                    else if (property === 'text') color = textColor;
+                                    else if (property === 'border') color = darkenColorVar(primaryColor, 30);
+                                    else if (property === 'icon') color = textColor;
+                                } else if (state === 'disabled') {
+                                    if (property === 'bg') color = '#AAAAAA';
+                                    else if (property === 'text') color = '#FFFFFF';
+                                    else if (property === 'border') color = '#AAAAAA';
+                                    else if (property === 'icon') color = '#FFFFFF';
+                                }
+                            } else if (type === 'secondary') {
+                                if (state === 'default') {
+                                    if (property === 'bg') color = lightenColorVar(primaryColor, 20);
+                                    else if (property === 'text') color = textColor;
+                                    else if (property === 'border') color = primaryColor;
+                                    else if (property === 'icon') color = textColor;
+                                } else if (state === 'hover') {
+                                    if (property === 'bg') color = primaryColor;
+                                    else if (property === 'text') color = textColor;
+                                    else if (property === 'border') color = darkenColorVar(primaryColor, 20);
+                                    else if (property === 'icon') color = textColor;
+                                } else if (state === 'active') {
+                                    if (property === 'bg') color = darkenColorVar(primaryColor, 10);
+                                    else if (property === 'text') color = textColor;
+                                    else if (property === 'border') color = darkenColorVar(primaryColor, 20);
+                                    else if (property === 'icon') color = textColor;
+                                } else if (state === 'disabled') {
+                                    if (property === 'bg') color = '#AAAAAA';
+                                    else if (property === 'text') color = '#FFFFFF';
+                                    else if (property === 'border') color = '#AAAAAA';
+                                    else if (property === 'icon') color = '#FFFFFF';
+                                }
+                            } else if (type === 'destructive') {
+                                if (state === 'default') {
+                                    if (property === 'bg') color = destructiveColor;
+                                    else if (property === 'text') color = '#FFFFFF';
+                                    else if (property === 'border') color = '#CC0000';
+                                    else if (property === 'icon') color = '#FFFFFF';
+                                } else if (state === 'hover') {
+                                    if (property === 'bg') color = '#CC0000';
+                                    else if (property === 'text') color = '#FFFFFF';
+                                    else if (property === 'border') color = '#990000';
+                                    else if (property === 'icon') color = '#FFFFFF';
+                                } else if (state === 'active') {
+                                    if (property === 'bg') color = '#990000';
+                                    else if (property === 'text') color = '#FFFFFF';
+                                    else if (property === 'border') color = '#990000';
+                                    else if (property === 'icon') color = '#FFFFFF';
+                                } else if (state === 'disabled') {
+                                    if (property === 'bg') color = '#AAAAAA';
+                                    else if (property === 'text') color = '#FFFFFF';
+                                    else if (property === 'border') color = '#AAAAAA';
+                                    else if (property === 'icon') color = '#FFFFFF';
+                                }
+                            } else if (type === 'ghost') {
+                                if (state === 'default') {
+                                    if (property === 'bg') color = '#FFFFFF';
+                                    else if (property === 'text') color = neutralColor;
+                                    else if (property === 'border') color = '#FFFFFF';
+                                    else if (property === 'icon') color = neutralColor;
+                                } else if (state === 'hover') {
+                                    if (property === 'bg') color = '#E3E3E3';
+                                    else if (property === 'text') color = neutralColor;
+                                    else if (property === 'border') color = '#E3E3E3';
+                                    else if (property === 'icon') color = neutralColor;
+                                } else if (state === 'active') {
+                                    if (property === 'bg') color = '#C6C6C6';
+                                    else if (property === 'text') color = neutralColor;
+                                    else if (property === 'border') color = '#C6C6C6';
+                                    else if (property === 'icon') color = neutralColor;
+                                } else if (state === 'disabled') {
+                                    if (property === 'bg') color = '#FFFFFF';
+                                    else if (property === 'text') color = '#717171';
+                                    else if (property === 'border') color = '#FFFFFF';
+                                    else if (property === 'icon') color = '#717171';
+                                }
+                            } else if (type === 'line') {
+                                if (state === 'default') {
+                                    if (property === 'bg') color = '#FFFFFF';
+                                    else if (property === 'text') color = primaryColor;
+                                    else if (property === 'border') color = primaryColor;
+                                    else if (property === 'icon') color = primaryColor;
+                                } else if (state === 'hover') {
+                                    if (property === 'bg') color = lightenColorVar(primaryColor, 90);
+                                    else if (property === 'text') color = primaryColor;
+                                    else if (property === 'border') color = primaryColor;
+                                    else if (property === 'icon') color = primaryColor;
+                                } else if (state === 'active') {
+                                    if (property === 'bg') color = lightenColorVar(primaryColor, 70);
+                                    else if (property === 'text') color = primaryColor;
+                                    else if (property === 'border') color = primaryColor;
+                                    else if (property === 'icon') color = primaryColor;
+                                } else if (state === 'disabled') {
+                                    if (property === 'bg') color = '#AAAAAA';
+                                    else if (property === 'text') color = '#FFFFFF';
+                                    else if (property === 'border') color = '#AAAAAA';
+                                    else if (property === 'icon') color = '#FFFFFF';
+                                }
+                            } else if (type === 'link') {
+                                if (state === 'default') {
+                                    if (property === 'bg') color = '#FFFFFF';
+                                    else if (property === 'text') color = primaryColor;
+                                    else if (property === 'border') color = '#FFFFFF';
+                                    else if (property === 'icon') color = primaryColor;
+                                } else if (state === 'hover') {
+                                    if (property === 'bg') color = '#FFFFFF';
+                                    else if (property === 'text') color = darkenColorVar(primaryColor, 20);
+                                    else if (property === 'border') color = '#FFFFFF';
+                                    else if (property === 'icon') color = darkenColorVar(primaryColor, 20);
+                                } else if (state === 'active') {
+                                    if (property === 'bg') color = '#FFFFFF';
+                                    else if (property === 'text') color = neutralColor;
+                                    else if (property === 'border') color = '#FFFFFF';
+                                    else if (property === 'icon') color = neutralColor;
+                                } else if (state === 'disabled') {
+                                    if (property === 'bg') color = '#FFFFFF';
+                                    else if (property === 'text') color = '#8E8E8E';
+                                    else if (property === 'border') color = '#FFFFFF';
+                                    else if (property === 'icon') color = '#8E8E8E';
+                                }
+                            }
+
+                            // Set the color value
+                            const rgb = hexToRgbVar(color);
+                            variable.setValueForMode(modeId, rgb);
+                        }
+                    }
+                }
+
+                // Create padding variables for each size
+                const paddingConfig = {
+                    'sm': { vertical: 4, horizontal: 8 },
+                    'md': { vertical: 6, horizontal: 16 },
+                    'lg': { vertical: 10, horizontal: 20 }
+                };
+
+                for (const [sizeName, padding] of Object.entries(paddingConfig)) {
+                    // Vertical padding
+                    const vPaddingName = `button/padding/${sizeName}/vertical`;
+                    let vPaddingVar = figma.variables.getLocalVariables().find(v =>
+                        v.name === vPaddingName && v.variableCollectionId === collection.id
+                    );
+                    if (!vPaddingVar) {
+                        vPaddingVar = figma.variables.createVariable(vPaddingName, collection, "FLOAT");
+                    }
+                    vPaddingVar.setValueForMode(modeId, padding.vertical);
+
+                    // Horizontal padding
+                    const hPaddingName = `button/padding/${sizeName}/horizontal`;
+                    let hPaddingVar = figma.variables.getLocalVariables().find(v =>
+                        v.name === hPaddingName && v.variableCollectionId === collection.id
+                    );
+                    if (!hPaddingVar) {
+                        hPaddingVar = figma.variables.createVariable(hPaddingName, collection, "FLOAT");
+                    }
+                    hPaddingVar.setValueForMode(modeId, padding.horizontal);
+                }
+
+                // Create text style variables for each size
+                const textConfig = {
+                    'sm': { fontSize: 14, lineHeight: 21 },
+                    'md': { fontSize: 16, lineHeight: 26 },
+                    'lg': { fontSize: 18, lineHeight: 29 }
+                };
+
+                for (const [sizeName, textStyle] of Object.entries(textConfig)) {
+                    // Font size
+                    const fontSizeName = `button/text/${sizeName}/fontSize`;
+                    let fontSizeVar = figma.variables.getLocalVariables().find(v =>
+                        v.name === fontSizeName && v.variableCollectionId === collection.id
+                    );
+                    if (!fontSizeVar) {
+                        fontSizeVar = figma.variables.createVariable(fontSizeName, collection, "FLOAT");
+                    }
+                    fontSizeVar.setValueForMode(modeId, textStyle.fontSize);
+
+                    // Line height
+                    const lineHeightName = `button/text/${sizeName}/lineHeight`;
+                    let lineHeightVar = figma.variables.getLocalVariables().find(v =>
+                        v.name === lineHeightName && v.variableCollectionId === collection.id
+                    );
+                    if (!lineHeightVar) {
+                        lineHeightVar = figma.variables.createVariable(lineHeightName, collection, "FLOAT");
+                    }
+                    lineHeightVar.setValueForMode(modeId, textStyle.lineHeight);
+                }
+
+                // Create corner radius variable
+                const radiusName = `button/cornerRadius`;
+                let radiusVar = figma.variables.getLocalVariables().find(v =>
+                    v.name === radiusName && v.variableCollectionId === collection.id
+                );
+                if (!radiusVar) {
+                    radiusVar = figma.variables.createVariable(radiusName, collection, "FLOAT");
+                }
+                radiusVar.setValueForMode(modeId, userRadius);
+
+                // Create gap variable (space between icon and text)
+                const gapName = `button/gap`;
+                let gapVar = figma.variables.getLocalVariables().find(v =>
+                    v.name === gapName && v.variableCollectionId === collection.id
+                );
+                if (!gapVar) {
+                    gapVar = figma.variables.createVariable(gapName, collection, "FLOAT");
+                }
+                gapVar.setValueForMode(modeId, 8);
+
+            } catch (varError) {
+                console.log('Error creating variables:', varError);
+                // Continue with component creation even if variables fail
+            }
+
+            // Load fonts first
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+
+            // Create text styles for each button size
+            const textStylesMap = {};
+            const textStyleConfig = {
+                'sm': { fontSize: 14, lineHeight: 1.4, fontWeight: 'Medium' },
+                'md': { fontSize: 16, lineHeight: 1.5, fontWeight: 'Medium' },
+                'lg': { fontSize: 18, lineHeight: 1.5, fontWeight: 'Bold' }
+            };
+
+            for (const [sizeName, config] of Object.entries(textStyleConfig)) {
+                const styleName = `Button/${sizeName.toUpperCase()}`;
+
+                // Check if text style already exists
+                let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
+
+                if (!textStyle) {
+                    textStyle = figma.createTextStyle();
+                    textStyle.name = styleName;
+                }
+
+                // Set text style properties
+                textStyle.fontName = { family: "Inter", style: config.fontWeight };
+                textStyle.fontSize = config.fontSize;
+                // Calculate line height in pixels (fontSize * lineHeight multiplier)
+                const lineHeightPx = config.fontSize * config.lineHeight;
+                textStyle.lineHeight = { value: lineHeightPx, unit: "PIXELS" };
+
+                // Bind text style properties to variables if collection exists
+                try {
+                    const buttonCollection = figma.variables.getLocalVariableCollections().find(c => c.name === "Button");
+                    if (buttonCollection) {
+                        const allVariables = figma.variables.getLocalVariables();
+
+                        // Bind font size
+                        const fontSizeVar = allVariables.find(v =>
+                            v.name === `button/text/${sizeName}/fontSize` &&
+                            v.variableCollectionId === buttonCollection.id
+                        );
+                        if (fontSizeVar) {
+                            textStyle.setBoundVariable('fontSize', fontSizeVar);
+                        }
+
+                        // Bind line height
+                        const lineHeightVar = allVariables.find(v =>
+                            v.name === `button/text/${sizeName}/lineHeight` &&
+                            v.variableCollectionId === buttonCollection.id
+                        );
+                        if (lineHeightVar) {
+                            textStyle.setBoundVariable('lineHeight', lineHeightVar);
+                        }
+                    }
+                } catch (e) {
+                    console.log('Could not bind text style variables:', e);
+                }
+
+                textStylesMap[sizeName] = textStyle;
+            }
+
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                }
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+                return { r, g, b };
+            }
+
+            // Helper function to darken a color
+            function darkenColor(hex, percent) {
+                const rgb = hexToRgb(hex);
+                const factor = 1 - (percent / 100);
+                const r = Math.round(rgb.r * 255 * factor);
+                const g = Math.round(rgb.g * 255 * factor);
+                const b = Math.round(rgb.b * 255 * factor);
+                return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+            }
+
+            // Helper function to lighten a color
+            function lightenColor(hex, percent) {
+                const rgb = hexToRgb(hex);
+                const factor = percent / 100;
+                const r = Math.round(rgb.r * 255 + (255 - rgb.r * 255) * factor);
+                const g = Math.round(rgb.g * 255 + (255 - rgb.g * 255) * factor);
+                const b = Math.round(rgb.b * 255 + (255 - rgb.b * 255) * factor);
+                return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+            }
+
+            // Create shared icon components once (to be used for instance swap)
+            // Left icon component
+            const leftIconSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.8334 10.0003H4.16675M4.16675 10.0003L10.0001 15.8337M4.16675 10.0003L10.0001 4.16699" stroke="#000000" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            const leftIconNode = figma.createNodeFromSvg(leftIconSvg);
+            const sharedLeftIconComponent = figma.createComponent();
+            sharedLeftIconComponent.name = "arrow-left";
+            sharedLeftIconComponent.resize(20, 20);
+            sharedLeftIconComponent.appendChild(leftIconNode);
+            sharedLeftIconComponent.x = -2000;
+            sharedLeftIconComponent.y = -2000;
+
+            // Right icon component
+            const rightIconSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.16675 10.0003H15.8334M15.8334 10.0003L10.0001 4.16699M15.8334 10.0003L10.0001 15.8337" stroke="#000000" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            const rightIconNode = figma.createNodeFromSvg(rightIconSvg);
+            const sharedRightIconComponent = figma.createComponent();
+            sharedRightIconComponent.name = "arrow-right";
+            sharedRightIconComponent.resize(20, 20);
+            sharedRightIconComponent.appendChild(rightIconNode);
+            sharedRightIconComponent.x = -2000;
+            sharedRightIconComponent.y = -2000;
+
+            // Create button component function
+            function createButton(size, type, state, leftIconComp, rightIconComp, buttonCollection, textStylesMap) {
+                const button = figma.createComponent();
+                button.name = `Size=${size}, Type=${type}, State=${state}`;
+
+                // Size configurations
+                const sizeConfig = {
+                    'SM': { padding: 4, hPadding: 8, fontSize: 14, fontWeight: 'Medium', height: 28, iconSize: 16, sizeName: 'sm' },
+                    'MD': { padding: 6, hPadding: 16, fontSize: 16, fontWeight: 'Medium', height: 36, iconSize: 20, sizeName: 'md' },
+                    'LG': { padding: 10, hPadding: 20, fontSize: 18, fontWeight: 'Bold', height: 47, iconSize: 24, sizeName: 'lg' }
+                };
+
+                const config = sizeConfig[size];
+                button.layoutMode = "HORIZONTAL";
+                button.primaryAxisSizingMode = "AUTO";
+                button.counterAxisSizingMode = "FIXED";
+                button.counterAxisAlignItems = "CENTER";
+                button.primaryAxisAlignItems = "CENTER";
+                button.paddingTop = config.padding;
+                button.paddingBottom = config.padding;
+                button.paddingLeft = config.hPadding;
+                button.paddingRight = config.hPadding;
+                button.itemSpacing = 8;
+                button.cornerRadius = userRadius;
+                button.resize(button.width, config.height);
+
+                // Bind padding variables if available
+                if (buttonCollection) {
+                    const allVariables = figma.variables.getLocalVariables();
+
+                    // Bind vertical padding
+                    const vPaddingVar = allVariables.find(v =>
+                        v.name === `button/padding/${config.sizeName}/vertical` &&
+                        v.variableCollectionId === buttonCollection.id
+                    );
+                    if (vPaddingVar) {
                         try {
-                            textStyle.setBoundVariable('fontSize', typographyVariables[key].size);
-                            textStyle.setBoundVariable('letterSpacing', typographyVariables[key].letterSpacing);
-                            textStyle.setBoundVariable('lineHeight', typographyVariables[key].lineHeight);
+                            button.paddingTop = 0;
+                            button.paddingBottom = 0;
+                            button.setBoundVariable('paddingTop', vPaddingVar);
+                            button.setBoundVariable('paddingBottom', vPaddingVar);
                         } catch (e) {
-                            console.warn(`Could not bind variables for ${styleName}:`, e);
+                            console.log('Could not bind vertical padding:', e);
                         }
                     }
 
-                    // Bind Font Family and Font Weight variables
-                    try {
-                        if (secondaryFontVar) textStyle.setBoundVariable('fontFamily', secondaryFontVar);
-                        if (weightVars[weight.name]) textStyle.setBoundVariable('fontWeight', weightVars[weight.name]);
-                    } catch (e) {
-                        console.warn(`Could not bind font family/weight for ${styleName}:`, e);
+                    // Bind horizontal padding
+                    const hPaddingVar = allVariables.find(v =>
+                        v.name === `button/padding/${config.sizeName}/horizontal` &&
+                        v.variableCollectionId === buttonCollection.id
+                    );
+                    if (hPaddingVar) {
+                        try {
+                            button.paddingLeft = 0;
+                            button.paddingRight = 0;
+                            button.setBoundVariable('paddingLeft', hPaddingVar);
+                            button.setBoundVariable('paddingRight', hPaddingVar);
+                        } catch (e) {
+                            console.log('Could not bind horizontal padding:', e);
+                        }
                     }
 
-                    createdStylesCount++;
-                } catch (styleError) {
-                    console.error(`Error creating secondary style ${key} with weight ${weight.name}:`, styleError);
+                    // Bind gap variable
+                    const gapVar = allVariables.find(v =>
+                        v.name === `button/gap` &&
+                        v.variableCollectionId === buttonCollection.id
+                    );
+                    if (gapVar) {
+                        try {
+                            button.itemSpacing = 0;
+                            button.setBoundVariable('itemSpacing', gapVar);
+                        } catch (e) {
+                            console.log('Could not bind gap:', e);
+                        }
+                    }
+
+                    // Bind corner radius variable
+                    const radiusVar = allVariables.find(v =>
+                        v.name === `button/cornerRadius` &&
+                        v.variableCollectionId === buttonCollection.id
+                    );
+                    if (radiusVar) {
+                        try {
+                            button.cornerRadius = 0;
+                            button.setBoundVariable('cornerRadius', radiusVar);
+                        } catch (e) {
+                            console.log('Could not bind corner radius:', e);
+                        }
+                    }
+                }
+
+                // Map UI state names to variable state names
+                const stateMap = {
+                    'Normal': 'default',
+                    'Hover': 'hover',
+                    'Click': 'active',
+                    'Disable': 'disabled'
+                };
+
+                // Map UI type names to variable type names
+                const typeMap = {
+                    'Primary': 'primary',
+                    'Secondary': 'secondary',
+                    'Destructive': 'destructive',
+                    'Ghost': 'ghost',
+                    'Line': 'line',
+                    'Link': 'link'
+                };
+
+                const varType = typeMap[type];
+                const varState = stateMap[state];
+
+                // Get variables for this button type and state
+                let bgVariable, textVariable, borderVariable, iconVariable;
+
+                if (buttonCollection) {
+                    const allVariables = figma.variables.getLocalVariables();
+                    bgVariable = allVariables.find(v =>
+                        v.name === `button/${varType}/${varState}/bg` &&
+                        v.variableCollectionId === buttonCollection.id
+                    );
+                    textVariable = allVariables.find(v =>
+                        v.name === `button/${varType}/${varState}/text` &&
+                        v.variableCollectionId === buttonCollection.id
+                    );
+                    borderVariable = allVariables.find(v =>
+                        v.name === `button/${varType}/${varState}/border` &&
+                        v.variableCollectionId === buttonCollection.id
+                    );
+                    iconVariable = allVariables.find(v =>
+                        v.name === `button/${varType}/${varState}/icon` &&
+                        v.variableCollectionId === buttonCollection.id
+                    );
+                }
+
+                // Type and State styling using user colors
+                let bgColor, borderColor, textColor, hasBorder = false, hasUnderline = false;
+
+                if (type === 'Primary') {
+                    if (state === 'Normal') { bgColor = userPrimaryColor; borderColor = darkenColor(userPrimaryColor, 20); hasBorder = true; textColor = userTextColor; }
+                    else if (state === 'Hover') { bgColor = darkenColor(userPrimaryColor, 10); borderColor = darkenColor(userPrimaryColor, 30); hasBorder = true; textColor = userTextColor; }
+                    else if (state === 'Click') { bgColor = darkenColor(userPrimaryColor, 20); borderColor = darkenColor(userPrimaryColor, 30); hasBorder = true; textColor = userTextColor; }
+                    else if (state === 'Disable') { bgColor = '#AAAAAA'; borderColor = '#AAAAAA'; hasBorder = true; textColor = '#FFFFFF'; }
+                } else if (type === 'Secondary') {
+                    if (state === 'Normal') { bgColor = lightenColor(userPrimaryColor, 20); borderColor = userPrimaryColor; hasBorder = true; textColor = userTextColor; }
+                    else if (state === 'Hover') { bgColor = userPrimaryColor; borderColor = darkenColor(userPrimaryColor, 20); hasBorder = true; textColor = userTextColor; }
+                    else if (state === 'Click') { bgColor = darkenColor(userPrimaryColor, 10); borderColor = darkenColor(userPrimaryColor, 20); hasBorder = true; textColor = userTextColor; }
+                    else if (state === 'Disable') { bgColor = '#AAAAAA'; borderColor = '#AAAAAA'; hasBorder = true; textColor = '#FFFFFF'; }
+                } else if (type === 'Destructive') {
+                    if (state === 'Normal') { bgColor = '#FF0000'; borderColor = '#CC0000'; hasBorder = true; textColor = '#FFFFFF'; }
+                    else if (state === 'Hover') { bgColor = '#CC0000'; borderColor = '#990000'; hasBorder = true; textColor = '#FFFFFF'; }
+                    else if (state === 'Click') { bgColor = '#990000'; borderColor = '#990000'; hasBorder = true; textColor = '#FFFFFF'; }
+                    else if (state === 'Disable') { bgColor = '#AAAAAA'; borderColor = '#AAAAAA'; hasBorder = true; textColor = '#FFFFFF'; }
+                } else if (type === 'Ghost') {
+                    if (state === 'Normal') { bgColor = 'transparent'; textColor = '#000000'; }
+                    else if (state === 'Hover') { bgColor = '#E3E3E3'; textColor = '#000000'; }
+                    else if (state === 'Click') { bgColor = '#C6C6C6'; textColor = '#000000'; }
+                    else if (state === 'Disable') { bgColor = 'transparent'; textColor = '#717171'; }
+                } else if (type === 'Line') {
+                    if (state === 'Normal') { bgColor = 'transparent'; borderColor = userPrimaryColor; hasBorder = true; textColor = userPrimaryColor; }
+                    else if (state === 'Hover') { bgColor = `rgba(${Math.round(hexToRgb(userPrimaryColor).r * 255)}, ${Math.round(hexToRgb(userPrimaryColor).g * 255)}, ${Math.round(hexToRgb(userPrimaryColor).b * 255)}, 0.08)`; borderColor = userPrimaryColor; hasBorder = true; textColor = userPrimaryColor; }
+                    else if (state === 'Click') { bgColor = lightenColor(userPrimaryColor, 70); borderColor = userPrimaryColor; hasBorder = true; textColor = userPrimaryColor; }
+                    else if (state === 'Disable') { bgColor = '#AAAAAA'; borderColor = '#AAAAAA'; hasBorder = true; textColor = '#FFFFFF'; }
+                } else if (type === 'Link') {
+                    if (state === 'Normal') { bgColor = 'transparent'; textColor = userPrimaryColor; hasUnderline = true; }
+                    else if (state === 'Hover') { bgColor = 'transparent'; textColor = darkenColor(userPrimaryColor, 20); hasUnderline = true; }
+                    else if (state === 'Click') { bgColor = 'transparent'; textColor = '#000000'; hasUnderline = true; }
+                    else if (state === 'Disable') { bgColor = 'transparent'; textColor = '#8E8E8E'; hasUnderline = true; }
+                }
+
+                // Set background with variable binding
+                if (bgColor === 'transparent') {
+                    button.fills = [];
+                } else if (bgColor.startsWith('rgba')) {
+                    const match = bgColor.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+                    button.fills = [{ type: 'SOLID', color: { r: parseInt(match[1]) / 255, g: parseInt(match[2]) / 255, b: parseInt(match[3]) / 255 }, opacity: parseFloat(match[4]) }];
+                } else {
+                    button.fills = [{ type: 'SOLID', color: hexToRgb(bgColor) }];
+                }
+
+                // Bind background to variable if available
+                if (bgVariable) {
+                    try {
+                        button.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: bgVariable.id } } }];
+                    } catch (e) {
+                        console.log('Could not bind bg variable:', e);
+                    }
+                }
+
+                // Set border with variable binding
+                if (hasBorder) {
+                    button.strokes = [{ type: 'SOLID', color: hexToRgb(borderColor) }];
+                    button.strokeWeight = 1;
+
+                    // Bind border to variable if available
+                    if (borderVariable) {
+                        try {
+                            button.strokes = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: borderVariable.id } } }];
+                        } catch (e) {
+                            console.log('Could not bind border variable:', e);
+                        }
+                    }
+                }
+
+                // Create left icon instance from shared component
+                const leftIcon = leftIconComp.createInstance();
+                leftIcon.name = "Left Icon";
+
+                // Scale the icon properly based on size
+                const iconScale = config.iconSize / 20; // 20 is the base icon size
+                leftIcon.rescale(iconScale);
+                leftIcon.visible = true; // Make visible by default to see them
+
+                // Set icon color (icons use strokes, not fills)
+                try {
+                    // Find all vector nodes in the icon and set their stroke color
+                    const vectors = leftIcon.findAll(node => node.type === 'VECTOR');
+                    vectors.forEach(vector => {
+                        if (vector.strokes && vector.strokes.length > 0) {
+                            vector.strokes = [{ type: 'SOLID', color: hexToRgb(textColor) }];
+
+                            // Bind icon stroke color to variable if available
+                            if (iconVariable) {
+                                try {
+                                    vector.strokes = [{
+                                        type: 'SOLID',
+                                        color: { r: 0, g: 0, b: 0 },
+                                        boundVariables: {
+                                            color: {
+                                                type: 'VARIABLE_ALIAS',
+                                                id: iconVariable.id
+                                            }
+                                        }
+                                    }];
+                                } catch (e) {
+                                    console.log('Could not bind left icon stroke variable:', e);
+                                }
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.log('Could not set left icon color:', e);
+                }
+
+                // Add text
+                const text = figma.createText();
+                text.name = "Button Text";
+                text.characters = buttonText;
+                // Apply text style first
+                if (textStylesMap && textStylesMap[config.sizeName]) {
+                    text.textStyleId = textStylesMap[config.sizeName].id;
+                } else {
+                    text.fontSize = config.fontSize;
+                    text.fontName = { family: "Inter", style: config.fontWeight };
+                    text.lineHeight = { value: size === 'SM' ? 140 : 150, unit: "PERCENT" };
+                }
+
+                text.fills = [{ type: 'SOLID', color: hexToRgb(textColor) }];
+                text.textDecoration = hasUnderline ? "UNDERLINE" : "NONE";
+
+                // Bind text color to variable if available
+                if (textVariable) {
+                    try {
+                        text.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: textVariable.id } } }];
+                    } catch (e) {
+                        console.log('Could not bind text variable:', e);
+                    }
+                }
+
+                // Create right icon instance from shared component
+                const rightIcon = rightIconComp.createInstance();
+                rightIcon.name = "Right Icon";
+
+                // Scale the icon properly based on size
+                const iconScaleRight = config.iconSize / 20; // 20 is the base icon size
+                rightIcon.rescale(iconScaleRight);
+                rightIcon.visible = true; // Make visible by default to see them
+
+                // Set icon color (icons use strokes, not fills)
+                try {
+                    // Find all vector nodes in the icon and set their stroke color
+                    const vectors = rightIcon.findAll(node => node.type === 'VECTOR');
+                    vectors.forEach(vector => {
+                        if (vector.strokes && vector.strokes.length > 0) {
+                            vector.strokes = [{ type: 'SOLID', color: hexToRgb(textColor) }];
+
+                            // Bind icon stroke color to variable if available
+                            if (iconVariable) {
+                                try {
+                                    vector.strokes = [{
+                                        type: 'SOLID',
+                                        color: { r: 0, g: 0, b: 0 },
+                                        boundVariables: {
+                                            color: {
+                                                type: 'VARIABLE_ALIAS',
+                                                id: iconVariable.id
+                                            }
+                                        }
+                                    }];
+                                } catch (e) {
+                                    console.log('Could not bind right icon stroke variable:', e);
+                                }
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.log('Could not set right icon color:', e);
+                }
+
+                // Add children to button in order
+                button.appendChild(leftIcon);
+                button.appendChild(text);
+                button.appendChild(rightIcon);
+                return button;
+            }
+
+            // Create component set
+            const components = [];
+            const sizes = ['SM', 'MD', 'LG'];
+            const types = ['Primary', 'Destructive', 'Ghost', 'Line', 'Link'];
+            const states = ['Normal', 'Hover', 'Click', 'Disable'];
+
+            // Get the button collection for variable binding
+            let buttonCollection = figma.variables.getLocalVariableCollections().find(c => c.name === "Button");
+
+            for (const size of sizes) {
+                for (const type of types) {
+                    for (const state of states) {
+                        components.push(createButton(size, type, state, sharedLeftIconComponent, sharedRightIconComponent, buttonCollection, textStylesMap));
+                    }
                 }
             }
-        }
-    }
 
-    // Create typography documentation
-    try {
-        await createTypographyDocumentation(typography, findBestFont);
-    } catch (docError) {
-        console.error('Error creating typography documentation:', docError);
-        // Don't throw - documentation is optional
-    }
+            // Add all components to the page and position them in a grid layout
+            // Layout: Group by TYPE first, showing all sizes for each type
+            // 8 columns (4 states x 2 types), 9 rows (3 type-pairs x 3 sizes)
+            const startX = 100;
+            const startY = 100;
+            const horizontalGap = 140; // Gap between buttons horizontally
+            const verticalGap = 70; // Gap between rows
+            const typeGroupGap = 30; // Extra gap between type groups
 
-    figma.notify(`✅ Created ${createdStylesCount} text styles!`);
-}
-
-async function createTypographyDocumentation(typography, findBestFont) {
-    // Get a safe fallback font for documentation
-    let docFont = { family: "Poppins", style: "Regular" };
-    try {
-        await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
-        await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
-        await figma.loadFontAsync({ family: "Poppins", style: "Regular" });
-        docFont = { family: "Poppins", style: "Regular" };
-    } catch (e) {
-        try {
-            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
-            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-            docFont = { family: "Inter", style: "Regular" };
-        } catch (e2) {
-            await figma.loadFontAsync({ family: "Arial", style: "Bold" });
-            await figma.loadFontAsync({ family: "Arial", style: "Regular" });
-            docFont = { family: "Arial", style: "Regular" };
-        }
-    }
-
-    const container = figma.createFrame();
-    container.name = "Typography System";
-    container.fills = [{ type: 'SOLID', color: { r: 0.98, g: 0.98, b: 0.99 } }];
-    container.layoutMode = 'VERTICAL';
-    container.primaryAxisSizingMode = 'AUTO';
-    container.counterAxisSizingMode = 'AUTO';
-    container.paddingBottom = 0;
-
-    // --- PREMIUM CENTERED HEADER ---
-    const headerFrame = figma.createFrame();
-    headerFrame.name = "Header";
-    headerFrame.layoutMode = 'VERTICAL';
-    headerFrame.layoutAlign = 'STRETCH';
-    headerFrame.primaryAxisSizingMode = 'AUTO';
-    headerFrame.paddingLeft = 80; headerFrame.paddingRight = 80; headerFrame.paddingTop = 80; headerFrame.paddingBottom = 100;
-    headerFrame.itemSpacing = 40;
-    headerFrame.counterAxisAlignItems = 'CENTER'; // Center content
-    headerFrame.fills = [{
-        type: 'GRADIENT_LINEAR',
-        gradientStops: [
-            { position: 0, color: { r: 0.04, g: 0.06, b: 0.15, a: 1 } },
-            { position: 1, color: { r: 0.08, g: 0.02, b: 0.18, a: 1 } }
-        ],
-        gradientTransform: [[1, 0, 0], [0, 1, 0]]
-    }];
-
-    // Logo & Title Group
-    const headerMain = figma.createFrame();
-    headerMain.layoutMode = 'VERTICAL';
-    headerMain.primaryAxisSizingMode = 'AUTO';
-    headerMain.counterAxisSizingMode = 'AUTO';
-    headerMain.counterAxisAlignItems = 'CENTER';
-    headerMain.itemSpacing = 24;
-    headerMain.fills = [];
-    headerFrame.appendChild(headerMain);
-
-    const title = figma.createText();
-    title.fontName = { family: "Poppins", style: "Bold" };
-    title.characters = "Typography System";
-    title.fontSize = 56;
-    title.letterSpacing = { value: -1.5, unit: 'PIXELS' };
-    title.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    headerMain.appendChild(title);
-
-    const categories = Object.keys(typography.styles);
-    const desc = figma.createText();
-    desc.fontName = { family: "Poppins", style: "Regular" };
-    desc.characters = `The ${typography.primaryFont} font family with ${categories.length} responsive styles for consistent typography across all platforms.`;
-    desc.fontSize = 18;
-    desc.opacity = 0.6;
-    desc.textAlignHorizontal = 'CENTER';
-    desc.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    headerMain.appendChild(desc);
-
-    // STATS ROW (Glassmorphism)
-    const statsRow = figma.createFrame();
-    statsRow.layoutMode = 'HORIZONTAL';
-    statsRow.primaryAxisSizingMode = 'AUTO';
-    statsRow.counterAxisSizingMode = 'AUTO';
-    statsRow.itemSpacing = 16;
-    statsRow.fills = [];
-
-    // Helper function for glassmorphism badges
-    function createStatBadge(label, value) {
-        const badge = figma.createFrame();
-        badge.layoutMode = 'HORIZONTAL';
-        badge.primaryAxisSizingMode = 'AUTO';
-        badge.counterAxisSizingMode = 'AUTO';
-        badge.paddingLeft = 20;
-        badge.paddingRight = 20;
-        badge.paddingTop = 10;
-        badge.paddingBottom = 10;
-        badge.cornerRadius = 100;
-        badge.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.08 }];
-        badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.15 }];
-        badge.strokeWeight = 1;
-        badge.itemSpacing = 10;
-        badge.counterAxisAlignItems = 'CENTER';
-        badge.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }];
-
-        const tLabel = figma.createText();
-        tLabel.fontName = { family: "Poppins", style: "Medium" };
-        safeSetCharacters(tLabel, label);
-        tLabel.fontSize = 13;
-        tLabel.fills = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.8 } }];
-        badge.appendChild(tLabel);
-
-        const tValue = figma.createText();
-        tValue.fontName = { family: "Poppins", style: "Bold" };
-        safeSetCharacters(tValue, value);
-        tValue.fontSize = 13;
-        tValue.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        badge.appendChild(tValue);
-
-        return badge;
-    }
-
-    statsRow.appendChild(createStatBadge("Font", typography.primaryFont));
-    statsRow.appendChild(createStatBadge("Styles", categories.length.toString()));
-    const dateText = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-    statsRow.appendChild(createStatBadge("Last Updated", dateText));
-
-    headerFrame.appendChild(statsRow);
-
-    container.appendChild(headerFrame);
-
-    // CONTENT WRAPPER FRAME
-    const contentWrapper = figma.createFrame();
-    contentWrapper.name = "Content";
-    contentWrapper.layoutMode = 'VERTICAL';
-    contentWrapper.primaryAxisSizingMode = 'AUTO';
-    contentWrapper.counterAxisSizingMode = 'AUTO';
-    contentWrapper.layoutAlign = 'STRETCH';
-    contentWrapper.paddingLeft = 48;
-    contentWrapper.paddingRight = 48;
-    contentWrapper.paddingTop = 48;
-    contentWrapper.paddingBottom = 48;
-    contentWrapper.fills = [];
-
-    // Typography cards
-    const grid = figma.createFrame();
-    grid.name = "Typography Grid";
-    grid.fills = [];
-    grid.layoutMode = 'VERTICAL';
-    grid.primaryAxisSizingMode = 'AUTO';
-    grid.counterAxisSizingMode = 'AUTO';
-    grid.itemSpacing = 16;
-
-    for (const category of categories) {
-        const styleData = typography.styles[category];
-        let previewWeightValue = 400;
-        if (styleData.weight === 'Bold') previewWeightValue = 700;
-        else if (styleData.weight === 'Semibold') previewWeightValue = 600;
-        else if (styleData.weight === 'Medium') previewWeightValue = 500;
-
-        const previewFontName = findBestFont(typography.primaryFont, previewWeightValue);
-        await figma.loadFontAsync(previewFontName);
-
-        const card = figma.createFrame();
-        card.name = `${category} Card`;
-        card.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-        card.layoutMode = 'VERTICAL';
-        card.primaryAxisSizingMode = 'AUTO';
-        card.counterAxisSizingMode = 'AUTO';
-        card.paddingLeft = 32;
-        card.paddingRight = 32;
-        card.paddingTop = 28;
-        card.paddingBottom = 28;
-        card.itemSpacing = 20;
-        card.cornerRadius = 12;
-        card.effects = [{ type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.04 }, offset: { x: 0, y: 2 }, radius: 8, visible: true, blendMode: 'NORMAL' }];
-
-        // Category label
-        const categoryLabel = figma.createText();
-        categoryLabel.fontName = { family: docFont.family, style: "Bold" };
-        safeSetCharacters(categoryLabel, category.toUpperCase());
-        categoryLabel.fontSize = 13;
-        categoryLabel.fills = [{ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }];
-        categoryLabel.letterSpacing = { value: 1, unit: 'PIXELS' };
-        card.appendChild(categoryLabel);
-
-        // Preview text
-        const previewText = figma.createText();
-        previewText.fontName = previewFontName;
-        safeSetCharacters(previewText, "The quick brown fox jumps over the lazy dog");
-        previewText.fontSize = styleData.size;
-        previewText.fills = [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }];
-        previewText.lineHeight = { value: (styleData.lineHeight || 1.5) * 100, unit: 'PERCENT' };
-        previewText.letterSpacing = { value: styleData.letterSpacing || 0, unit: 'PIXELS' };
-        card.appendChild(previewText);
-
-        // Specs
-        const specsText = figma.createText();
-        specsText.fontName = docFont;
-        const mobileSize = Math.round(styleData.size * 0.85);
-        safeSetCharacters(specsText, `Desktop: ${styleData.size}px • Mobile: ${mobileSize}px • Line Height: ${Math.round((styleData.lineHeight || 1.5) * 100)}%`);
-        specsText.fontSize = 12;
-        specsText.fills = [{ type: 'SOLID', color: { r: 0.55, g: 0.55, b: 0.55 } }];
-        card.appendChild(specsText);
-
-        grid.appendChild(card);
-    }
-
-    contentWrapper.appendChild(grid);
-    container.appendChild(contentWrapper);
-    figma.currentPage.appendChild(container);
-    figma.viewport.scrollAndZoomIntoView([container]);
-}
-
-// ============================================
-// TYPOGRAPHY SYSTEM - END
-// ============================================
-
-// ============================================
-// LAYOUT GRID STYLES - START
-// ============================================
-
-async function createLayoutGridStyles(grids) {
-    let gridCount = 0;
-
-    const gridConfigs = [
-        { name: 'Grid/Desktop', data: grids.desktop, color: { r: 0.31, g: 0.27, b: 0.9, a: 0.1 } },
-        { name: 'Grid/Tablet', data: grids.tablet, color: { r: 0.55, g: 0.36, b: 0.96, a: 0.1 } },
-        { name: 'Grid/Mobile', data: grids.mobile, color: { r: 0.06, g: 0.73, b: 0.51, a: 0.1 } }
-    ];
-
-    for (const config of gridConfigs) {
-        if (!config.data) continue;
-
-        try {
-            // Check if grid style already exists
-            const existingStyles = await figma.getLocalGridStylesAsync();
-            let gridStyle = existingStyles.find(s => s.name === config.name);
-
-            if (!gridStyle) {
-                gridStyle = figma.createGridStyle();
-                gridStyle.name = config.name;
+            // First, add all components to page and store in a map for easy access
+            const componentMap = {};
+            let componentIndex = 0;
+            for (const size of sizes) {
+                for (const type of types) {
+                    for (const state of states) {
+                        const component = components[componentIndex];
+                        figma.currentPage.appendChild(component);
+                        componentMap[`${size}-${type}-${state}`] = component;
+                        componentIndex++;
+                    }
+                }
             }
 
-            // Create column grid layout
-            gridStyle.layoutGrids = [{
-                pattern: 'COLUMNS',
-                alignment: 'STRETCH',
-                gutterSize: config.data.gutter,
-                count: config.data.columns,
-                offset: config.data.margin,
-                color: config.color
-            }];
+            // Now position them: Single column layout with all types
+            // Rows 0-2: Primary (SM, MD, LG)
+            // Rows 3-5: Destructive (SM, MD, LG)
+            // Rows 6-8: Ghost (SM, MD, LG)
+            // Rows 9-11: Line (SM, MD, LG)
+            // Rows 12-14: Link (SM, MD, LG)
+            const typesList = ['Primary', 'Destructive', 'Ghost', 'Line', 'Link'];
 
-            gridCount++;
-            console.log(`Created grid style: ${config.name}`);
+            for (let typeIndex = 0; typeIndex < typesList.length; typeIndex++) {
+                for (let sizeIndex = 0; sizeIndex < sizes.length; sizeIndex++) {
+                    const type = typesList[typeIndex];
+                    const size = sizes[sizeIndex];
+
+                    for (let stateIndex = 0; stateIndex < states.length; stateIndex++) {
+                        const state = states[stateIndex];
+                        const component = componentMap[`${size}-${type}-${state}`];
+
+                        // Row calculation: type index * 3 sizes + current size
+                        const rowIndex = typeIndex * 3 + sizeIndex;
+
+                        // Column calculation: just the state index (0-3)
+                        const columnIndex = stateIndex;
+
+                        // Add extra vertical spacing between type groups
+                        let extraYOffset = typeIndex * typeGroupGap;
+
+                        component.x = startX + (columnIndex * horizontalGap);
+                        component.y = startY + (rowIndex * verticalGap) + extraYOffset;
+                    }
+                }
+            }
+
+            // Select all components and combine them as variants
+            figma.currentPage.selection = components;
+
+            // Use the correct API method
+            let componentSet;
+            if (typeof figma.combineAsVariants === 'function') {
+                componentSet = figma.combineAsVariants(components, figma.currentPage);
+            } else {
+                // Fallback: just group them if combineAsVariants doesn't exist
+                figma.notify('Creating component set manually. Please select all buttons and use "Create component set" from the menu.');
+                componentSet = components[0]; // Use first component as reference
+            }
+
+            if (componentSet) {
+                componentSet.name = "Button";
+
+                // Add component properties
+                try {
+                    // First, get references to the icon instances from the first variant to use as defaults
+                    const firstVariant = componentSet.children.find(child => child.type === "COMPONENT");
+                    let leftIconInstance = null;
+                    let rightIconInstance = null;
+
+                    if (firstVariant) {
+                        leftIconInstance = firstVariant.findOne(node => node.name === "Left Icon" && node.type === "INSTANCE");
+                        rightIconInstance = firstVariant.findOne(node => node.name === "Right Icon" && node.type === "INSTANCE");
+
+                        console.log("Left icon instance found:", leftIconInstance ? "yes" : "no");
+                        console.log("Right icon instance found:", rightIconInstance ? "yes" : "no");
+                        if (leftIconInstance) {
+                            console.log("Left icon mainComponent:", leftIconInstance.mainComponent);
+                        }
+                        if (rightIconInstance) {
+                            console.log("Right icon mainComponent:", rightIconInstance.mainComponent);
+                        }
+                    }
+
+                    // Add instance properties to the component set
+                    componentSet.addComponentProperty("Button Text", "TEXT", buttonText);
+                    componentSet.addComponentProperty("Show Left Icon", "BOOLEAN", false);
+
+                    // Only add instance swap if we found an instance to use as default
+                    if (leftIconInstance && leftIconInstance.mainComponent) {
+                        try {
+                            componentSet.addComponentProperty("Left Icon", "INSTANCE_SWAP", leftIconInstance.mainComponent);
+                            console.log("Added Left Icon instance swap property");
+                        } catch (e) {
+                            console.log("Could not add Left Icon instance swap:", e);
+                        }
+                    }
+
+                    componentSet.addComponentProperty("Show Right Icon", "BOOLEAN", false);
+
+                    // Only add instance swap if we found an instance to use as default
+                    if (rightIconInstance && rightIconInstance.mainComponent) {
+                        try {
+                            componentSet.addComponentProperty("Right Icon", "INSTANCE_SWAP", rightIconInstance.mainComponent);
+                            console.log("Added Right Icon instance swap property");
+                        } catch (e) {
+                            console.log("Could not add Right Icon instance swap:", e);
+                        }
+                    }
+
+                    componentSet.addComponentProperty("Text", "BOOLEAN", true);
+
+                    // Get the property IDs from the component set
+                    const propDefs = componentSet.componentPropertyDefinitions;
+                    let textPropId, showLeftIconPropId, leftIconPropId, showRightIconPropId, rightIconPropId, showTextPropId;
+
+                    for (const [key, prop] of Object.entries(propDefs)) {
+                        // Match by the property name we set
+                        const propName = key.split('#')[0]; // Property names in Figma can have # suffix
+
+                        if (propName === "Button Text") {
+                            textPropId = key;
+                        } else if (propName === "Show Left Icon") {
+                            showLeftIconPropId = key;
+                        } else if (propName === "Left Icon") {
+                            leftIconPropId = key;
+                        } else if (propName === "Show Right Icon") {
+                            showRightIconPropId = key;
+                        } else if (propName === "Right Icon") {
+                            rightIconPropId = key;
+                        } else if (propName === "Text") {
+                            showTextPropId = key;
+                        }
+                    }
+
+                    console.log("Property IDs:", { textPropId, showLeftIconPropId, leftIconPropId, showRightIconPropId, rightIconPropId, showTextPropId });
+
+                    // Apply property bindings to each variant
+                    componentSet.children.forEach(variant => {
+                        if (variant.type === "COMPONENT") {
+                            // Bind text layer to text property
+                            const textLayer = variant.findOne(node => node.name === "Button Text");
+                            if (textLayer && textLayer.type === "TEXT" && textPropId && showTextPropId) {
+                                try {
+                                    textLayer.componentPropertyReferences = {
+                                        characters: textPropId,
+                                        visible: showTextPropId
+                                    };
+                                    console.log("Bound text layer in variant:", variant.name);
+                                } catch (e) {
+                                    console.log("Could not bind text properties:", e);
+                                }
+                            }
+
+                            // Bind left icon visibility and instance swap to property
+                            const leftIconLayer = variant.findOne(node => node.name === "Left Icon");
+                            if (leftIconLayer) {
+                                try {
+                                    const refs = {};
+                                    if (showLeftIconPropId) {
+                                        refs.visible = showLeftIconPropId;
+                                    }
+                                    if (leftIconPropId && leftIconLayer.type === "INSTANCE") {
+                                        refs.mainComponent = leftIconPropId;
+                                    }
+                                    if (Object.keys(refs).length > 0) {
+                                        leftIconLayer.componentPropertyReferences = refs;
+                                        console.log("Bound left icon in variant:", variant.name);
+                                    }
+                                } catch (e) {
+                                    console.log("Could not bind left icon:", e);
+                                }
+                            }
+
+                            // Bind right icon visibility and instance swap to property
+                            const rightIconLayer = variant.findOne(node => node.name === "Right Icon");
+                            if (rightIconLayer) {
+                                try {
+                                    const refs = {};
+                                    if (showRightIconPropId) {
+                                        refs.visible = showRightIconPropId;
+                                    }
+                                    if (rightIconPropId && rightIconLayer.type === "INSTANCE") {
+                                        refs.mainComponent = rightIconPropId;
+                                    }
+                                    if (Object.keys(refs).length > 0) {
+                                        rightIconLayer.componentPropertyReferences = refs;
+                                        console.log("Bound right icon in variant:", variant.name);
+                                    }
+                                } catch (e) {
+                                    console.log("Could not bind right icon:", e);
+                                }
+                            }
+                        }
+                    });
+
+                    figma.notify("Button component set created with properties!");
+                } catch (error) {
+                    console.log("Error adding component properties:", error);
+                    figma.notify("Component created with some limitations: " + error.message);
+                }
+            }
+
+            // Create documentation frame
+            const docFrame = figma.createFrame();
+            docFrame.name = "Button Component Set Documentation";
+            docFrame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            docFrame.paddingTop = 40;
+            docFrame.paddingBottom = 40;
+            docFrame.paddingLeft = 40;
+            docFrame.paddingRight = 40;
+            docFrame.layoutMode = "VERTICAL";
+            docFrame.primaryAxisSizingMode = "AUTO";
+            docFrame.counterAxisSizingMode = "AUTO";
+            docFrame.itemSpacing = 40;
+            docFrame.x = 100;
+            docFrame.y = 100;
+
+            // Add top border
+            const borderColor = hexToRgb('#1350FF');
+            docFrame.strokes = [{ type: 'SOLID', color: borderColor }];
+            docFrame.strokeWeight = 8;
+            docFrame.strokeAlign = "INSIDE";
+            docFrame.strokeTopWeight = 8;
+            docFrame.strokeBottomWeight = 0;
+            docFrame.strokeLeftWeight = 0;
+            docFrame.strokeRightWeight = 0;
+
+            // Title section
+            const titleSection = figma.createFrame();
+            titleSection.name = "Title Section";
+            titleSection.layoutMode = "VERTICAL";
+            titleSection.primaryAxisSizingMode = "AUTO";
+            titleSection.counterAxisSizingMode = "AUTO";
+            titleSection.itemSpacing = 34;
+            titleSection.fills = [];
+
+            // Create logo from SVG
+            const logoSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_466_1736)"><g clip-path="url(#clip1_466_1736)"><path d="M47.9502 22.765C46.7073 22.0781 45.7261 21.1295 45.0065 19.952C44.2869 18.7418 43.9271 17.4008 43.9271 15.8962C43.9271 14.3916 44.2869 13.0506 45.0065 11.8404C45.7261 10.6302 46.7073 9.71438 47.9502 9.0275C49.1931 8.34063 50.5996 8.01355 52.1696 8.01355C53.4125 8.01355 54.59 8.24251 55.604 8.66771C56.6506 9.09292 57.5337 9.74708 58.2533 10.5648L56.4217 12.2983C55.3096 11.0881 53.9358 10.4994 52.3004 10.4994C51.2538 10.4994 50.3052 10.7283 49.4548 11.1862C48.6044 11.6442 47.9829 12.2983 47.4923 13.116C47.0344 13.9337 46.8054 14.8496 46.8054 15.8962C46.8054 16.9429 47.0344 17.8587 47.4923 18.6764C47.9502 19.4941 48.6044 20.1483 49.4548 20.6062C50.3052 21.0641 51.2211 21.2931 52.3004 21.2931C53.9358 21.2931 55.3096 20.6716 56.4217 19.4614L58.2533 21.2277C57.5337 22.0781 56.6506 22.6995 55.604 23.1247C54.5573 23.5499 53.4125 23.7789 52.1369 23.7789C50.5996 23.7789 49.1931 23.4191 47.9502 22.765Z" fill="black"/><path d="M63.6175 22.7649C62.3745 22.0781 61.3606 21.1295 60.641 19.9193C59.9214 18.7091 59.5616 17.3681 59.5616 15.8635C59.5616 14.3589 59.9214 13.0179 60.641 11.8077C61.3606 10.5975 62.3418 9.64895 63.6175 8.96207C64.8604 8.2752 66.2995 7.94812 67.8695 7.94812C69.4395 7.94812 70.846 8.2752 72.1216 8.96207C73.3645 9.64895 74.3785 10.5975 75.098 11.775C75.8176 12.9852 76.1774 14.3262 76.1774 15.8308C76.1774 17.3354 75.8176 18.6764 75.098 19.8866C74.3785 21.0968 73.3972 22.0126 72.1216 22.6995C70.8787 23.3864 69.4395 23.7135 67.8695 23.7135C66.2995 23.7789 64.8604 23.4191 63.6175 22.7649ZM70.617 20.5735C71.4347 20.1156 72.0889 19.4614 72.5468 18.6437C73.0047 17.826 73.2337 16.8775 73.2337 15.8635C73.2337 14.8496 73.0047 13.901 72.5468 13.0833C72.0889 12.2656 71.4347 11.6114 70.617 11.1535C69.7993 10.6956 68.8835 10.4667 67.8368 10.4667C66.8229 10.4667 65.8743 10.6956 65.0566 11.1535C64.2389 11.6114 63.5848 12.2656 63.1268 13.0833C62.6689 13.901 62.44 14.8496 62.44 15.8635C62.44 16.8775 62.6689 17.826 63.1268 18.6437C63.5848 19.4614 64.2389 20.1156 65.0566 20.5735C65.8743 21.0314 66.7902 21.2604 67.8368 21.2604C68.8835 21.2604 69.7993 21.0314 70.617 20.5735Z" fill="black"/><path d="M79.1539 8.17706H85.8591C87.4945 8.17706 88.9663 8.50414 90.242 9.1256C91.5176 9.74706 92.4988 10.6629 93.2184 11.8404C93.9053 13.0179 94.2651 14.3589 94.2651 15.8635C94.2651 17.4008 93.9053 18.7418 93.2184 19.8866C92.5315 21.0641 91.5176 21.9472 90.242 22.6014C88.9663 23.2228 87.5272 23.5499 85.8918 23.5499H79.1539V8.17706ZM85.7282 21.1295C86.8403 21.1295 87.8543 20.9006 88.7047 20.4753C89.5551 20.0501 90.2093 19.4287 90.6672 18.6437C91.1251 17.8587 91.354 16.9102 91.354 15.8635C91.354 14.8168 91.1251 13.8683 90.6672 13.0833C90.2093 12.2983 89.5551 11.6768 88.7047 11.2516C87.8543 10.8264 86.8403 10.5975 85.7282 10.5975H81.9995V21.1295H85.7282Z" fill="black"/><path d="M108.82 21.1622V23.5499H97.3069V8.17706H108.526V10.5648H100.153V14.5552H107.577V16.9102H100.153V21.1622H108.82Z" fill="black"/><path d="M115.133 10.5975H110.03V8.17706H123.081V10.5975H117.978V23.5499H115.133V10.5975Z" fill="black"/><path d="M138.879 8.17706V23.5499H136.033V16.9756H128.085V23.5499H125.24V8.17706H128.085V14.5225H136.033V8.17706H138.879Z" fill="black"/><path d="M154.514 21.1622V23.5499H143V8.17706H154.219V10.5648H145.846V14.5552H153.271V16.9102H145.846V21.1622H154.514Z" fill="black"/><path d="M160.597 22.7649C159.354 22.0781 158.34 21.1295 157.621 19.9193C156.901 18.7091 156.542 17.3681 156.542 15.8635C156.542 14.3589 156.901 13.0179 157.621 11.8077C158.34 10.5975 159.322 9.64895 160.597 8.96207C161.873 8.2752 163.279 7.94812 164.849 7.94812C166.419 7.94812 167.826 8.2752 169.101 8.96207C170.344 9.64895 171.358 10.5975 172.078 11.775C172.797 12.9852 173.157 14.3262 173.157 15.8308C173.157 17.3354 172.797 18.6764 172.078 19.8866C171.358 21.0968 170.377 22.0126 169.101 22.6995C167.859 23.3864 166.419 23.7135 164.849 23.7135C163.247 23.7789 161.84 23.4191 160.597 22.7649ZM167.597 20.5735C168.415 20.1156 169.069 19.4614 169.527 18.6437C169.985 17.826 170.214 16.8775 170.214 15.8635C170.214 14.8496 169.985 13.901 169.527 13.0833C169.069 12.2656 168.415 11.6114 167.597 11.1535C166.779 10.6956 165.863 10.4667 164.817 10.4667C163.803 10.4667 162.854 10.6956 162.036 11.1535C161.219 11.6114 160.565 12.2656 160.107 13.0833C159.649 13.901 159.42 14.8496 159.42 15.8635C159.42 16.8775 159.649 17.826 160.107 18.6437C160.565 19.4614 161.219 20.1156 162.036 20.5735C162.854 21.0314 163.77 21.2604 164.817 21.2604C165.863 21.2604 166.779 21.0314 167.597 20.5735Z" fill="black"/><path d="M186.175 23.5499L183.035 19.0362C182.904 19.0362 182.708 19.0689 182.446 19.0689H178.979V23.5499H176.134V8.17706H182.446C183.787 8.17706 184.932 8.40602 185.913 8.83123C186.895 9.25643 187.647 9.9106 188.17 10.7283C188.694 11.546 188.955 12.5273 188.955 13.6393C188.955 14.7841 188.661 15.7981 188.105 16.6158C187.549 17.4662 186.731 18.0877 185.685 18.4801L189.25 23.5499H186.175ZM185.161 11.3825C184.507 10.8591 183.558 10.5975 182.316 10.5975H178.979V16.7139H182.316C183.558 16.7139 184.507 16.4522 185.161 15.8962C185.815 15.3729 186.142 14.6206 186.142 13.6393C186.11 12.6581 185.815 11.9058 185.161 11.3825Z" fill="black"/><path d="M203.707 21.1622V23.5499H192.193V8.17706H203.412V10.5648H195.039V14.5552H202.464V16.9102H195.039V21.1622H203.707Z" fill="black"/><path d="M221.009 23.5499L220.977 13.3777L215.94 21.8164H214.664L209.627 13.5085V23.5499H206.912V8.17706H209.267L215.384 18.3493L221.336 8.17706H223.691L223.724 23.5499H221.009Z" fill="black"/><path d="M34.1474 24.5312H1.83165C0.327072 24.5312 -0.523342 22.8303 0.392488 21.6201L15.9943 1.01395C17.041 -0.359794 19.1016 -0.359794 20.1155 1.01395L35.6192 21.5874C36.5023 22.7976 35.6519 24.5312 34.1474 24.5312Z" fill="url(#paint0_linear_466_1736)"/><path d="M4.15395 28.5215L16.7466 11.9385C17.5643 10.8591 19.167 10.8918 19.952 11.9385L32.4465 28.5215C33.4278 29.8626 32.512 31.727 30.8438 31.727H5.75665C4.08853 31.727 3.14 29.8299 4.15395 28.5215Z" fill="url(#paint1_linear_466_1736)"/><path d="M29.4047 24.5312L19.952 11.9385C19.1343 10.8591 17.5643 10.8591 16.7466 11.9385L7.1958 24.5312H29.4047Z" fill="#6699FF"/></g></g><defs><linearGradient id="paint0_linear_466_1736" x1="0.0140991" y1="12.2574" x2="35.977" y2="12.2574" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><linearGradient id="paint1_linear_466_1736" x1="3.73645" y1="21.4341" x2="32.8498" y2="21.4341" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><clipPath id="clip0_466_1736"><rect width="224" height="31.727" fill="white"/></clipPath><clipPath id="clip1_466_1736"><rect width="223.724" height="31.727" fill="white"/></clipPath></defs></svg>`;
+
+            const logo = figma.createNodeFromSvg(logoSvg);
+            logo.name = "logo - Horizontal";
+            logo.resize(224, 31.73);
+
+            // Header Section frame
+            const headerSection = figma.createFrame();
+            headerSection.name = "Header Section";
+            headerSection.layoutMode = "VERTICAL";
+            headerSection.primaryAxisSizingMode = "AUTO";
+            headerSection.counterAxisSizingMode = "AUTO";
+            headerSection.itemSpacing = 6;
+            headerSection.fills = [];
+
+            // Title text
+            const titleText = figma.createText();
+            titleText.characters = "Button Component Set";
+            titleText.fontSize = 40;
+            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+            titleText.lineHeight = { value: 150, unit: "PERCENT" };
+
+            // Subtitle text
+            const subtitleText = figma.createText();
+            subtitleText.characters = "Explore our diverse button set with different styles, sizes, and colors for your design.";
+            subtitleText.fontSize = 16;
+            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+            subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
+            subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
+
+            headerSection.appendChild(titleText);
+            headerSection.appendChild(subtitleText);
+
+            titleSection.appendChild(logo);
+            titleSection.appendChild(headerSection);
+            docFrame.appendChild(titleSection);
+
+            // Create container for button component set
+            const componentContainer = figma.createFrame();
+            componentContainer.name = "Button Component Preview";
+            componentContainer.layoutMode = "VERTICAL";
+            componentContainer.primaryAxisSizingMode = "AUTO";
+            componentContainer.counterAxisSizingMode = "AUTO";
+            componentContainer.paddingTop = 84;
+            componentContainer.paddingBottom = 84;
+            componentContainer.paddingLeft = 84;
+            componentContainer.paddingRight = 84;
+            componentContainer.fills = [{ type: 'SOLID', color: hexToRgb('#FAFAFA') }];
+            componentContainer.strokes = [{ type: 'SOLID', color: hexToRgb('#D5D5D6') }];
+            componentContainer.strokeWeight = 1;
+            componentContainer.cornerRadius = 8;
+
+            // Move the component set inside the container
+            if (componentSet && componentSet !== components[0]) {
+                docFrame.appendChild(componentContainer);
+                componentContainer.appendChild(componentSet);
+            } else {
+                // If component set wasn't created, add placeholder
+                const placeholderText = figma.createText();
+                placeholderText.characters = "Button components created. Please combine them manually into a component set.";
+                placeholderText.fontSize = 16;
+                placeholderText.fontName = { family: "Inter", style: "Regular" };
+                placeholderText.fills = [{ type: 'SOLID', color: hexToRgb('#666666') }];
+                componentContainer.appendChild(placeholderText);
+                docFrame.appendChild(componentContainer);
+            }
+
+            // Footer section
+            const footer = figma.createFrame();
+            footer.name = "Footer Section";
+            footer.layoutMode = "VERTICAL";
+            footer.primaryAxisSizingMode = "AUTO";
+            footer.counterAxisSizingMode = "AUTO";
+            footer.itemSpacing = 8;
+            footer.fills = [];
+
+            const createdBy = figma.createText();
+            createdBy.characters = "Created By";
+            createdBy.fontSize = 12;
+            createdBy.fontName = { family: "Inter", style: "Regular" };
+            createdBy.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+            createdBy.textAlignHorizontal = "CENTER";
+
+            const website = figma.createText();
+            website.characters = "Slate.Design";
+            website.fontSize = 16;
+            website.fontName = { family: "Inter", style: "Bold" };
+            website.fills = [{ type: 'SOLID', color: hexToRgb('#121212') }];
+            website.textAlignHorizontal = "CENTER";
+
+            footer.appendChild(createdBy);
+            footer.appendChild(website);
+            docFrame.appendChild(footer);
+
+            // Select created documentation frame
+            figma.currentPage.selection = [docFrame];
+            figma.viewport.scrollAndZoomIntoView([docFrame]);
+
+            if (componentSet && componentSet !== components[0]) {
+                figma.notify('Button Component Set with 72 variants created inside documentation frame!');
+            } else {
+                figma.notify('72 Button components created! Select all buttons and use "Create component set" from the menu to combine them.');
+            }
         } catch (error) {
-            console.error(`Error creating grid style ${config.name}:`, error);
+            figma.notify('Error creating button component: ' + error.message);
+            console.error(error);
         }
     }
 
-    return gridCount;
-}
 
-// ============================================
-// LAYOUT GRID STYLES - END
-// ============================================
+    if (msg.type === "create-input-doc") {
+        try {
+            // Get custom values from UI
+            const customLabelText = msg.labelText || 'label';
+            const customRadius = msg.radius !== undefined && msg.radius !== null ? parseInt(msg.radius) : 8;
+            const customBorderColor = msg.borderColor || '#D1D5DB';
+            const customPrimaryColor = msg.primaryColor || '#3B82F6';
+
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) {
+                    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                }
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+                return { r, g, b };
+            }
+
+            // Create input variables
+            try {
+                let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Input");
+                if (!collection) {
+                    collection = figma.variables.createVariableCollection("Input");
+                }
+                let modeId = collection.modes[0].modeId;
+
+                const inputTypesArr = ['search', 'otp', 'text', 'phone', 'rich_text'];
+                const stateMapObj = { 'Normal': 'default', 'Hover': 'hover', 'Click': 'active', 'Error': 'error', 'Disable': 'disabled' };
+                const properties = ['bg', 'text', 'boarder', 'icon'];
+
+                for (const type of inputTypesArr) {
+                    for (const [uiState, varState] of Object.entries(stateMapObj)) {
+                        for (const property of properties) {
+                            const variableName = `input/${type}/${varState}/${property}`;
+                            let variable = figma.variables.getLocalVariables().find(v =>
+                                v.name === variableName && v.variableCollectionId === collection.id
+                            );
+                            if (!variable) {
+                                variable = figma.variables.createVariable(variableName, collection, "COLOR");
+                            }
+
+                            let bgColor, borderColor, textColor, iconColor;
+                            if (uiState === 'Normal') {
+                                bgColor = '#FFFFFF'; borderColor = customBorderColor; textColor = '#8E8E8E'; iconColor = '#8E8E8E';
+                            } else if (uiState === 'Hover') {
+                                bgColor = '#FFFFFF'; borderColor = '#9CA3AF'; textColor = '#8E8E8E'; iconColor = '#8E8E8E';
+                            } else if (uiState === 'Click') {
+                                bgColor = '#FFFFFF'; borderColor = customPrimaryColor; textColor = '#8E8E8E'; iconColor = '#8E8E8E';
+                            } else if (uiState === 'Error') {
+                                bgColor = '#FFFFFF'; borderColor = '#EF4444'; textColor = '#EF4444'; iconColor = '#EF4444';
+                            } else {
+                                bgColor = '#F3F4F6'; borderColor = '#E5E7EB'; textColor = '#D1D5DB'; iconColor = '#D1D5DB';
+                            }
+
+                            let colorH = bgColor;
+                            if (property === 'bg') colorH = bgColor;
+                            else if (property === 'text') colorH = textColor;
+                            else if (property === 'boarder') colorH = borderColor;
+                            else if (property === 'icon') colorH = iconColor;
+
+                            const rgb = hexToRgb(colorH);
+                            variable.setValueForMode(modeId, rgb);
+                        }
+
+                        // Also helper text color by state
+                        const helperColorName = `input/helper/${varState}/color`;
+                        let helperVar = figma.variables.getLocalVariables().find(v => v.name === helperColorName && v.variableCollectionId === collection.id);
+                        if (!helperVar) helperVar = figma.variables.createVariable(helperColorName, collection, "COLOR");
+
+                        let helperHex = (uiState === 'Error') ? '#EF4444' : '#6B7280';
+                        helperVar.setValueForMode(modeId, hexToRgb(helperHex));
+                    }
+                }
+
+                // Add general label and asterisk color vars
+                let labelVar = figma.variables.getLocalVariables().find(v => v.name === 'input/label/color' && v.variableCollectionId === collection.id);
+                if (!labelVar) labelVar = figma.variables.createVariable('input/label/color', collection, "COLOR");
+                labelVar.setValueForMode(modeId, hexToRgb('#374151'));
+
+                let asteriskVar = figma.variables.getLocalVariables().find(v => v.name === 'input/asterisk/color' && v.variableCollectionId === collection.id);
+                if (!asteriskVar) asteriskVar = figma.variables.createVariable('input/asterisk/color', collection, "COLOR");
+                asteriskVar.setValueForMode(modeId, hexToRgb('#FF0000'));
+
+                const spacingVars = { 'spacing/vertical': 10, 'spacing/horizontal': 12, 'spacing/horizontalLeft': 14, 'radius': customRadius };
+                for (const [key, val] of Object.entries(spacingVars)) {
+                    const varName = `input/${key}`;
+                    let variable = figma.variables.getLocalVariables().find(v => v.name === varName && v.variableCollectionId === collection.id);
+                    if (!variable) variable = figma.variables.createVariable(varName, collection, "FLOAT");
+                    variable.setValueForMode(modeId, val);
+                }
+
+                const fontVars = {
+                    'text/label/fontSize': 14, 'text/label/lineHeight': 21,
+                    'text/placeholder/fontSize': 14, 'text/placeholder/lineHeight': 21,
+                    'text/helper/fontSize': 12, 'text/helper/lineHeight': 18
+                };
+                for (const [key, val] of Object.entries(fontVars)) {
+                    const varName = `input/${key}`;
+                    let variable = figma.variables.getLocalVariables().find(v => v.name === varName && v.variableCollectionId === collection.id);
+                    if (!variable) variable = figma.variables.createVariable(varName, collection, "FLOAT");
+                    variable.setValueForMode(modeId, val);
+                }
+            } catch (e) { console.log('Error creating input variables:', e); }
+
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+
+            // Create text styles for Input
+            const inputTextStylesMap = {};
+            const inputTextStyleConfig = {
+                'label': { fontSize: 14, lineHeight: 1.5, fontWeight: 'Medium' },
+                'placeholder': { fontSize: 14, lineHeight: 1.5, fontWeight: 'Regular' },
+                'helper': { fontSize: 12, lineHeight: 1.5, fontWeight: 'Regular' }
+            };
+
+            for (const [typeName, config] of Object.entries(inputTextStyleConfig)) {
+                const styleName = `Input/${typeName.charAt(0).toUpperCase() + typeName.slice(1)}`;
+                let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
+                if (!textStyle) {
+                    textStyle = figma.createTextStyle();
+                    textStyle.name = styleName;
+                }
+
+                textStyle.fontName = { family: "Inter", style: config.fontWeight };
+                textStyle.fontSize = config.fontSize;
+                const lineHeightPx = config.fontSize * config.lineHeight;
+                textStyle.lineHeight = { value: lineHeightPx, unit: "PIXELS" };
+
+                try {
+                    const inputCollection = figma.variables.getLocalVariableCollections().find(c => c.name === "Input");
+                    if (inputCollection) {
+                        const allVariables = figma.variables.getLocalVariables();
+                        const fontSizeVar = allVariables.find(v => v.name === `input/text/${typeName}/fontSize` && v.variableCollectionId === inputCollection.id);
+                        if (fontSizeVar) { textStyle.setBoundVariable('fontSize', fontSizeVar); }
+
+                        const lineHeightVar = allVariables.find(v => v.name === `input/text/${typeName}/lineHeight` && v.variableCollectionId === inputCollection.id);
+                        if (lineHeightVar) { textStyle.setBoundVariable('lineHeight', lineHeightVar); }
+                    }
+                } catch (e) {
+                    console.log('Could not bind text style variables for input:', e);
+                }
+
+                inputTextStylesMap[typeName] = textStyle;
+            }
+
+            // Create shared icon components
+            const searchIconSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="6" stroke="#6B7280" stroke-width="1.5"/><path d="M13.5 13.5L17 17" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+            const searchIconNode = figma.createNodeFromSvg(searchIconSvg);
+            const sharedSearchIcon = figma.createComponent();
+            sharedSearchIcon.name = "search-icon";
+            sharedSearchIcon.resize(20, 20);
+            sharedSearchIcon.appendChild(searchIconNode);
+            sharedSearchIcon.x = -2000;
+            sharedSearchIcon.y = -2000;
+
+            const leftIconSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.8334 10H4.16675M4.16675 10L10.0001 15.8333M4.16675 10L10.0001 4.16667" stroke="#000000" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            const leftIconNode = figma.createNodeFromSvg(leftIconSvg);
+            const sharedLeftIcon = figma.createComponent();
+            sharedLeftIcon.name = "arrow-left";
+            sharedLeftIcon.resize(20, 20);
+            sharedLeftIcon.appendChild(leftIconNode);
+            sharedLeftIcon.x = -2000;
+            sharedLeftIcon.y = -2000;
+
+            const rightIconSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.16675 10H15.8334M15.8334 10L10.0001 4.16667M15.8334 10L10.0001 15.8333" stroke="#000000" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            const rightIconNode = figma.createNodeFromSvg(rightIconSvg);
+            const sharedRightIcon = figma.createComponent();
+            sharedRightIcon.name = "arrow-right-1";
+            sharedRightIcon.resize(20, 20);
+            sharedRightIcon.appendChild(rightIconNode);
+            sharedRightIcon.x = -2000;
+            sharedRightIcon.y = -2000;
+
+            const dropdownArrowSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.99982 14.0001C9.41649 14.0001 8.83315 13.7751 8.39149 13.3334L2.95815 7.90008C2.71649 7.65841 2.71649 7.25841 2.95815 7.01675C3.19982 6.77508 3.59982 6.77508 3.84149 7.01675L9.27482 12.4501C9.67482 12.8501 10.3248 12.8501 10.7248 12.4501L16.1581 7.01675C16.3998 6.77508 16.7998 6.77508 17.0415 7.01675C17.2831 7.25841 17.2831 7.65841 17.0415 7.90008L11.6081 13.3334C11.1665 13.7751 10.5831 14.0001 9.99982 14.0001Z" fill="#555555"/></svg>`;
+            const dropdownArrowNode = figma.createNodeFromSvg(dropdownArrowSvg);
+            const sharedDropdownArrow = figma.createComponent();
+            sharedDropdownArrow.name = "arrow-down-1";
+            sharedDropdownArrow.resize(20, 20);
+            sharedDropdownArrow.appendChild(dropdownArrowNode);
+            sharedDropdownArrow.x = -2000;
+            sharedDropdownArrow.y = -2000;
+
+            const infoIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6" stroke="#6B7280" stroke-width="1.2"/><path d="M8 8V10.8M8 5.6V6" stroke="#6B7280" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+            const infoIconNode = figma.createNodeFromSvg(infoIconSvg);
+            const sharedInfoIcon = figma.createComponent();
+            sharedInfoIcon.name = "info-circle";
+            sharedInfoIcon.resize(16, 16);
+            sharedInfoIcon.appendChild(infoIconNode);
+            sharedInfoIcon.x = -2000;
+            sharedInfoIcon.y = -2000;
+
+            function createInputField(type, state) {
+                const input = figma.createComponent();
+                input.name = `Type=${type}, State=${state}`;
+                input.layoutMode = "VERTICAL";
+                input.primaryAxisSizingMode = "AUTO";
+                input.counterAxisSizingMode = "AUTO";
+                input.itemSpacing = 6;
+                input.fills = [];
+
+                let labelColorVar, asteriskColorVar, helperColorVar;
+                try {
+                    const inputCollection = figma.variables.getLocalVariableCollections().find(c => c.name === "Input");
+                    if (inputCollection) {
+                        const allVariables = figma.variables.getLocalVariables();
+                        const stateMapObj = { 'Normal': 'default', 'Hover': 'hover', 'Click': 'active', 'Error': 'error', 'Disable': 'disabled' };
+                        const varState = stateMapObj[state];
+                        labelColorVar = allVariables.find(v => v.name === 'input/label/color' && v.variableCollectionId === inputCollection.id);
+                        asteriskColorVar = allVariables.find(v => v.name === 'input/asterisk/color' && v.variableCollectionId === inputCollection.id);
+                        helperColorVar = allVariables.find(v => v.name === `input/helper/${varState}/color` && v.variableCollectionId === inputCollection.id);
+                    }
+                } catch (e) { }
+
+                // Only create label frame for non-Search types
+                let labelFrame;
+                if (type !== 'Search') {
+                    labelFrame = figma.createFrame();
+                    labelFrame.name = "Label Frame";
+                    labelFrame.layoutMode = "HORIZONTAL";
+                    labelFrame.primaryAxisSizingMode = "AUTO";
+                    labelFrame.counterAxisSizingMode = "AUTO";
+                    labelFrame.itemSpacing = 4;
+                    labelFrame.fills = [];
+
+                    const labelText = figma.createText();
+                    labelText.name = "Label";
+                    labelText.characters = customLabelText;
+                    if (inputTextStylesMap['label']) {
+                        labelText.textStyleId = inputTextStylesMap['label'].id;
+                    } else {
+                        labelText.fontSize = 14;
+                        labelText.fontName = { family: "Inter", style: "Medium" };
+                        labelText.lineHeight = { value: 21, unit: "PIXELS" };
+                    }
+                    labelText.fills = [{ type: 'SOLID', color: hexToRgb('#374151') }];
+                    if (labelColorVar) {
+                        try { labelText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: labelColorVar.id } } }]; } catch (e) { }
+                    }
+
+                    // Add required asterisk (*)
+                    const requiredAsterisk = figma.createText();
+                    requiredAsterisk.name = "Required";
+                    requiredAsterisk.characters = "*";
+                    if (inputTextStylesMap['label']) {
+                        requiredAsterisk.textStyleId = inputTextStylesMap['label'].id;
+                    } else {
+                        requiredAsterisk.fontSize = 14;
+                        requiredAsterisk.fontName = { family: "Inter", style: "Medium" };
+                        requiredAsterisk.lineHeight = { value: 21, unit: "PIXELS" };
+                    }
+                    requiredAsterisk.fills = [{ type: 'SOLID', color: hexToRgb('#FF0000') }];
+                    if (asteriskColorVar) {
+                        try { requiredAsterisk.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: asteriskColorVar.id } } }]; } catch (e) { }
+                    }
+                    requiredAsterisk.visible = false;
+
+                    const infoIcon = sharedInfoIcon.createInstance();
+                    infoIcon.name = "Label Info Icon";
+                    infoIcon.visible = false;
+
+                    labelFrame.appendChild(labelText);
+                    labelFrame.appendChild(requiredAsterisk);
+                    labelFrame.appendChild(infoIcon);
+                }
+
+                const inputContainer = figma.createFrame();
+                inputContainer.name = "Input Container";
+                inputContainer.layoutMode = "HORIZONTAL";
+                inputContainer.primaryAxisSizingMode = "AUTO";
+                inputContainer.counterAxisSizingMode = "AUTO";
+
+                if (type === 'OTP') {
+                    inputContainer.itemSpacing = 12;
+                } else if (type === 'Rich Text Box') {
+                    inputContainer.resize(320, 100);
+                    inputContainer.layoutMode = "VERTICAL";
+                    inputContainer.counterAxisSizingMode = "FIXED";
+                    inputContainer.primaryAxisAlignItems = "MIN";
+                    inputContainer.counterAxisAlignItems = "MIN";
+                } else if (type === 'Phone Number') {
+                    inputContainer.itemSpacing = 0;
+                    inputContainer.paddingLeft = 0;
+                    inputContainer.paddingRight = 0;
+                    inputContainer.paddingTop = 0;
+                    inputContainer.paddingBottom = 0;
+                    inputContainer.fills = [];
+                    inputContainer.strokes = [];
+                    inputContainer.cornerRadius = 0;
+                } else {
+                    inputContainer.resize(320, 40);
+                    inputContainer.itemSpacing = 8;
+                    inputContainer.primaryAxisAlignItems = "CENTER";
+                    inputContainer.counterAxisAlignItems = "CENTER";
+                }
+
+                let bgVar, borderVar, textVar, iconVar;
+                let vPaddingVar, hPaddingVar, hPaddingLeftVar, radiusVar, fontSizeVar, lineHeightVar;
+
+                try {
+                    const inputCollection = figma.variables.getLocalVariableCollections().find(c => c.name === "Input");
+                    if (inputCollection) {
+                        const stateMapObj = { 'Normal': 'default', 'Hover': 'hover', 'Click': 'active', 'Error': 'error', 'Disable': 'disabled' };
+                        const typeMapObj = { 'Search': 'search', 'OTP': 'otp', 'Text Field': 'text', 'Phone Number': 'phone', 'Rich Text Box': 'rich_text' };
+                        const varType = typeMapObj[type];
+                        const varState = stateMapObj[state];
+
+                        const allVariables = figma.variables.getLocalVariables();
+                        bgVar = allVariables.find(v => v.name === `input/${varType}/${varState}/bg` && v.variableCollectionId === inputCollection.id);
+                        borderVar = allVariables.find(v => v.name === `input/${varType}/${varState}/boarder` && v.variableCollectionId === inputCollection.id);
+                        textVar = allVariables.find(v => v.name === `input/${varType}/${varState}/text` && v.variableCollectionId === inputCollection.id);
+                        iconVar = allVariables.find(v => v.name === `input/${varType}/${varState}/icon` && v.variableCollectionId === inputCollection.id);
+                        vPaddingVar = allVariables.find(v => v.name === `input/spacing/vertical` && v.variableCollectionId === inputCollection.id);
+                        hPaddingVar = allVariables.find(v => v.name === `input/spacing/horizontal` && v.variableCollectionId === inputCollection.id);
+                        hPaddingLeftVar = allVariables.find(v => v.name === `input/spacing/horizontalLeft` && v.variableCollectionId === inputCollection.id);
+                        radiusVar = allVariables.find(v => v.name === `input/radius` && v.variableCollectionId === inputCollection.id);
+                        radiusVar = allVariables.find(v => v.name === `input/radius` && v.variableCollectionId === inputCollection.id);
+                        fontSizeVar = allVariables.find(v => v.name === `input/text/fontSize` && v.variableCollectionId === inputCollection.id);
+                        lineHeightVar = allVariables.find(v => v.name === `input/text/lineHeight` && v.variableCollectionId === inputCollection.id);
+                    }
+                } catch (e) { }
+
+
+                if (type !== 'Phone Number') {
+                    if (hPaddingVar) {
+                        try {
+                            inputContainer.paddingLeft = type === 'Text Field' ? 14 : 0;
+                            inputContainer.paddingRight = 0;
+                            if (type === 'Text Field') {
+                                if (hPaddingLeftVar) inputContainer.setBoundVariable('paddingLeft', hPaddingLeftVar);
+                            } else {
+                                inputContainer.setBoundVariable('paddingLeft', hPaddingVar);
+                            }
+                            inputContainer.setBoundVariable('paddingRight', hPaddingVar);
+                        } catch (e) { }
+                    } else {
+                        inputContainer.paddingLeft = type === 'Text Field' ? 14 : 12;
+                        inputContainer.paddingRight = 12;
+                    }
+
+                    if (vPaddingVar) {
+                        try {
+                            inputContainer.paddingTop = 0; inputContainer.paddingBottom = 0;
+                            inputContainer.setBoundVariable('paddingTop', vPaddingVar);
+                            inputContainer.setBoundVariable('paddingBottom', vPaddingVar);
+                        } catch (e) { }
+                    } else {
+                        inputContainer.paddingTop = 10; inputContainer.paddingBottom = 10;
+                    }
+
+                    if (radiusVar && type !== 'Rich Text Box') {
+                        try {
+                            inputContainer.cornerRadius = 0;
+                            inputContainer.setBoundVariable('cornerRadius', radiusVar);
+                        } catch (e) { }
+                    } else {
+                        inputContainer.cornerRadius = type === 'Rich Text Box' ? Math.min(customRadius, 18) : customRadius;
+                    }
+                }
+
+                let bgColor, borderColor, textColor, placeholderColor, iconColor;
+                if (state === 'Normal') {
+                    bgColor = '#FFFFFF'; borderColor = customBorderColor; textColor = '#111827'; placeholderColor = '#8E8E8E'; iconColor = '#8E8E8E';
+                } else if (state === 'Hover') {
+                    bgColor = '#FFFFFF'; borderColor = '#9CA3AF'; textColor = '#111827'; placeholderColor = '#8E8E8E'; iconColor = '#8E8E8E';
+                } else if (state === 'Click') {
+                    bgColor = '#FFFFFF'; borderColor = customPrimaryColor; textColor = '#111827'; placeholderColor = '#8E8E8E'; iconColor = '#8E8E8E';
+                } else if (state === 'Error') {
+                    bgColor = '#FFFFFF'; borderColor = '#EF4444'; textColor = '#111827'; placeholderColor = '#EF4444'; iconColor = '#EF4444';
+                } else {
+                    bgColor = '#F3F4F6'; borderColor = '#E5E7EB'; textColor = '#9CA3AF'; placeholderColor = '#D1D5DB'; iconColor = '#D1D5DB';
+                }
+
+                inputContainer.fills = [{ type: 'SOLID', color: hexToRgb(bgColor) }];
+                if (bgVar && type !== 'Phone Number' && type !== 'OTP') {
+                    try { inputContainer.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: bgVar.id } } }]; } catch (e) { }
+                }
+
+                inputContainer.strokes = [{ type: 'SOLID', color: hexToRgb(borderColor) }];
+                if (borderVar && type !== 'Phone Number' && type !== 'OTP') {
+                    try { inputContainer.strokes = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: borderVar.id } } }]; } catch (e) { }
+                }
+
+                inputContainer.strokeWeight = 1;
+
+                if (type === 'Phone Number') {
+                    inputContainer.fills = [];
+                    inputContainer.strokes = [];
+                    inputContainer.strokeWeight = 0;
+                }
+
+                if (type === 'Search') {
+                    const searchIcon = sharedSearchIcon.createInstance();
+                    try {
+                        const vectors = searchIcon.findAll(n => n.type === 'VECTOR');
+                        vectors.forEach(v => {
+                            if (v.strokes && v.strokes.length > 0) {
+                                v.strokes = [{ type: 'SOLID', color: hexToRgb(iconColor) }];
+                                if (iconVar) {
+                                    v.strokes = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: iconVar.id } } }];
+                                }
+                            }
+                        });
+                    } catch (e) { }
+                    searchIcon.name = "Search Icon";
+                    const placeholderText = figma.createText();
+                    placeholderText.name = "Placeholder";
+                    placeholderText.characters = "Placeholder text...";
+                    if (inputTextStylesMap['placeholder']) {
+                        placeholderText.textStyleId = inputTextStylesMap['placeholder'].id;
+                    } else {
+                        placeholderText.fontSize = 14;
+                        placeholderText.fontName = { family: "Inter", style: "Regular" };
+                        placeholderText.lineHeight = { value: 21, unit: "PIXELS" };
+                    }
+                    placeholderText.fills = [{ type: 'SOLID', color: hexToRgb(placeholderColor) }];
+                    if (textVar) {
+                        try { placeholderText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: textVar.id } } }]; } catch (e) { }
+                    }
+                    placeholderText.layoutAlign = "STRETCH";
+                    placeholderText.layoutGrow = 1;
+                    const rightIcon = sharedRightIcon.createInstance();
+                    rightIcon.name = "Right Icon";
+                    rightIcon.visible = false;
+                    inputContainer.appendChild(searchIcon);
+                    inputContainer.appendChild(placeholderText);
+                    inputContainer.appendChild(rightIcon);
+                } else if (type === 'OTP') {
+                    // Update container for OTP
+                    inputContainer.itemSpacing = 12;
+                    inputContainer.paddingLeft = 0;
+                    inputContainer.paddingRight = 0;
+                    inputContainer.paddingTop = 0;
+                    inputContainer.paddingBottom = 0;
+                    inputContainer.fills = [];
+                    inputContainer.strokes = [];
+                    inputContainer.strokeWeight = 0;
+                    inputContainer.cornerRadius = 0;
+
+                    for (let i = 0; i < 4; i++) {
+                        const digitBox = figma.createFrame();
+                        digitBox.name = `Field ${i + 1}`;
+                        digitBox.resize(44, 44);
+                        digitBox.layoutMode = "HORIZONTAL";
+                        digitBox.primaryAxisSizingMode = "FIXED";
+                        digitBox.counterAxisSizingMode = "FIXED";
+                        digitBox.primaryAxisAlignItems = "CENTER";
+                        digitBox.counterAxisAlignItems = "CENTER";
+                        digitBox.paddingLeft = 8;
+                        digitBox.paddingRight = 8;
+                        digitBox.paddingTop = 12;
+                        digitBox.paddingBottom = 12;
+                        digitBox.fills = [{ type: 'SOLID', color: hexToRgb(bgColor) }];
+                        if (bgVar) {
+                            try { digitBox.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: bgVar.id } } }]; } catch (e) { }
+                        }
+                        digitBox.strokes = [{ type: 'SOLID', color: hexToRgb(borderColor) }];
+                        if (borderVar) {
+                            try { digitBox.strokes = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: borderVar.id } } }]; } catch (e) { }
+                        }
+                        digitBox.strokeWeight = 1;
+                        digitBox.cornerRadius = customRadius;
+                        const digitText = figma.createText();
+                        digitText.name = "0";
+                        digitText.characters = "0";
+                        if (inputTextStylesMap['label']) {
+                            digitText.textStyleId = inputTextStylesMap['label'].id; // Using Label style since mapped to medium
+                        } else {
+                            digitText.fontSize = 14;
+                            digitText.fontName = { family: "Inter", style: "Medium" };
+                            digitText.lineHeight = { value: 21, unit: "PIXELS" };
+                        }
+                        digitText.fills = [{ type: 'SOLID', color: hexToRgb(textColor) }];
+                        if (textVar) {
+                            try { digitText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: textVar.id } } }]; } catch (e) { }
+                        }
+                        if (fontSizeVar) { try { digitText.setBoundVariable('fontSize', fontSizeVar); } catch (e) { } }
+                        if (lineHeightVar) { try { digitText.setBoundVariable('lineHeight', lineHeightVar); } catch (e) { } }
+                        digitText.textAlignHorizontal = "CENTER";
+                        digitBox.appendChild(digitText);
+                        inputContainer.appendChild(digitBox);
+                    }
+
+                    // Add 2 hidden digit boxes for 6-digit OTP option
+                    for (let i = 4; i < 6; i++) {
+                        const digitBox = figma.createFrame();
+                        digitBox.name = `Field ${i + 1}`;
+                        digitBox.resize(44, 44);
+                        digitBox.layoutMode = "HORIZONTAL";
+                        digitBox.primaryAxisSizingMode = "FIXED";
+                        digitBox.counterAxisSizingMode = "FIXED";
+                        digitBox.primaryAxisAlignItems = "CENTER";
+                        digitBox.counterAxisAlignItems = "CENTER";
+                        digitBox.paddingLeft = 8;
+                        digitBox.paddingRight = 8;
+                        digitBox.paddingTop = 12;
+                        digitBox.paddingBottom = 12;
+                        digitBox.fills = [{ type: 'SOLID', color: hexToRgb(bgColor) }];
+                        digitBox.strokes = [{ type: 'SOLID', color: hexToRgb(borderColor) }];
+                        digitBox.strokeWeight = 1;
+                        digitBox.cornerRadius = customRadius;
+                        digitBox.visible = false;
+                        const digitText = figma.createText();
+                        digitText.name = "0";
+                        digitText.characters = "0";
+                        digitText.fontSize = 14;
+                        digitText.fontName = { family: "Inter", style: "Medium" };
+                        digitText.fills = [{ type: 'SOLID', color: hexToRgb(textColor) }];
+                        digitText.textAlignHorizontal = "CENTER";
+                        digitBox.appendChild(digitText);
+                        inputContainer.appendChild(digitBox);
+                    }
+                } else if (type === 'Phone Number') {
+                    // Country Code Field
+                    const countryCodeField = figma.createFrame();
+                    countryCodeField.name = "Filed";
+                    countryCodeField.layoutMode = "HORIZONTAL";
+                    countryCodeField.primaryAxisSizingMode = "AUTO";
+                    countryCodeField.counterAxisSizingMode = "AUTO";
+                    countryCodeField.itemSpacing = 6;
+                    countryCodeField.paddingTop = 12;
+                    countryCodeField.paddingBottom = 12;
+                    countryCodeField.paddingLeft = 12;
+                    countryCodeField.paddingRight = 12;
+                    countryCodeField.fills = [{ type: 'SOLID', color: hexToRgb(bgColor) }];
+                    if (bgVar) {
+                        try { countryCodeField.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: bgVar.id } } }]; } catch (e) { }
+                    }
+                    countryCodeField.strokes = [{ type: 'SOLID', color: hexToRgb(borderColor) }];
+                    if (borderVar) {
+                        try { countryCodeField.strokes = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: borderVar.id } } }]; } catch (e) { }
+                    }
+                    countryCodeField.strokeWeight = 1;
+                    countryCodeField.topLeftRadius = customRadius;
+                    countryCodeField.topRightRadius = 0;
+                    countryCodeField.bottomLeftRadius = customRadius;
+                    countryCodeField.bottomRightRadius = 0;
+
+                    const codeText = figma.createText();
+                    codeText.name = "+91";
+                    codeText.characters = "+91";
+                    if (inputTextStylesMap['label']) { // Use label style for medium texts like country code
+                        codeText.textStyleId = inputTextStylesMap['label'].id;
+                    } else {
+                        codeText.fontSize = 14;
+                        codeText.fontName = { family: "Inter", style: "Medium" };
+                        codeText.lineHeight = { value: 140, unit: "PERCENT" };
+                    }
+                    codeText.fills = [{ type: 'SOLID', color: hexToRgb(iconColor) }];
+                    if (iconVar) {
+                        try { codeText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: iconVar.id } } }]; } catch (e) { }
+                    }
+
+                    const dropdownIcon = sharedDropdownArrow.createInstance();
+                    dropdownIcon.name = "arrow-down-1";
+                    try {
+                        const vectors = dropdownIcon.findAll(n => n.type === 'VECTOR');
+                        vectors.forEach(v => {
+                            if (v.fills && v.fills.length > 0) {
+                                v.fills = [{ type: 'SOLID', color: hexToRgb(iconColor) }];
+                                if (iconVar) {
+                                    v.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: iconVar.id } } }];
+                                }
+                            }
+                        });
+                    } catch (e) { }
+
+                    countryCodeField.appendChild(codeText);
+                    countryCodeField.appendChild(dropdownIcon);
+
+                    // Phone Number Field
+                    const phoneNumberField = figma.createFrame();
+                    phoneNumberField.name = "Filed";
+                    phoneNumberField.layoutMode = "HORIZONTAL";
+                    phoneNumberField.primaryAxisSizingMode = "FIXED";
+                    phoneNumberField.counterAxisSizingMode = "AUTO";
+                    phoneNumberField.resize(251, 45);
+                    phoneNumberField.itemSpacing = 8;
+                    phoneNumberField.paddingTop = 12;
+                    phoneNumberField.paddingBottom = 12;
+                    phoneNumberField.paddingLeft = 12;
+                    phoneNumberField.paddingRight = 8;
+                    phoneNumberField.fills = [{ type: 'SOLID', color: hexToRgb(bgColor) }];
+                    if (bgVar) {
+                        try { phoneNumberField.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: bgVar.id } } }]; } catch (e) { }
+                    }
+                    phoneNumberField.strokes = [{ type: 'SOLID', color: hexToRgb(borderColor) }];
+                    if (borderVar) {
+                        try { phoneNumberField.strokes = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: borderVar.id } } }]; } catch (e) { }
+                    }
+                    phoneNumberField.strokeWeight = 1;
+                    phoneNumberField.strokeLeftWeight = 0;
+                    phoneNumberField.topLeftRadius = 0;
+                    phoneNumberField.topRightRadius = customRadius;
+                    phoneNumberField.bottomLeftRadius = 0;
+                    phoneNumberField.bottomRightRadius = customRadius;
+
+                    const phoneText = figma.createText();
+                    phoneText.name = "Placeholder";
+                    phoneText.characters = "1234567890";
+                    if (inputTextStylesMap['label']) {
+                        phoneText.textStyleId = inputTextStylesMap['label'].id;
+                    } else {
+                        phoneText.fontSize = 14;
+                        phoneText.fontName = { family: "Inter", style: "Medium" };
+                        phoneText.lineHeight = { value: 140, unit: "PERCENT" };
+                    }
+                    phoneText.fills = [{ type: 'SOLID', color: hexToRgb(placeholderColor) }];
+                    if (textVar) {
+                        try { phoneText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: textVar.id } } }]; } catch (e) { }
+                    }
+
+                    phoneNumberField.appendChild(phoneText);
+
+                    inputContainer.appendChild(countryCodeField);
+                    inputContainer.appendChild(phoneNumberField);
+                } else if (type === 'Rich Text Box') {
+                    const placeholderText = figma.createText();
+                    placeholderText.name = "Placeholder";
+                    placeholderText.characters = "Placeholder text...";
+                    if (inputTextStylesMap['placeholder']) {
+                        placeholderText.textStyleId = inputTextStylesMap['placeholder'].id;
+                    } else {
+                        placeholderText.fontSize = 14;
+                        placeholderText.fontName = { family: "Inter", style: "Regular" };
+                        placeholderText.lineHeight = { value: 21, unit: "PIXELS" };
+                    }
+                    placeholderText.fills = [{ type: 'SOLID', color: hexToRgb(placeholderColor) }];
+                    if (textVar) {
+                        try { placeholderText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: textVar.id } } }]; } catch (e) { }
+                    }
+                    placeholderText.layoutAlign = "STRETCH";
+                    placeholderText.layoutGrow = 1;
+                    placeholderText.textAlignVertical = "TOP";
+                    inputContainer.appendChild(placeholderText);
+                } else {
+                    // Text Field
+                    const leftIcon = sharedLeftIcon.createInstance();
+                    try {
+                        const vectors = leftIcon.findAll(n => n.type === 'VECTOR');
+                        vectors.forEach(v => {
+                            if (v.strokes && v.strokes.length > 0) {
+                                v.strokes = [{ type: 'SOLID', color: hexToRgb(iconColor) }];
+                                if (iconVar) {
+                                    v.strokes = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: iconVar.id } } }];
+                                }
+                            }
+                        });
+                    } catch (e) { }
+                    leftIcon.name = "Left Icon";
+                    leftIcon.visible = false;
+                    const placeholderText = figma.createText();
+                    placeholderText.name = "Placeholder";
+                    placeholderText.characters = "Placeholder text...";
+                    if (inputTextStylesMap['placeholder']) {
+                        placeholderText.textStyleId = inputTextStylesMap['placeholder'].id;
+                    } else {
+                        placeholderText.fontSize = 14;
+                        placeholderText.fontName = { family: "Inter", style: "Regular" };
+                        placeholderText.lineHeight = { value: 21, unit: "PIXELS" };
+                    }
+                    placeholderText.fills = [{ type: 'SOLID', color: hexToRgb(placeholderColor) }];
+                    if (textVar) {
+                        try { placeholderText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: textVar.id } } }]; } catch (e) { }
+                    }
+                    placeholderText.layoutAlign = "STRETCH";
+                    placeholderText.layoutGrow = 1;
+                    const rightIcon = sharedRightIcon.createInstance();
+                    try {
+                        const vectors = rightIcon.findAll(n => n.type === 'VECTOR');
+                        vectors.forEach(v => {
+                            if (v.strokes && v.strokes.length > 0) {
+                                v.strokes = [{ type: 'SOLID', color: hexToRgb(iconColor) }];
+                                if (iconVar) {
+                                    v.strokes = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: iconVar.id } } }];
+                                }
+                            }
+                        });
+                    } catch (e) { }
+                    rightIcon.name = "Right Icon";
+                    rightIcon.visible = false;
+                    inputContainer.appendChild(leftIcon);
+                    inputContainer.appendChild(placeholderText);
+                    inputContainer.appendChild(rightIcon);
+                }
+
+                // Create hint frame with icon first, then text
+                const hintFrame = figma.createFrame();
+                hintFrame.name = "Hint Frame";
+                hintFrame.layoutMode = "HORIZONTAL";
+                hintFrame.primaryAxisSizingMode = "AUTO";
+                hintFrame.counterAxisSizingMode = "AUTO";
+                hintFrame.itemSpacing = 4;
+                hintFrame.fills = [];
+                hintFrame.primaryAxisAlignItems = "CENTER";
+                hintFrame.counterAxisAlignItems = "CENTER";
+                hintFrame.visible = false;
+
+                const hintIcon = sharedInfoIcon.createInstance();
+                hintIcon.name = "Hint Icon";
+                hintIcon.resize(16, 16);
+                hintIcon.layoutAlign = "INHERIT";
+                hintIcon.visible = true;
+
+                const hintText = figma.createText();
+                hintText.name = "Hint Text";
+                hintText.characters = "Hint text to help users";
+                if (inputTextStylesMap['helper']) {
+                    hintText.textStyleId = inputTextStylesMap['helper'].id;
+                } else {
+                    hintText.fontSize = 12;
+                    hintText.fontName = { family: "Inter", style: "Regular" };
+                    hintText.lineHeight = { value: 18, unit: "PIXELS" };
+                }
+                hintText.fills = [{ type: 'SOLID', color: hexToRgb(state === 'Error' ? '#EF4444' : '#6B7280') }];
+                if (helperColorVar) {
+                    try { hintText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: helperColorVar.id } } }]; } catch (e) { }
+                }
+                hintText.layoutAlign = "STRETCH";
+                hintText.layoutGrow = 1;
+
+                hintFrame.appendChild(hintIcon);
+                hintFrame.appendChild(hintText);
+
+                // Append frames to input based on type
+                if (type !== 'Search' && labelFrame) {
+                    input.appendChild(labelFrame);
+                }
+                input.appendChild(inputContainer);
+                input.appendChild(hintFrame);
+                return input;
+            }
+
+            // Create ONE component set with all types and states (25 variants)
+            const types = ['Search', 'OTP', 'Text Field', 'Phone Number', 'Rich Text Box'];
+            const states = ['Normal', 'Hover', 'Click', 'Error', 'Disable'];
+            const allComponents = [];
+
+            const startX = 100;
+            const startY = 100;
+            const gapBetweenColumns = 84;
+            const componentGap = 34;
+
+            // First pass: create all components and calculate column widths
+            const columnWidths = [];
+            const componentsByColumn = [];
+
+            for (let typeIndex = 0; typeIndex < types.length; typeIndex++) {
+                const type = types[typeIndex];
+                const columnComponents = [];
+                let maxWidth = 0;
+
+                for (let stateIndex = 0; stateIndex < states.length; stateIndex++) {
+                    const state = states[stateIndex];
+                    const component = createInputField(type, state);
+                    figma.currentPage.appendChild(component);
+                    columnComponents.push(component);
+                    allComponents.push(component);
+                    maxWidth = Math.max(maxWidth, component.width);
+                }
+
+                columnWidths.push(maxWidth);
+                componentsByColumn.push(columnComponents);
+            }
+
+            // Second pass: position components based on actual column widths
+            let currentX = startX;
+            for (let typeIndex = 0; typeIndex < types.length; typeIndex++) {
+                let currentY = startY;
+                const columnComponents = componentsByColumn[typeIndex];
+
+                for (let stateIndex = 0; stateIndex < states.length; stateIndex++) {
+                    const component = columnComponents[stateIndex];
+                    component.x = currentX;
+                    component.y = currentY;
+                    currentY += component.height + componentGap;
+                }
+
+                currentX += columnWidths[typeIndex] + gapBetweenColumns;
+            }
+
+            // Combine ALL components into ONE component set
+            if (typeof figma.combineAsVariants === 'function' && allComponents.length > 0) {
+                figma.currentPage.selection = allComponents;
+                const componentSet = figma.combineAsVariants(allComponents, figma.currentPage);
+                if (componentSet) {
+                    componentSet.name = "Input Field";
+
+                    // Add boolean properties to component set
+                    try {
+                        const labelTextPropId = componentSet.addComponentProperty("Label Text", "TEXT", customLabelText);
+                        const labelInfoIconPropId = componentSet.addComponentProperty("Label Info Icon", "BOOLEAN", false);
+                        const requiredPropId = componentSet.addComponentProperty("Required", "BOOLEAN", false);
+                        const hintFramePropId = componentSet.addComponentProperty("Hint Frame", "BOOLEAN", false);
+                        const hintIconPropId = componentSet.addComponentProperty("Hint Icon", "BOOLEAN", false);
+                        const leftIconPropId = componentSet.addComponentProperty("Left Icon", "BOOLEAN", false);
+                        const rightIconPropId = componentSet.addComponentProperty("Right Icon", "BOOLEAN", false);
+                        const sixDigitsPropId = componentSet.addComponentProperty("6 Digits", "BOOLEAN", false);
+
+                        // Bind properties to layers in all variants
+                        allComponents.forEach(comp => {
+                            // Get the type from component name (safely handle variant name parts)
+                            let compType = "";
+                            const nameParts = comp.name.split(',');
+                            for (const part of nameParts) {
+                                if (part.includes('Type=')) {
+                                    compType = part.split('=')[1].trim();
+                                    break;
+                                }
+                            }
+
+                            // Bind Label Text property to the label text layer
+                            if (compType !== 'Search') {
+                                const labelText = comp.findOne(n => n.name === "Label");
+                                if (labelText && labelText.type === 'TEXT' && labelTextPropId) {
+                                    labelText.componentPropertyReferences = { characters: labelTextPropId };
+                                }
+
+                                const labelInfoIcon = comp.findOne(n => n.name === "Label Info Icon");
+                                if (labelInfoIcon && labelInfoIconPropId) {
+                                    labelInfoIcon.componentPropertyReferences = { visible: labelInfoIconPropId };
+                                }
+
+                                const required = comp.findOne(n => n.name === "Required");
+                                if (required && requiredPropId) {
+                                    required.componentPropertyReferences = { visible: requiredPropId };
+                                }
+                            }
+
+                            const hintFrame = comp.findOne(n => n.name === "Hint Frame");
+                            if (hintFrame && hintFramePropId) {
+                                hintFrame.componentPropertyReferences = { visible: hintFramePropId };
+                            }
+
+                            const hintIcon = comp.findOne(n => n.name === "Hint Icon");
+                            if (hintIcon && hintIconPropId) {
+                                hintIcon.componentPropertyReferences = { visible: hintIconPropId };
+                            }
+
+                            const leftIcon = comp.findOne(n => n.name === "Left Icon");
+                            if (leftIcon && leftIconPropId) {
+                                leftIcon.componentPropertyReferences = { visible: leftIconPropId };
+                            }
+
+                            const rightIcon = comp.findOne(n => n.name === "Right Icon");
+                            if (rightIcon && rightIconPropId) {
+                                rightIcon.componentPropertyReferences = { visible: rightIconPropId };
+                            }
+
+                            // Bind 6 Digits property for OTP
+                            if (compType === 'OTP') {
+                                const field5 = comp.findOne(n => n.name === "Field 5");
+                                const field6 = comp.findOne(n => n.name === "Field 6");
+                                if (field5 && sixDigitsPropId) {
+                                    field5.componentPropertyReferences = { visible: sixDigitsPropId };
+                                }
+                                if (field6 && sixDigitsPropId) {
+                                    field6.componentPropertyReferences = { visible: sixDigitsPropId };
+                                }
+                            }
+                        });
+                    } catch (propError) {
+                        console.error("Error adding properties:", propError);
+                    }
+
+                    // Create documentation frame
+                    const docFrame = figma.createFrame();
+                    docFrame.name = "Input Field Component Set Documentation";
+                    docFrame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                    docFrame.paddingTop = 40;
+                    docFrame.paddingBottom = 40;
+                    docFrame.paddingLeft = 40;
+                    docFrame.paddingRight = 40;
+                    docFrame.layoutMode = "VERTICAL";
+                    docFrame.primaryAxisSizingMode = "AUTO";
+                    docFrame.counterAxisSizingMode = "AUTO";
+                    docFrame.itemSpacing = 40;
+                    docFrame.x = 100;
+                    docFrame.y = 100;
+
+                    // Add top border
+                    const borderColor = hexToRgb('#1350FF');
+                    docFrame.strokes = [{ type: 'SOLID', color: borderColor }];
+                    docFrame.strokeWeight = 8;
+                    docFrame.strokeAlign = "INSIDE";
+                    docFrame.strokeTopWeight = 8;
+                    docFrame.strokeBottomWeight = 0;
+                    docFrame.strokeLeftWeight = 0;
+                    docFrame.strokeRightWeight = 0;
+
+                    // Title section
+                    const titleSection = figma.createFrame();
+                    titleSection.name = "Title Section";
+                    titleSection.layoutMode = "VERTICAL";
+                    titleSection.primaryAxisSizingMode = "AUTO";
+                    titleSection.counterAxisSizingMode = "AUTO";
+                    titleSection.itemSpacing = 34;
+                    titleSection.fills = [];
+
+                    // Create logo from SVG
+                    const logoSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_466_1736)"><g clip-path="url(#clip1_466_1736)"><path d="M47.9502 22.765C46.7073 22.0781 45.7261 21.1295 45.0065 19.952C44.2869 18.7418 43.9271 17.4008 43.9271 15.8962C43.9271 14.3916 44.2869 13.0506 45.0065 11.8404C45.7261 10.6302 46.7073 9.71438 47.9502 9.0275C49.1931 8.34063 50.5996 8.01355 52.1696 8.01355C53.4125 8.01355 54.59 8.24251 55.604 8.66771C56.6506 9.09292 57.5337 9.74708 58.2533 10.5648L56.4217 12.2983C55.3096 11.0881 53.9358 10.4994 52.3004 10.4994C51.2538 10.4994 50.3052 10.7283 49.4548 11.1862C48.6044 11.6442 47.9829 12.2983 47.4923 13.116C47.0344 13.9337 46.8054 14.8496 46.8054 15.8962C46.8054 16.9429 47.0344 17.8587 47.4923 18.6764C47.9502 19.4941 48.6044 20.1483 49.4548 20.6062C50.3052 21.0641 51.2211 21.2931 52.3004 21.2931C53.9358 21.2931 55.3096 20.6716 56.4217 19.4614L58.2533 21.2277C57.5337 22.0781 56.6506 22.6995 55.604 23.1247C54.5573 23.5499 53.4125 23.7789 52.1369 23.7789C50.5996 23.7789 49.1931 23.4191 47.9502 22.765Z" fill="black"/><path d="M63.6175 22.7649C62.3745 22.0781 61.3606 21.1295 60.641 19.9193C59.9214 18.7091 59.5616 17.3681 59.5616 15.8635C59.5616 14.3589 59.9214 13.0179 60.641 11.8077C61.3606 10.5975 62.3418 9.64895 63.6175 8.96207C64.8604 8.2752 66.2995 7.94812 67.8695 7.94812C69.4395 7.94812 70.846 8.2752 72.1216 8.96207C73.3645 9.64895 74.3785 10.5975 75.098 11.775C75.8176 12.9852 76.1774 14.3262 76.1774 15.8308C76.1774 17.3354 75.8176 18.6764 75.098 19.8866C74.3785 21.0968 73.3972 22.0126 72.1216 22.6995C70.8787 23.3864 69.4395 23.7135 67.8695 23.7135C66.2995 23.7789 64.8604 23.4191 63.6175 22.7649ZM70.617 20.5735C71.4347 20.1156 72.0889 19.4614 72.5468 18.6437C73.0047 17.826 73.2337 16.8775 73.2337 15.8635C73.2337 14.8496 73.0047 13.901 72.5468 13.0833C72.0889 12.2656 71.4347 11.6114 70.617 11.1535C69.7993 10.6956 68.8835 10.4667 67.8368 10.4667C66.8229 10.4667 65.8743 10.6956 65.0566 11.1535C64.2389 11.6114 63.5848 12.2656 63.1268 13.0833C62.6689 13.901 62.44 14.8496 62.44 15.8635C62.44 16.8775 62.6689 17.826 63.1268 18.6437C63.5848 19.4614 64.2389 20.1156 65.0566 20.5735C65.8743 21.0314 66.7902 21.2604 67.8368 21.2604C68.8835 21.2604 69.7993 21.0314 70.617 20.5735Z" fill="black"/><path d="M79.1539 8.17706H85.8591C87.4945 8.17706 88.9663 8.50414 90.242 9.1256C91.5176 9.74706 92.4988 10.6629 93.2184 11.8404C93.9053 13.0179 94.2651 14.3589 94.2651 15.8635C94.2651 17.4008 93.9053 18.7418 93.2184 19.8866C92.5315 21.0641 91.5176 21.9472 90.242 22.6014C88.9663 23.2228 87.5272 23.5499 85.8918 23.5499H79.1539V8.17706ZM85.7282 21.1295C86.8403 21.1295 87.8543 20.9006 88.7047 20.4753C89.5551 20.0501 90.2093 19.4287 90.6672 18.6437C91.1251 17.8587 91.354 16.9102 91.354 15.8635C91.354 14.8168 91.1251 13.8683 90.6672 13.0833C90.2093 12.2983 89.5551 11.6768 88.7047 11.2516C87.8543 10.8264 86.8403 10.5975 85.7282 10.5975H81.9995V21.1295H85.7282Z" fill="black"/><path d="M108.82 21.1622V23.5499H97.3069V8.17706H108.526V10.5648H100.153V14.5552H107.577V16.9102H100.153V21.1622H108.82Z" fill="black"/><path d="M115.133 10.5975H110.03V8.17706H123.081V10.5975H117.978V23.5499H115.133V10.5975Z" fill="black"/><path d="M138.879 8.17706V23.5499H136.033V16.9756H128.085V23.5499H125.24V8.17706H128.085V14.5225H136.033V8.17706H138.879Z" fill="black"/><path d="M154.514 21.1622V23.5499H143V8.17706H154.219V10.5648H145.846V14.5552H153.271V16.9102H145.846V21.1622H154.514Z" fill="black"/><path d="M160.597 22.7649C159.354 22.0781 158.34 21.1295 157.621 19.9193C156.901 18.7091 156.542 17.3681 156.542 15.8635C156.542 14.3589 156.901 13.0179 157.621 11.8077C158.34 10.5975 159.322 9.64895 160.597 8.96207C161.873 8.2752 163.279 7.94812 164.849 7.94812C166.419 7.94812 167.826 8.2752 169.101 8.96207C170.344 9.64895 171.358 10.5975 172.078 11.775C172.797 12.9852 173.157 14.3262 173.157 15.8308C173.157 17.3354 172.797 18.6764 172.078 19.8866C171.358 21.0968 170.377 22.0126 169.101 22.6995C167.859 23.3864 166.419 23.7135 164.849 23.7135C163.247 23.7789 161.84 23.4191 160.597 22.7649ZM167.597 20.5735C168.415 20.1156 169.069 19.4614 169.527 18.6437C169.985 17.826 170.214 16.8775 170.214 15.8635C170.214 14.8496 169.985 13.901 169.527 13.0833C169.069 12.2656 168.415 11.6114 167.597 11.1535C166.779 10.6956 165.863 10.4667 164.817 10.4667C163.803 10.4667 162.854 10.6956 162.036 11.1535C161.219 11.6114 160.565 12.2656 160.107 13.0833C159.649 13.901 159.42 14.8496 159.42 15.8635C159.42 16.8775 159.649 17.826 160.107 18.6437C160.565 19.4614 161.219 20.1156 162.036 20.5735C162.854 21.0314 163.77 21.2604 164.817 21.2604C165.863 21.2604 166.779 21.0314 167.597 20.5735Z" fill="black"/><path d="M186.175 23.5499L183.035 19.0362C182.904 19.0362 182.708 19.0689 182.446 19.0689H178.979V23.5499H176.134V8.17706H182.446C183.787 8.17706 184.932 8.40602 185.913 8.83123C186.895 9.25643 187.647 9.9106 188.17 10.7283C188.694 11.546 188.955 12.5273 188.955 13.6393C188.955 14.7841 188.661 15.7981 188.105 16.6158C187.549 17.4662 186.731 18.0877 185.685 18.4801L189.25 23.5499H186.175ZM185.161 11.3825C184.507 10.8591 183.558 10.5975 182.316 10.5975H178.979V16.7139H182.316C183.558 16.7139 184.507 16.4522 185.161 15.8962C185.815 15.3729 186.142 14.6206 186.142 13.6393C186.11 12.6581 185.815 11.9058 185.161 11.3825Z" fill="black"/><path d="M203.707 21.1622V23.5499H192.193V8.17706H203.412V10.5648H195.039V14.5552H202.464V16.9102H195.039V21.1622H203.707Z" fill="black"/><path d="M221.009 23.5499L220.977 13.3777L215.94 21.8164H214.664L209.627 13.5085V23.5499H206.912V8.17706H209.267L215.384 18.3493L221.336 8.17706H223.691L223.724 23.5499H221.009Z" fill="black"/><path d="M34.1474 24.5312H1.83165C0.327072 24.5312 -0.523342 22.8303 0.392488 21.6201L15.9943 1.01395C17.041 -0.359794 19.1016 -0.359794 20.1155 1.01395L35.6192 21.5874C36.5023 22.7976 35.6519 24.5312 34.1474 24.5312Z" fill="url(#paint0_linear_466_1736)"/><path d="M4.15395 28.5215L16.7466 11.9385C17.5643 10.8591 19.167 10.8918 19.952 11.9385L32.4465 28.5215C33.4278 29.8626 32.512 31.727 30.8438 31.727H5.75665C4.08853 31.727 3.14 29.8299 4.15395 28.5215Z" fill="url(#paint1_linear_466_1736)"/><path d="M29.4047 24.5312L19.952 11.9385C19.1343 10.8591 17.5643 10.8591 16.7466 11.9385L7.1958 24.5312H29.4047Z" fill="#6699FF"/></g></g><defs><linearGradient id="paint0_linear_466_1736" x1="0.0140991" y1="12.2574" x2="35.977" y2="12.2574" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><linearGradient id="paint1_linear_466_1736" x1="3.73645" y1="21.4341" x2="32.8498" y2="21.4341" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><clipPath id="clip0_466_1736"><rect width="224" height="31.727" fill="white"/></clipPath><clipPath id="clip1_466_1736"><rect width="223.724" height="31.727" fill="white"/></clipPath></defs></svg>`;
+
+                    const logo = figma.createNodeFromSvg(logoSvg);
+                    logo.name = "logo - Horizontal";
+                    logo.resize(224, 31.73);
+
+                    // Header Section frame
+                    const headerSection = figma.createFrame();
+                    headerSection.name = "Header Section";
+                    headerSection.layoutMode = "VERTICAL";
+                    headerSection.primaryAxisSizingMode = "AUTO";
+                    headerSection.counterAxisSizingMode = "AUTO";
+                    headerSection.itemSpacing = 6;
+                    headerSection.fills = [];
+
+                    // Title text
+                    const titleText = figma.createText();
+                    titleText.characters = "Input Field Component Set";
+                    titleText.fontSize = 40;
+                    titleText.fontName = { family: "Poppins", style: "SemiBold" };
+                    titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+                    titleText.lineHeight = { value: 150, unit: "PERCENT" };
+
+                    // Subtitle text
+                    const subtitleText = figma.createText();
+                    subtitleText.characters = "Explore our diverse input field set with different types and states for your design.";
+                    subtitleText.fontSize = 16;
+                    subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+                    subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+                    subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
+                    subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
+
+                    headerSection.appendChild(titleText);
+                    headerSection.appendChild(subtitleText);
+
+                    titleSection.appendChild(logo);
+                    titleSection.appendChild(headerSection);
+                    docFrame.appendChild(titleSection);
+
+                    // Create container frame for component set
+                    const inputContainer = figma.createFrame();
+                    inputContainer.name = "Input Field Preview";
+                    inputContainer.layoutMode = "VERTICAL";
+                    inputContainer.primaryAxisSizingMode = "AUTO";
+                    inputContainer.counterAxisSizingMode = "AUTO";
+                    inputContainer.paddingTop = 84;
+                    inputContainer.paddingBottom = 84;
+                    inputContainer.paddingLeft = 84;
+                    inputContainer.paddingRight = 84;
+                    inputContainer.fills = [{ type: 'SOLID', color: hexToRgb('#FAFAFA') }];
+                    inputContainer.strokes = [{ type: 'SOLID', color: hexToRgb('#D5D5D6') }];
+                    inputContainer.strokeWeight = 1;
+                    inputContainer.cornerRadius = 8;
+
+                    // Move component set inside the container
+                    inputContainer.appendChild(componentSet);
+                    docFrame.appendChild(inputContainer);
+
+                    // Footer section
+                    const footer = figma.createFrame();
+                    footer.name = "Footer Section";
+                    footer.layoutMode = "VERTICAL";
+                    footer.primaryAxisSizingMode = "AUTO";
+                    footer.counterAxisSizingMode = "AUTO";
+                    footer.itemSpacing = 8;
+                    footer.fills = [];
+
+                    const createdBy = figma.createText();
+                    createdBy.characters = "Created By";
+                    createdBy.fontSize = 12;
+                    createdBy.fontName = { family: "Inter", style: "Regular" };
+                    createdBy.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+                    createdBy.textAlignHorizontal = "CENTER";
+
+                    const website = figma.createText();
+                    website.characters = "Slate.Design";
+                    website.fontSize = 16;
+                    website.fontName = { family: "Inter", style: "Bold" };
+                    website.fills = [{ type: 'SOLID', color: hexToRgb('#121212') }];
+                    website.textAlignHorizontal = "CENTER";
+
+                    footer.appendChild(createdBy);
+                    footer.appendChild(website);
+                    docFrame.appendChild(footer);
+
+                    figma.currentPage.selection = [docFrame];
+                    figma.viewport.scrollAndZoomIntoView([docFrame]);
+                    figma.notify(`✓ Input Field Component Set created inside documentation frame!`);
+                } else {
+                    figma.notify('Error: Failed to create component set');
+                }
+            } else {
+                figma.notify('Error: combineAsVariants is not available');
+            }
+
+        } catch (error) {
+            figma.notify('Error: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    if (msg.type === "create-icons-doc") {
+        try {
+            const library = msg.library;
+            const category = msg.category;
+            const iconsArray = msg.icons || [];
+
+            console.log(`[Figma Plugin] Creating icons doc for ${library} - ${category} with ${iconsArray.length} icons`);
+
+            // Load fonts
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+
+            // Helper function to convert hex to RGB
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                return {
+                    r: parseInt(hex.substring(0, 2), 16) / 255,
+                    g: parseInt(hex.substring(2, 4), 16) / 255,
+                    b: parseInt(hex.substring(4, 6), 16) / 255
+                };
+            }
+
+            // Create main frame (1160px width, blue top border, white background)
+            const frame = figma.createFrame();
+            frame.name = `${library} - ${category} Doc`;
+            frame.resize(1160, 440);
+            frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+            frame.paddingTop = 40;
+            frame.paddingBottom = 40;
+            frame.paddingLeft = 40;
+            frame.paddingRight = 40;
+            frame.layoutMode = "VERTICAL";
+            frame.primaryAxisSizingMode = "AUTO";
+            frame.counterAxisSizingMode = "FIXED";
+            frame.itemSpacing = 40;
+
+            // Top Border styling
+            frame.strokes = [{ type: 'SOLID', color: hexToRgb('#1350FF') }];
+            frame.strokeWeight = 8;
+            frame.strokeTopWeight = 8;
+            frame.strokeBottomWeight = 0;
+            frame.strokeLeftWeight = 0;
+            frame.strokeRightWeight = 0;
+
+            // Header Section
+            const headerSection = figma.createFrame();
+            headerSection.name = "Header Section";
+            headerSection.layoutMode = "VERTICAL";
+            headerSection.primaryAxisSizingMode = "AUTO";
+            headerSection.counterAxisSizingMode = "AUTO";
+            headerSection.itemSpacing = 34;
+            headerSection.fills = [];
+
+            // Logo
+            const logoSvg = `<svg width="224" height="32" viewBox="0 0 224 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_466_1736)"><g clip-path="url(#clip1_466_1736)"><path d="M47.9502 22.765C46.7073 22.0781 45.7261 21.1295 45.0065 19.952C44.2869 18.7418 43.9271 17.4008 43.9271 15.8962C43.9271 14.3916 44.2869 13.0506 45.0065 11.8404C45.7261 10.6302 46.7073 9.71438 47.9502 9.0275C49.1931 8.34063 50.5996 8.01355 52.1696 8.01355C53.4125 8.01355 54.59 8.24251 55.604 8.66771C56.6506 9.09292 57.5337 9.74708 58.2533 10.5648L56.4217 12.2983C55.3096 11.0881 53.9358 10.4994 52.3004 10.4994C51.2538 10.4994 50.3052 10.7283 49.4548 11.1862C48.6044 11.6442 47.9829 12.2983 47.4923 13.116C47.0344 13.9337 46.8054 14.8496 46.8054 15.8962C46.8054 16.9429 47.0344 17.8587 47.4923 18.6764C47.9502 19.4941 48.6044 20.1483 49.4548 20.6062C50.3052 21.0641 51.2211 21.2931 52.3004 21.2931C53.9358 21.2931 55.3096 20.6716 56.4217 19.4614L58.2533 21.2277C57.5337 22.0781 56.6506 22.6995 55.604 23.1247C54.5573 23.5499 53.4125 23.7789 52.1369 23.7789C50.5996 23.7789 49.1931 23.4191 47.9502 22.765Z" fill="black"/><path d="M63.6175 22.7649C62.3745 22.0781 61.3606 21.1295 60.641 19.9193C59.9214 18.7091 59.5616 17.3681 59.5616 15.8635C59.5616 14.3589 59.9214 13.0179 60.641 11.8077C61.3606 10.5975 62.3418 9.64895 63.6175 8.96207C64.8604 8.2752 66.2995 7.94812 67.8695 7.94812C69.4395 7.94812 70.846 8.2752 72.1216 8.96207C73.3645 9.64895 74.3785 10.5975 75.098 11.775C75.8176 12.9852 76.1774 14.3262 76.1774 15.8308C76.1774 17.3354 75.8176 18.6764 75.098 19.8866C74.3785 21.0968 73.3972 22.0126 72.1216 22.6995C70.8787 23.3864 69.4395 23.7135 67.8695 23.7135C66.2995 23.7789 64.8604 23.4191 63.6175 22.7649ZM70.617 20.5735C71.4347 20.1156 72.0889 19.4614 72.5468 18.6437C73.0047 17.826 73.2337 16.8775 73.2337 15.8635C73.2337 14.8496 73.0047 13.901 72.5468 13.0833C72.0889 12.2656 71.4347 11.6114 70.617 11.1535C69.7993 10.6956 68.8835 10.4667 67.8368 10.4667C66.8229 10.4667 65.8743 10.6956 65.0566 11.1535C64.2389 11.6114 63.5848 12.2656 63.1268 13.0833C62.6689 13.901 62.44 14.8496 62.44 15.8635C62.44 16.8775 62.6689 17.826 63.1268 18.6437C63.5848 19.4614 64.2389 20.1156 65.0566 20.5735C65.8743 21.0314 66.7902 21.2604 67.8368 21.2604C68.8835 21.2604 69.7993 21.0314 70.617 20.5735Z" fill="black"/><path d="M79.1539 8.17706H85.8591C87.4945 8.17706 88.9663 8.50414 90.242 9.1256C91.5176 9.74706 92.4988 10.6629 93.2184 11.8404C93.9053 13.0179 94.2651 14.3589 94.2651 15.8635C94.2651 17.4008 93.9053 18.7418 93.2184 19.8866C92.5315 21.0641 91.5176 21.9472 90.242 22.6014C88.9663 23.2228 87.5272 23.5499 85.8918 23.5499H79.1539V8.17706ZM85.7282 21.1295C86.8403 21.1295 87.8543 20.9006 88.7047 20.4753C89.5551 20.0501 90.2093 19.4287 90.6672 18.6437C91.1251 17.8587 91.354 16.9102 91.354 15.8635C91.354 14.8168 91.1251 13.8683 90.6672 13.0833C90.2093 12.2983 89.5551 11.6768 88.7047 11.2516C87.8543 10.8264 86.8403 10.5975 85.7282 10.5975H81.9995V21.1295H85.7282Z" fill="black"/><path d="M108.82 21.1622V23.5499H97.3069V8.17706H108.526V10.5648H100.153V14.5552H107.577V16.9102H100.153V21.1622H108.82Z" fill="black"/><path d="M115.133 10.5975H110.03V8.17706H123.081V10.5975H117.978V23.5499H115.133V10.5975Z" fill="black"/><path d="M138.879 8.17706V23.5499H136.033V16.9756H128.085V23.5499H125.24V8.17706H128.085V14.5225H136.033V8.17706H138.879Z" fill="black"/><path d="M154.514 21.1622V23.5499H143V8.17706H154.21901 10.5648H145.846V14.5552H153.271V16.9102H145.846V21.1622H154.514Z" fill="black"/><path d="M160.597 22.7649C159.354 22.0781 158.34 21.1295 157.621 19.9193C156.901 18.7091 156.542 17.3681 156.542 15.8635C156.542 14.3589 156.901 13.0179 157.621 11.8077C158.34 10.5975 159.322 9.64895 160.597 8.96207C161.873 8.2752 163.279 7.94812 164.849 7.94812C166.419 7.94812 167.826 8.2752 169.101 8.96207C170.344 9.64895 171.358 10.5975 172.078 11.775C172.797 12.9852 173.157 14.3262 173.157 15.8308C173.157 17.3354 172.797 18.6764 172.078 19.8866C171.358 21.0968 170.377 22.0126 169.101 22.6995C167.859 23.3864 166.419 23.7135 164.849 23.7135C163.247 23.7789 161.84 23.4191 160.597 22.7649ZM167.597 20.5735C168.415 20.1156 169.069 19.4614 169.527 18.6437C169.985 17.826 170.214 16.8775 170.214 15.8635C170.214 14.8496 169.069 13.901 169.527 13.0833C169.069 12.2656 168.415 11.6114 167.597 11.1535C166.779 10.6956 165.863 10.4667 164.817 10.4667C163.803 10.4667 162.854 10.6956 162.036 11.1535C161.219 11.6114 160.565 12.2656 160.107 13.0833C159.649 13.901 159.42 14.8496 159.42 15.8635C159.42 16.8775 159.649 17.826 160.107 18.6437C160.565 19.4614 161.219 20.1156 162.036 20.5735C162.854 21.0314 163.77 21.2604 164.817 21.2604C165.863 21.2604 166.779 21.0314 167.597 20.5735Z" fill="black"/><path d="M186.175 23.5499L183.035 19.0362C182.904 19.0362 182.708 19.0689 182.446 19.0689H178.979V23.5499H176.134V8.17706H182.446C183.787 8.17706 184.932 8.40602 185.913 8.83123C186.895 9.25643 187.647 9.9106 188.17 10.7283C188.694 11.546 188.955 12.5273 188.955 13.6393C188.955 14.7841 188.661 15.7981 188.105 16.6158C187.549 17.4662 186.731 18.0877 185.685 18.4801L189.25 23.5499H186.175ZM185.161 11.3825C184.507 10.8591 183.558 10.5975 182.316 10.5975H178.979V16.7139H182.316C183.558 16.7139 184.507 16.4522 185.161 15.8962C185.815 15.3729 186.142 14.6206 186.142 13.6393C186.11 12.6581 185.815 11.9058 185.161 11.3825Z" fill="black"/><path d="M203.707 21.1622V23.5499H192.193V8.17706H203.412V10.5648H195.039V14.5552H202.464V16.9102H195.039V21.1622H203.707Z" fill="black"/><path d="M221.009 23.5499L220.977 13.3777L215.94 21.8164H214.664L209.627 13.5085V23.5499H206.912V8.17706H209.267L215.384 18.3493L221.336 8.17706H223.691L223.724 23.5499H221.009Z" fill="black"/><path d="M34.1474 24.5312H1.83165C0.327072 24.5312 -0.523342 22.8303 0.392488 21.6201L15.9943 1.01395C17.041 -0.359794 19.1016 -0.359794 20.1155 1.01395L35.6192 21.5874C36.5023 22.7976 35.6519 24.5312 34.1474 24.5312Z" fill="url(#paint0_linear_466_1736)"/><path d="M4.15395 28.5215L16.7466 11.9385C17.5643 10.8591 19.167 10.8918 19.952 11.9385L32.4465 28.5215C33.4278 29.8626 32.512 31.727 30.8438 31.727H5.75665C4.08853 31.727 3.14 29.8299 4.15395 28.5215Z" fill="url(#paint1_linear_466_1736)"/><path d="M29.4047 24.5312L19.952 11.9385C19.1343 10.8591 17.5643 10.8591 16.7466 11.9385L7.1958 24.5312H29.4047Z" fill="#6699FF"/></g></g><defs><linearGradient id="paint0_linear_466_1736" x1="0.0140991" y1="12.2574" x2="35.977" y2="12.2574" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><linearGradient id="paint1_linear_466_1736" x1="3.73645" y1="21.4341" x2="32.8498" y2="21.4341" gradientUnits="userSpaceOnUse"><stop stop-color="#3F71FF"/><stop offset="1" stop-color="#6A73FF"/></linearGradient><clipPath id="clip0_466_1736"><rect width="224" height="31.727" fill="white"/></clipPath><clipPath id="clip1_466_1736"><rect width="223.724" height="31.727" fill="white"/></clipPath></defs></svg>`;
+            const logo = figma.createNodeFromSvg(logoSvg);
+            logo.name = "logo - Horizontal";
+            logo.resize(224, 31.73);
+            headerSection.appendChild(logo);
+
+            // Sub-header (Title + Subtitle)
+            const subHeader = figma.createFrame();
+            subHeader.name = "Header Info";
+            subHeader.layoutMode = "VERTICAL";
+            subHeader.primaryAxisSizingMode = "AUTO";
+            subHeader.counterAxisSizingMode = "AUTO";
+            subHeader.itemSpacing = 6;
+            subHeader.fills = [];
+
+            const titleText = figma.createText();
+            titleText.characters = `${library} Icon Set`;
+            titleText.fontSize = 40;
+            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+
+            const subtitleText = figma.createText();
+            subtitleText.characters = `Explore our diverse ${category} icon set from ${library} for your design.`;
+            subtitleText.fontSize = 16;
+            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
+            subtitleText.letterSpacing = { unit: "PIXELS", value: 0.032 };
+
+            subHeader.appendChild(titleText);
+            subHeader.appendChild(subtitleText);
+            headerSection.appendChild(subHeader);
+            frame.appendChild(headerSection);
+
+            // Icon Grid Section (Preview Box)
+            const iconGrid = figma.createFrame();
+            iconGrid.name = "Icon Preview Grid";
+
+            iconGrid.layoutMode = "HORIZONTAL";
+            try {
+                iconGrid.layoutWrap = "WRAP";
+            } catch (e) { }
+
+            iconGrid.resize(1080, 200); // Set initial width and a larger initial height
+            iconGrid.primaryAxisSizingMode = "FIXED";
+            iconGrid.counterAxisSizingMode = "AUTO";
+
+            iconGrid.itemSpacing = 24;
+            try {
+                iconGrid.counterAxisSpacing = 24; // Vertical spacing between rows
+            } catch (e) { }
+
+            iconGrid.paddingTop = 40;
+            iconGrid.paddingBottom = 40;
+            // Pad to 72 to maintain the 1080 standard width when hugging 20 icons
+            iconGrid.paddingLeft = 40;
+            iconGrid.paddingRight = 40;
+
+            iconGrid.fills = [{ type: 'SOLID', color: hexToRgb('#FAFAFA') }];
+            iconGrid.strokes = [{ type: 'SOLID', color: hexToRgb('#D5D5D6') }];
+            iconGrid.strokeWeight = 1;
+            iconGrid.cornerRadius = 8;
+
+            if (iconsArray.length === 0) {
+                notifyUI('icons-doc', false, `No icons were found for the category: ${category}`);
+                return;
+            }
+
+            // 4. Populate Icon Grid (Using components)
+            for (const icon of iconsArray) {
+                try {
+                    if (!icon.svg || !icon.svg.trim()) continue;
+
+                    // Create Master Component
+                    const component = figma.createComponent();
+                    component.name = icon.name;
+                    component.resize(24, 24);
+                    component.fills = [];
+
+                    // Create SVG node from the text content
+                    const svgNode = figma.createNodeFromSvg(icon.svg);
+                    svgNode.name = "icon";
+
+                    // Center and scale SVG to fit 20x20 inside 24x24 component
+                    const scale = Math.min(20 / svgNode.width, 20 / svgNode.height);
+                    svgNode.resize(svgNode.width * scale, svgNode.height * scale);
+                    svgNode.x = (component.width - svgNode.width) / 2;
+                    svgNode.y = (component.height - svgNode.height) / 2;
+
+                    component.appendChild(svgNode);
+                    iconGrid.appendChild(component);
+                } catch (err) {
+                    console.warn(`[Plugins] Error processing icon ${icon.name}:`, err);
+                }
+            }
+
+            // Sync sizing mode again after adding items to trigger Figma's layout engine
+            iconGrid.counterAxisSizingMode = "AUTO";
+
+            frame.appendChild(iconGrid);
+
+            // Footer Section
+            const footerSection = figma.createFrame();
+            footerSection.name = "Footer Section";
+            footerSection.layoutMode = "VERTICAL";
+            footerSection.primaryAxisSizingMode = "AUTO";
+            footerSection.counterAxisSizingMode = "AUTO";
+            footerSection.itemSpacing = 8;
+            footerSection.fills = [];
+
+            const createdByHeader = figma.createText();
+            createdByHeader.characters = "Created By";
+            createdByHeader.fontSize = 12;
+            createdByHeader.fontName = { family: "Inter", style: "Regular" };
+            createdByHeader.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+
+            const websiteLabel = figma.createText();
+            websiteLabel.characters = "Slate.Design";
+            websiteLabel.fontSize = 16;
+            websiteLabel.fontName = { family: "Inter", style: "Bold" };
+            websiteLabel.fills = [{ type: 'SOLID', color: hexToRgb('#121212') }];
+
+            footerSection.appendChild(createdByHeader);
+            footerSection.appendChild(websiteLabel);
+            frame.appendChild(footerSection);
+
+            // Position the frame to avoid overlap
+            const existingFrames = figma.currentPage.findAll(n => n.name.includes("- Doc") || n.name.includes("Icon Set"));
+            if (existingFrames.length > 0) {
+                // Find the bottom-most frame
+                let maxY = -Infinity;
+                existingFrames.forEach(f => {
+                    if (f.y + f.height > maxY) maxY = f.y + f.height;
+                });
+                frame.y = maxY + 100; // 100px gap
+            } else {
+                frame.y = figma.viewport.center.y - (frame.height / 2);
+            }
+            frame.x = figma.viewport.center.x - (frame.width / 2);
+
+            figma.currentPage.selection = [frame];
+            // Only zoom if single doc, or just pan to the new one
+            // figma.viewport.scrollAndZoomIntoView([frame]);
+
+            console.log(`Created documentation for ${library} - ${category} with ${iconsArray.length} icons.`);
+            notifyUI('icons-doc', true, `Successfully created documentation with ${iconsArray.length} icons!`);
+        } catch (error) {
+            notifyUI('icons-doc', false, 'Failed to create icon documentation', error.message);
+            console.error(error);
+        }
+    }
+};

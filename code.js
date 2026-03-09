@@ -241,6 +241,7 @@ figma.ui.onmessage = async (msg) => {
 
     if (msg.type === "create-spacing-doc") {
         try {
+            figma.notify('Creating spacing documentation...', { timeout: 2000 });
             const baseValue = msg.baseValue;
             const numberOfTokens = msg.numberOfTokens;
 
@@ -1942,9 +1943,14 @@ figma.ui.onmessage = async (msg) => {
 
     if (msg.type === "create-typography-styles") {
         try {
+            // Show loading notification for text style creation
+            figma.notify('Creating text styles...', { timeout: 2000 });
+            console.log('Starting text style creation...');
+
             const baseFontSize = msg.baseFontSize;
             const scale = msg.scale || 1.25; // Default scale if not provided
             const primaryFont = msg.primaryFont;
+            console.log(`Primary font: ${primaryFont}, Base size: ${baseFontSize}, Scale: ${scale}`);
 
             const typographyLevels = [
                 { name: 'H1', multiplier: Math.pow(scale, 5) },
@@ -1958,68 +1964,232 @@ figma.ui.onmessage = async (msg) => {
                 { name: 'CAPTION', multiplier: 0.75 }
             ];
 
-            let createdCount = 0;
+            // Get or create Typography collection
+            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Typography");
+            if (!collection) {
+                collection = figma.variables.createVariableCollection("Typography");
+            }
+            const modeId = collection.modes[0].modeId;
 
-            for (const level of typographyLevels) {
-                const fontSize = Math.round(baseFontSize * level.multiplier);
-                const styleName = `Typography/${level.name}`;
+            let fontWeights = [
+                { name: 'Regular', weight: 400 },
+                { name: 'Medium', weight: 500 },
+                { name: 'Semibold', weight: 600 },
+                { name: 'Bold', weight: 700 }
+            ];
 
-                // Check if style already exists
-                let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
+            const fontStyleMap = {
+                'Regular': ['Regular', 'Normal', 'Book', 'Roman'],
+                'Medium': ['Medium'],
+                'Semibold': ['SemiBold', 'Semi Bold', 'Demibold', 'Demi Bold'],
+                'Bold': ['Bold']
+            };
 
-                if (!textStyle) {
-                    textStyle = figma.createTextStyle();
-                    textStyle.name = styleName;
+            // Create/Update Font Family Variable
+            let fontFamilyVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/primary");
+            if (!fontFamilyVar) {
+                fontFamilyVar = figma.variables.createVariable("font-family/primary", collection, "STRING");
+            }
+            fontFamilyVar.setValueForMode(modeId, primaryFont);
+
+            let secondaryFontVar = null;
+            if (msg.secondaryFont) {
+                secondaryFontVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/secondary");
+                if (!secondaryFontVar) {
+                    secondaryFontVar = figma.variables.createVariable("font-family/secondary", collection, "STRING");
                 }
-
-                // Load font before setting it
-                await figma.loadFontAsync({ family: primaryFont, style: "Regular" });
-
-                // Set font properties
-                textStyle.fontSize = fontSize;
-                textStyle.fontName = { family: primaryFont, style: "Regular" };
-                textStyle.lineHeight = { value: 150, unit: "PERCENT" };
-
-                createdCount++;
+                secondaryFontVar.setValueForMode(modeId, msg.secondaryFont);
             }
 
-            notifyUI('typography-styles', true, `Created ${createdCount} typography styles!`);
+            // Create/Update Weight Variables
+            for (const weight of fontWeights) {
+                const weightVarName = `font-weight/${weight.name.toLowerCase()}`;
+                let weightVar = figma.variables.getLocalVariables().find(v => v.name === weightVarName);
+                if (!weightVar) {
+                    weightVar = figma.variables.createVariable(weightVarName, collection, "FLOAT");
+                }
+                weightVar.setValueForMode(modeId, weight.weight);
+            }
+
+            let createdCount = 0;
+            const fontsToCreate = [{ name: 'primary', family: primaryFont, var: fontFamilyVar }];
+            if (msg.secondaryFont) {
+                fontsToCreate.push({ name: 'secondary', family: msg.secondaryFont, var: secondaryFontVar });
+            }
+
+            for (const fontInfo of fontsToCreate) {
+                for (const level of typographyLevels) {
+                    const fontSize = Math.round(baseFontSize * level.multiplier);
+                    const lineHeight = Math.round(fontSize * 1.5); // Default line height
+
+                    // Create/Update Size and Line Height Variables
+                    const fontSizeVarName = `font-size/${level.name.toLowerCase()}`;
+                    let fontSizeVar = figma.variables.getLocalVariables().find(v => v.name === fontSizeVarName);
+                    if (!fontSizeVar) {
+                        fontSizeVar = figma.variables.createVariable(fontSizeVarName, collection, "FLOAT");
+                    }
+                    fontSizeVar.setValueForMode(modeId, fontSize);
+
+                    const lineHeightVarName = `line-height/${level.name.toLowerCase()}`;
+                    let lineHeightVar = figma.variables.getLocalVariables().find(v => v.name === lineHeightVarName);
+                    if (!lineHeightVar) {
+                        lineHeightVar = figma.variables.createVariable(lineHeightVarName, collection, "FLOAT");
+                    }
+                    lineHeightVar.setValueForMode(modeId, lineHeight);
+
+                    for (const weight of fontWeights) {
+                        let fontLoaded = false;
+                        let loadedStyle = weight.name;
+                        const stylesToTry = fontStyleMap[weight.name] || [weight.name];
+
+                        for (const style of stylesToTry) {
+                            try {
+                                await figma.loadFontAsync({ family: fontInfo.family, style: style });
+                                loadedStyle = style;
+                                fontLoaded = true;
+                                break;
+                            } catch (e) { continue; }
+                        }
+
+                        if (!fontLoaded) continue;
+
+                        const prefix = fontInfo.name.charAt(0).toUpperCase() + fontInfo.name.slice(1);
+                        const styleName = `${prefix}/${level.name}-${fontSize}px/${weight.name}`;
+
+                        let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
+                        if (!textStyle) {
+                            textStyle = figma.createTextStyle();
+                            textStyle.name = styleName;
+                        }
+
+                        textStyle.fontName = { family: fontInfo.family, style: loadedStyle };
+
+                        // Bind variables
+                        const weightVar = figma.variables.getLocalVariables().find(v => v.name === `font-weight/${weight.name.toLowerCase()}`);
+
+                        try {
+                            if (fontInfo.var) textStyle.setBoundVariable('fontFamily', fontInfo.var);
+                        } catch (e) { }
+
+                        try {
+                            if (weightVar) textStyle.setBoundVariable('fontWeight', weightVar);
+                        } catch (e) { }
+
+                        try {
+                            if (fontSizeVar) textStyle.setBoundVariable('fontSize', fontSizeVar);
+                            else textStyle.fontSize = fontSize;
+                        } catch (e) { textStyle.fontSize = fontSize; }
+
+                        try {
+                            if (lineHeightVar) textStyle.setBoundVariable('lineHeight', lineHeightVar);
+                            else textStyle.lineHeight = { value: lineHeight, unit: "PIXELS" };
+                        } catch (e) { textStyle.lineHeight = { value: lineHeight, unit: "PIXELS" }; }
+
+                        createdCount++;
+                    }
+                }
+            }
+
+            console.log(`Text styles created successfully! Total count: ${createdCount}`);
+            notifyUI('typography-styles', true, `Created ${createdCount} typography styles with assigned variables!`);
         } catch (error) {
+            console.error('Error creating typography styles:', error);
             notifyUI('typography-styles', false, 'Error creating typography styles', error.message);
         }
     }
 
     if (msg.type === "create-typography-doc") {
         try {
+            console.log('Starting typography documentation creation...');
             const baseFontSize = msg.baseFontSize;
-            let primaryFont = msg.primaryFont;
+            const primaryFont = msg.primaryFont;
+            console.log(`Primary font: ${primaryFont}, Base size: ${baseFontSize}`);
 
-            // Load fonts with fallback
-            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
-            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
-            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
-            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-            await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
-            await figma.loadFontAsync({ family: "Roboto", style: "Bold" });
-            await figma.loadFontAsync({ family: "Plus Jakarta Sans", style: "SemiBold" });
+            // Load fonts with fallbacks
+            let poppinsSemiBoldLoaded = false;
+            let poppinsMediumLoaded = false;
+            let montserratMediumLoaded = false;
 
-            // Try to load the primary font with different styles
-            let primaryFontStyle = "Bold";
             try {
-                await figma.loadFontAsync({ family: primaryFont, style: "Bold" });
+                await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+                poppinsSemiBoldLoaded = true;
             } catch (e) {
+                console.warn('Poppins SemiBold not available');
+            }
+
+            try {
+                await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
+                poppinsMediumLoaded = true;
+            } catch (e) {
+                console.warn('Poppins Medium not available');
+            }
+
+            try {
+                await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+                montserratMediumLoaded = true;
+            } catch (e) {
+                console.warn('Montserrat Medium not available');
+            }
+
+            // Load Inter fonts (required as fallback)
+            try {
+                await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+                await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+                await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+            } catch (e) {
+                console.error('Inter font failed to load - this is critical!');
+                throw new Error('Inter font is required but failed to load');
+            }
+
+            let robotoBoldLoaded = false;
+            try {
+                await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
+                await figma.loadFontAsync({ family: "Roboto", style: "Bold" });
+                robotoBoldLoaded = true;
+            } catch (e) {
+                console.warn('Roboto font not available, using Inter');
+            }
+
+            let plusJakartaSemiBoldLoaded = false;
+            try {
+                await figma.loadFontAsync({ family: "Plus Jakarta Sans", style: "SemiBold" });
+                plusJakartaSemiBoldLoaded = true;
+            } catch (e) {
+                console.warn('Plus Jakarta Sans not available, using Inter');
+            }
+
+            let primaryLoadedStyle = "";
+            let primaryFontLoaded = false;
+            const primaryStylesToTry = ["Medium", "Regular", "Normal", "Book"];
+            for (const style of primaryStylesToTry) {
                 try {
-                    await figma.loadFontAsync({ family: primaryFont, style: "SemiBold" });
-                    primaryFontStyle = "SemiBold";
-                } catch (e2) {
+                    await figma.loadFontAsync({ family: primaryFont, style: style });
+                    primaryFontLoaded = true;
+                    primaryLoadedStyle = style;
+                    console.log(`Loaded primary font: ${primaryFont} ${style}`);
+                    break;
+                } catch (e) {
+                    continue;
+                }
+            }
+            if (!primaryFontLoaded) {
+                console.warn(`Primary font ${primaryFont} not available with any typical preview style, trying to find any style...`);
+            }
+
+            let secondaryFontLoaded = false;
+            let secondaryLoadedStyle = "";
+            const secondaryFont = msg.secondaryFont;
+            if (secondaryFont) {
+                const secondaryStylesToTry = ["Medium", "Regular", "Normal", "Book"];
+                for (const style of secondaryStylesToTry) {
                     try {
-                        await figma.loadFontAsync({ family: primaryFont, style: "Regular" });
-                        primaryFontStyle = "Regular";
-                    } catch (e3) {
-                        console.error(`Could not load font ${primaryFont}, using Poppins as fallback`);
-                        await figma.loadFontAsync({ family: "Poppins", style: "Bold" });
-                        primaryFont = "Poppins";
-                        primaryFontStyle = "Bold";
+                        await figma.loadFontAsync({ family: secondaryFont, style: style });
+                        secondaryFontLoaded = true;
+                        secondaryLoadedStyle = style;
+                        console.log(`Loaded secondary font: ${secondaryFont} ${style}`);
+                        break;
+                    } catch (e) {
+                        continue;
                     }
                 }
             }
@@ -2050,9 +2220,9 @@ figma.ui.onmessage = async (msg) => {
                 { name: 'B4', multiplier: 12 / 12, lineHeight: 1.5 }
             ];
 
-            // Create main frame
+            // Create main frame for PRIMARY font
             const frame = figma.createFrame();
-            frame.name = "Token Typography";
+            frame.name = "Token Typography - Primary";
             frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
             frame.paddingTop = 40;
             frame.paddingBottom = 40;
@@ -2102,7 +2272,11 @@ figma.ui.onmessage = async (msg) => {
             const titleText = figma.createText();
             titleText.characters = "Typography";
             titleText.fontSize = 40;
-            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            if (poppinsSemiBoldLoaded) {
+                titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            } else {
+                titleText.fontName = { family: "Inter", style: "Bold" };
+            }
             titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
             titleText.lineHeight = { value: 150, unit: "PERCENT" };
 
@@ -2110,7 +2284,11 @@ figma.ui.onmessage = async (msg) => {
             const subtitleText = figma.createText();
             subtitleText.characters = "Typography is vital in interface design unreadable content quickly drives users away.";
             subtitleText.fontSize = 16;
-            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            if (montserratMediumLoaded) {
+                subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            } else {
+                subtitleText.fontName = { family: "Inter", style: "Regular" };
+            }
             subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
             subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
             subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
@@ -2162,16 +2340,25 @@ figma.ui.onmessage = async (msg) => {
                 const label = figma.createText();
                 label.characters = `HEADINGS/${level.name}-${fontSize}PX`;
                 label.fontSize = 12;
-                label.fontName = { family: "Plus Jakarta Sans", style: "SemiBold" };
+                if (plusJakartaSemiBoldLoaded) {
+                    label.fontName = { family: "Plus Jakarta Sans", style: "SemiBold" };
+                } else {
+                    label.fontName = { family: "Inter", style: "Bold" };
+                }
                 label.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
                 label.lineHeight = { value: 15, unit: "PIXELS" };
                 label.textCase = "UPPER";
 
                 // Sample text
                 const sampleText = figma.createText();
+                // Use the loaded style if available, fallback to Inter
+                if (primaryFontLoaded) {
+                    sampleText.fontName = { family: primaryFont, style: primaryLoadedStyle };
+                } else {
+                    sampleText.fontName = { family: "Inter", style: "Medium" };
+                }
                 sampleText.characters = "AaBbCc";
                 sampleText.fontSize = fontSize;
-                sampleText.fontName = { family: primaryFont, style: primaryFontStyle };
                 sampleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
                 sampleText.lineHeight = { value: lineHeight, unit: "PIXELS" };
 
@@ -2186,7 +2373,7 @@ figma.ui.onmessage = async (msg) => {
                 infoContainer.fills = [];
 
                 const infoItems = [
-                    { label: `Font Family: ${primaryFont} ${primaryFontStyle}` },
+                    { label: `Font Family: ${primaryFont} ${primaryFontLoaded ? primaryLoadedStyle : 'Medium'}` },
                     { label: `Font Size: ${fontSize}px` },
                     { label: `Line Height: ${lineHeight}px` },
                     { label: `Letter Spacing: 0px` }
@@ -2196,7 +2383,11 @@ figma.ui.onmessage = async (msg) => {
                     const infoText = figma.createText();
                     infoText.characters = item.label;
                     infoText.fontSize = 12;
-                    infoText.fontName = { family: "Roboto", style: "Bold" };
+                    if (robotoBoldLoaded) {
+                        infoText.fontName = { family: "Roboto", style: "Bold" };
+                    } else {
+                        infoText.fontName = { family: "Inter", style: "Bold" };
+                    }
                     infoText.fills = [{ type: 'SOLID', color: hexToRgb('#5E5E5E') }];
                     infoText.lineHeight = { value: 14, unit: "PIXELS" };
 
@@ -2211,7 +2402,7 @@ figma.ui.onmessage = async (msg) => {
 
             frame.appendChild(typoContainer);
 
-            // Add footer
+            // Add footer to PRIMARY frame
             const footer = figma.createFrame();
             footer.name = "Footer Section";
             footer.layoutMode = "VERTICAL";
@@ -2240,11 +2431,308 @@ figma.ui.onmessage = async (msg) => {
             frame.appendChild(footer);
 
             // Select and zoom to the created frame
-            figma.currentPage.selection = [frame];
-            figma.viewport.scrollAndZoomIntoView([frame]);
+            const framesToZoom = [frame];
 
-            notifyUI('typography-doc', true, 'Typography Documentation created!');
+            // Create secondary documentation if provided
+            if (secondaryFont && secondaryFontLoaded) {
+                const secondaryFrame = figma.createFrame();
+                secondaryFrame.name = "Token Typography - Secondary";
+                secondaryFrame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+                secondaryFrame.paddingTop = 40;
+                secondaryFrame.paddingBottom = 40;
+                secondaryFrame.paddingLeft = 40;
+                secondaryFrame.paddingRight = 40;
+                secondaryFrame.layoutMode = "VERTICAL";
+                secondaryFrame.primaryAxisSizingMode = "AUTO";
+                secondaryFrame.counterAxisSizingMode = "AUTO";
+                secondaryFrame.itemSpacing = 40;
+                secondaryFrame.x = frame.x + frame.width + 100;
+
+                // Add top border
+                secondaryFrame.strokes = [{ type: 'SOLID', color: hexToRgb('#1350FF') }];
+                secondaryFrame.strokeWeight = 8;
+                secondaryFrame.strokeTopWeight = 8;
+                secondaryFrame.strokeBottomWeight = 0;
+                secondaryFrame.strokeLeftWeight = 0;
+                secondaryFrame.strokeRightWeight = 0;
+
+                // Re-use logic for secondary documentation frame content
+                const secondaryTitleSection = titleSection.clone();
+                secondaryFrame.appendChild(secondaryTitleSection);
+
+                const secondaryTypoContainer = figma.createFrame();
+                secondaryTypoContainer.name = "Secondary Typography Container";
+                secondaryTypoContainer.layoutMode = "VERTICAL";
+                secondaryTypoContainer.primaryAxisSizingMode = "AUTO";
+                secondaryTypoContainer.counterAxisSizingMode = "AUTO";
+                secondaryTypoContainer.itemSpacing = 24;
+                secondaryTypoContainer.fills = [];
+
+                for (const level of typographyLevels) {
+                    let fontSize = Math.round(baseFontSize * level.multiplier);
+                    if (fontSize % 2 !== 0) fontSize = fontSize + 1;
+                    const lineHeight = Math.round(fontSize * level.lineHeight);
+
+                    const typoCard = figma.createFrame();
+                    typoCard.name = `${level.name}-${fontSize}px`;
+                    typoCard.layoutMode = "VERTICAL";
+                    typoCard.primaryAxisSizingMode = "AUTO";
+                    typoCard.counterAxisSizingMode = "AUTO";
+                    typoCard.itemSpacing = 16;
+                    typoCard.paddingTop = 16;
+                    typoCard.paddingBottom = 16;
+                    typoCard.paddingLeft = 16;
+                    typoCard.paddingRight = 16;
+                    typoCard.fills = [{ type: 'SOLID', color: hexToRgb('#FAFAFA') }];
+                    typoCard.strokes = [{ type: 'SOLID', color: hexToRgb('#D5D5D6') }];
+                    typoCard.strokeWeight = 1;
+                    typoCard.cornerRadius = 14;
+
+                    const label = figma.createText();
+                    label.characters = `SECONDARY/${level.name}-${fontSize}PX`;
+                    label.fontSize = 12;
+                    if (plusJakartaSemiBoldLoaded) {
+                        label.fontName = { family: "Plus Jakarta Sans", style: "SemiBold" };
+                    } else {
+                        label.fontName = { family: "Inter", style: "Bold" };
+                    }
+                    label.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+                    label.lineHeight = { value: 15, unit: "PIXELS" };
+                    label.textCase = "UPPER";
+
+                    const sampleText = figma.createText();
+                    sampleText.fontName = { family: secondaryFont, style: secondaryLoadedStyle };
+                    sampleText.characters = "AaBbCc";
+                    sampleText.fontSize = fontSize;
+                    sampleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+                    sampleText.lineHeight = { value: lineHeight, unit: "PIXELS" };
+
+                    const infoContainer = figma.createFrame();
+                    infoContainer.name = "Info";
+                    infoContainer.layoutMode = "HORIZONTAL";
+                    infoContainer.resize(668, 14);
+                    infoContainer.itemSpacing = 28;
+                    infoContainer.fills = [];
+
+                    const infoItems = [
+                        { label: `Font Family: ${secondaryFont} ${secondaryLoadedStyle}` },
+                        { label: `Font Size: ${fontSize}px` },
+                        { label: `Line Height: ${lineHeight}px` }
+                    ];
+
+                    for (const item of infoItems) {
+                        const infoText = figma.createText();
+                        infoText.characters = item.label;
+                        infoText.fontSize = 12;
+                        if (robotoBoldLoaded) {
+                            infoText.fontName = { family: "Roboto", style: "Bold" };
+                        } else {
+                            infoText.fontName = { family: "Inter", style: "Bold" };
+                        }
+                        infoText.fills = [{ type: 'SOLID', color: hexToRgb('#5E5E5E') }];
+                        infoText.lineHeight = { value: 14, unit: "PIXELS" };
+                        infoContainer.appendChild(infoText);
+                    }
+
+                    typoCard.appendChild(label);
+                    typoCard.appendChild(sampleText);
+                    typoCard.appendChild(infoContainer);
+                    secondaryTypoContainer.appendChild(typoCard);
+                }
+
+                secondaryFrame.appendChild(secondaryTypoContainer);
+                secondaryFrame.appendChild(footer.clone());
+                framesToZoom.push(secondaryFrame);
+            }
+
+            figma.currentPage.selection = framesToZoom;
+            figma.viewport.scrollAndZoomIntoView(framesToZoom);
+            console.log('Typography documentation created successfully!');
+
+            // NOW CREATE TEXT STYLES
+            try {
+                console.log('Creating text styles...');
+
+                // Get or create Typography collection
+                let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Typography");
+                if (!collection) {
+                    collection = figma.variables.createVariableCollection("Typography");
+                }
+
+                const modeId = collection.modes[0].modeId;
+
+                // Create Font Family variables
+                let fontFamilyVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/primary");
+                if (!fontFamilyVar) {
+                    fontFamilyVar = figma.variables.createVariable("font-family/primary", collection, "STRING");
+                }
+                fontFamilyVar.setValueForMode(modeId, primaryFont);
+                fontFamilyVar.description = "Primary font family for typography system";
+
+                // Create font weight variables
+                const fontWeights = [
+                    { name: 'Regular', weight: 400 },
+                    { name: 'Medium', weight: 500 },
+                    { name: 'Semibold', weight: 600 },
+                    { name: 'Bold', weight: 700 }
+                ];
+
+                for (const weight of fontWeights) {
+                    const weightVarName = `font-weight/${weight.name.toLowerCase()}`;
+                    let weightVar = figma.variables.getLocalVariables().find(v => v.name === weightVarName);
+                    if (!weightVar) {
+                        weightVar = figma.variables.createVariable(weightVarName, collection, "FLOAT");
+                    }
+                    weightVar.setValueForMode(modeId, weight.weight);
+                    weightVar.description = `Font weight value for ${weight.name} (${weight.weight})`;
+                }
+
+                // Create Font Size, Line Height, and Letter Spacing variables for each level
+                for (const level of typographyLevels) {
+                    let fontSize = Math.round(baseFontSize * level.multiplier);
+                    if (fontSize % 2 !== 0) fontSize += 1;
+                    const lineHeight = Math.round(fontSize * level.lineHeight);
+
+                    // Font Size
+                    const fontSizeVarName = `font-size/${level.name.toLowerCase()}`;
+                    let fontSizeVar = figma.variables.getLocalVariables().find(v => v.name === fontSizeVarName);
+                    if (!fontSizeVar) {
+                        fontSizeVar = figma.variables.createVariable(fontSizeVarName, collection, "FLOAT");
+                    }
+                    fontSizeVar.setValueForMode(modeId, fontSize);
+                    fontSizeVar.description = `Font size for ${level.name} (${fontSize}px)`;
+
+                    // Line Height
+                    const lineHeightVarName = `line-height/${level.name.toLowerCase()}`;
+                    let lineHeightVar = figma.variables.getLocalVariables().find(v => v.name === lineHeightVarName);
+                    if (!lineHeightVar) {
+                        lineHeightVar = figma.variables.createVariable(lineHeightVarName, collection, "FLOAT");
+                    }
+                    lineHeightVar.setValueForMode(modeId, lineHeight);
+                    lineHeightVar.description = `Line height for ${level.name} (${lineHeight}px)`;
+
+                    // Letter Spacing
+                    const letterSpacingVarName = `letter-spacing/${level.name.toLowerCase()}`;
+                    let letterSpacingVar = figma.variables.getLocalVariables().find(v => v.name === letterSpacingVarName);
+                    if (!letterSpacingVar) {
+                        letterSpacingVar = figma.variables.createVariable(letterSpacingVarName, collection, "FLOAT");
+                    }
+                    letterSpacingVar.setValueForMode(modeId, 0);
+                    letterSpacingVar.description = `Letter spacing for ${level.name} (0px)`;
+                }
+
+                // Create Text Styles
+                const fontStyleMap = {
+                    'Regular': ['Regular', 'Normal', 'Book', 'Roman'],
+                    'Medium': ['Medium'],
+                    'Semibold': ['SemiBold', 'Semi Bold', 'Demibold', 'Demi Bold'],
+                    'Bold': ['Bold']
+                };
+
+                let textStylesCreated = 0;
+
+                // Cache variables for faster lookup
+                const variableCache = {};
+                figma.variables.getLocalVariables().forEach(v => {
+                    variableCache[v.name] = v;
+                });
+
+                for (const level of typographyLevels) {
+                    let fontSize = Math.round(baseFontSize * level.multiplier);
+                    if (fontSize % 2 !== 0) fontSize += 1;
+                    const lineHeight = Math.round(fontSize * level.lineHeight);
+
+                    const fontSizeVar = variableCache[`font-size/${level.name.toLowerCase()}`];
+                    const lineHeightVar = variableCache[`line-height/${level.name.toLowerCase()}`];
+                    const letterSpacingVar = variableCache[`letter-spacing/${level.name.toLowerCase()}`];
+
+                    const fontsToProcess = [{ name: 'primary', family: primaryFont }];
+
+                    for (const fontInfo of fontsToProcess) {
+                        for (const weight of fontWeights) {
+                            let fontLoaded = false;
+                            let loadedStyle = weight.name;
+                            let loadedFamily = fontInfo.family;
+
+                            const stylesToTry = fontStyleMap[weight.name] || [weight.name];
+
+                            // Try primary font
+                            for (const style of stylesToTry) {
+                                try {
+                                    await figma.loadFontAsync({ family: fontInfo.family, style: style });
+                                    loadedStyle = style;
+                                    loadedFamily = fontInfo.family;
+                                    fontLoaded = true;
+                                    break;
+                                } catch (e) { continue; }
+                            }
+
+                            // Try Inter fallback if primary failed
+                            if (!fontLoaded) {
+                                for (const style of stylesToTry) {
+                                    try {
+                                        await figma.loadFontAsync({ family: "Inter", style: style });
+                                        loadedStyle = style;
+                                        loadedFamily = "Inter";
+                                        fontLoaded = true;
+                                        break;
+                                    } catch (e) { continue; }
+                                }
+                            }
+
+                            if (!fontLoaded) continue;
+
+                            const prefix = fontInfo.name.charAt(0).toUpperCase() + fontInfo.name.slice(1);
+                            const styleName = `${prefix}/${level.name}-${fontSize}px/${weight.name}`;
+
+                            let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
+                            if (!textStyle) {
+                                textStyle = figma.createTextStyle();
+                                textStyle.name = styleName;
+                            }
+
+                            textStyle.fontName = { family: loadedFamily, style: loadedStyle };
+
+                            // Bind variables
+                            const fontFamilyVar = variableCache[`font-family/${fontInfo.name}`];
+                            const fontWeightVar = variableCache[`font-weight/${weight.name.toLowerCase()}`];
+
+                            try {
+                                if (fontFamilyVar) textStyle.setBoundVariable('fontFamily', fontFamilyVar);
+                            } catch (e) { }
+
+                            try {
+                                if (fontWeightVar) textStyle.setBoundVariable('fontWeight', fontWeightVar);
+                            } catch (e) { }
+
+                            try {
+                                if (fontSizeVar) textStyle.setBoundVariable('fontSize', fontSizeVar);
+                                else textStyle.fontSize = fontSize;
+                            } catch (e) { textStyle.fontSize = fontSize; }
+
+                            try {
+                                if (lineHeightVar) textStyle.setBoundVariable('lineHeight', lineHeightVar);
+                                else textStyle.lineHeight = { value: lineHeight, unit: "PIXELS" };
+                            } catch (e) { textStyle.lineHeight = { value: lineHeight, unit: "PIXELS" }; }
+
+                            try {
+                                if (letterSpacingVar) textStyle.setBoundVariable('letterSpacing', letterSpacingVar);
+                                else textStyle.letterSpacing = { value: 0, unit: "PIXELS" };
+                            } catch (e) { textStyle.letterSpacing = { value: 0, unit: "PIXELS" }; }
+
+                            textStylesCreated++;
+                        }
+                    }
+                }
+
+                console.log(`Created ${textStylesCreated} text styles`);
+                notifyUI('typography-doc', true, `Typography documentation and ${textStylesCreated} text styles created!`);
+            } catch (styleError) {
+                console.error('Error creating text styles in doc:', styleError);
+                notifyUI('typography-doc', true, 'Typography documentation created, but some text styles failed: ' + styleError.message);
+            }
         } catch (error) {
+            console.error('Error creating typography doc:', error);
             notifyUI('typography-doc', false, 'Error creating typography doc', error.message);
             console.error(error);
         }
@@ -2264,15 +2752,23 @@ figma.ui.onmessage = async (msg) => {
 
             const modeId = collection.modes[0].modeId;
 
-            // Step 1: Create Font Family variable
-            let fontFamilyVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/primary");
-            if (!fontFamilyVar) {
-                fontFamilyVar = figma.variables.createVariable("font-family/primary", collection, "STRING");
+            // Create/Update Font Family Variables
+            let primaryFontVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/primary");
+            if (!primaryFontVar) {
+                primaryFontVar = figma.variables.createVariable("font-family/primary", collection, "STRING");
             }
-            fontFamilyVar.setValueForMode(modeId, primaryFont);
-            fontFamilyVar.description = "Primary font family for typography system";
+            primaryFontVar.setValueForMode(modeId, primaryFont);
 
-            // Step 2: Create Font Weight variables
+            let secondaryFontVar = null;
+            if (msg.secondaryFont) {
+                secondaryFontVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/secondary");
+                if (!secondaryFontVar) {
+                    secondaryFontVar = figma.variables.createVariable("font-family/secondary", collection, "STRING");
+                }
+                secondaryFontVar.setValueForMode(modeId, msg.secondaryFont);
+            }
+
+            // Create/Update Weight Variables
             for (const weight of fontWeights) {
                 const weightVarName = `font-weight/${weight.name.toLowerCase()}`;
                 let weightVar = figma.variables.getLocalVariables().find(v => v.name === weightVarName);
@@ -2283,8 +2779,7 @@ figma.ui.onmessage = async (msg) => {
                 weightVar.description = `Font weight value for ${weight.name} (${weight.weight})`;
             }
 
-            // Step 3: Create Font Size, Line Height, and Letter Spacing varia
-            // les for each level
+            // Step 3: Create Font Size, Line Height, and Letter Spacing variables for each level
             for (const typo of typographyData) {
                 // Font Size
                 const fontSizeVarName = `font-size/${typo.name.toLowerCase()}`;
@@ -2314,94 +2809,107 @@ figma.ui.onmessage = async (msg) => {
                 letterSpacingVar.description = `Letter spacing for ${typo.name} (${typo.letterSpacing}px)`;
             }
 
-            // Step 4: Create Text Styles for each typography level with all font weights
+            // Step 4: Create Text Styles
             let textStylesCreated = 0;
-
-            // Font style mapping for different weights
             const fontStyleMap = {
-                'Regular': ['Regular', 'Normal'],
+                'Regular': ['Regular', 'Normal', 'Book', 'Roman'],
                 'Medium': ['Medium'],
-                'Semibold': ['SemiBold'],
+                'Semibold': ['SemiBold', 'Semi Bold', 'Demibold', 'Demi Bold'],
                 'Bold': ['Bold']
             };
 
+            // Cache variables
+            const variableCache = {};
+            figma.variables.getLocalVariables().forEach(v => {
+                variableCache[v.name] = v;
+            });
+
             for (const typo of typographyData) {
-                // Get the variables for this typography level
-                const fontSizeVar = figma.variables.getLocalVariables().find(v => v.name === `font-size/${typo.name.toLowerCase()}`);
-                const lineHeightVar = figma.variables.getLocalVariables().find(v => v.name === `line-height/${typo.name.toLowerCase()}`);
-                const letterSpacingVar = figma.variables.getLocalVariables().find(v => v.name === `letter-spacing/${typo.name.toLowerCase()}`);
+                const fontSizeVar = variableCache[`font-size/${typo.name.toLowerCase()}`];
+                const lineHeightVar = variableCache[`line-height/${typo.name.toLowerCase()}`];
+                const letterSpacingVar = variableCache[`letter-spacing/${typo.name.toLowerCase()}`];
 
-                for (const weight of fontWeights) {
-                    let fontLoaded = false;
-                    let loadedStyle = weight.name;
+                const fontsToProcess = [{ name: 'primary', family: primaryFont }];
+                if (msg.secondaryFont) {
+                    fontsToProcess.push({ name: 'secondary', family: msg.secondaryFont });
+                }
 
-                    // Try to load font with different style variations
-                    const stylesToTry = fontStyleMap[weight.name] || [weight.name];
+                for (const fontInfo of fontsToProcess) {
+                    for (const weight of fontWeights) {
+                        let fontLoaded = false;
+                        let loadedStyle = weight.name;
+                        let loadedFamily = fontInfo.family;
+                        const stylesToTry = fontStyleMap[weight.name] || [weight.name];
 
-                    for (const style of stylesToTry) {
-                        try {
-                            await figma.loadFontAsync({ family: primaryFont, style: style });
-                            loadedStyle = style;
-                            fontLoaded = true;
-                            break;
-                        } catch (e) {
-                            // Continue to next style
-                            continue;
+                        for (const style of stylesToTry) {
+                            try {
+                                await figma.loadFontAsync({ family: fontInfo.family, style: style });
+                                loadedStyle = style;
+                                loadedFamily = fontInfo.family;
+                                fontLoaded = true;
+                                break;
+                            } catch (e) { continue; }
                         }
+
+                        if (!fontLoaded) {
+                            // Fallback to Inter
+                            for (const style of stylesToTry) {
+                                try {
+                                    await figma.loadFontAsync({ family: "Inter", style: style });
+                                    loadedStyle = style;
+                                    loadedFamily = "Inter";
+                                    fontLoaded = true;
+                                    break;
+                                } catch (e) { continue; }
+                            }
+                        }
+
+                        if (!fontLoaded) continue;
+
+                        const prefix = fontInfo.name.charAt(0).toUpperCase() + fontInfo.name.slice(1);
+                        const styleName = `${prefix}/${typo.name}-${typo.fontSize}px/${weight.name}`;
+
+                        let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
+                        if (!textStyle) {
+                            textStyle = figma.createTextStyle();
+                            textStyle.name = styleName;
+                        }
+
+                        textStyle.fontName = { family: loadedFamily, style: loadedStyle };
+
+                        // Bind variables
+                        const fontFamilyVar = variableCache[`font-family/${fontInfo.name}`];
+                        const fontWeightVar = variableCache[`font-weight/${weight.name.toLowerCase()}`];
+
+                        try {
+                            if (fontFamilyVar) textStyle.setBoundVariable('fontFamily', fontFamilyVar);
+                        } catch (e) { }
+
+                        try {
+                            if (fontWeightVar) textStyle.setBoundVariable('fontWeight', fontWeightVar);
+                        } catch (e) { }
+
+                        try {
+                            if (fontSizeVar) textStyle.setBoundVariable('fontSize', fontSizeVar);
+                            else textStyle.fontSize = typo.fontSize;
+                        } catch (e) { textStyle.fontSize = typo.fontSize; }
+
+                        try {
+                            if (lineHeightVar) textStyle.setBoundVariable('lineHeight', lineHeightVar);
+                            else textStyle.lineHeight = { value: typo.lineHeight, unit: "PIXELS" };
+                        } catch (e) { textStyle.lineHeight = { value: typo.lineHeight, unit: "PIXELS" }; }
+
+                        try {
+                            if (letterSpacingVar) textStyle.setBoundVariable('letterSpacing', letterSpacingVar);
+                            else textStyle.letterSpacing = { value: typo.letterSpacing, unit: "PIXELS" };
+                        } catch (e) { textStyle.letterSpacing = { value: typo.letterSpacing, unit: "PIXELS" }; }
+
+                        textStylesCreated++;
                     }
-
-                    if (!fontLoaded) {
-                        console.warn(`Could not load ${primaryFont} ${weight.name}, skipping...`);
-                        continue;
-                    }
-
-                    // Create text style name like "H1-56px/Regular"
-                    const styleName = `${typo.name}-${typo.fontSize}px/${weight.name}`;
-
-                    let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
-                    if (!textStyle) {
-                        textStyle = figma.createTextStyle();
-                        textStyle.name = styleName;
-                    }
-
-                    // Set font properties using the loaded style
-                    textStyle.fontName = { family: primaryFont, style: loadedStyle };
-
-                    // Bind variables to text style properties
-                    const fontFamilyVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/primary");
-                    const fontWeightVar = figma.variables.getLocalVariables().find(v => v.name === `font-weight/${weight.name.toLowerCase()}`);
-
-                    if (fontFamilyVar) {
-                        textStyle.setBoundVariable('fontFamily', fontFamilyVar);
-                    }
-
-                    if (fontWeightVar) {
-                        textStyle.setBoundVariable('fontWeight', fontWeightVar);
-                    }
-
-                    if (fontSizeVar) {
-                        textStyle.setBoundVariable('fontSize', fontSizeVar);
-                    } else {
-                        textStyle.fontSize = typo.fontSize;
-                    }
-
-                    if (lineHeightVar) {
-                        textStyle.setBoundVariable('lineHeight', lineHeightVar);
-                    } else {
-                        textStyle.lineHeight = { value: typo.lineHeight, unit: "PIXELS" };
-                    }
-
-                    if (letterSpacingVar) {
-                        textStyle.setBoundVariable('letterSpacing', letterSpacingVar);
-                    } else {
-                        textStyle.letterSpacing = { value: typo.letterSpacing, unit: "PIXELS" };
-                    }
-
-                    textStylesCreated++;
                 }
             }
 
-            notifyUI('typography-tokens', true, 'Typography system created successfully!');
+            notifyUI('typography-tokens', true, `Typography system created successfully with ${textStylesCreated} text styles!`);
         } catch (error) {
             notifyUI('typography-tokens', false, 'Error creating typography tokens', error.message);
             console.error(error);
@@ -2410,6 +2918,7 @@ figma.ui.onmessage = async (msg) => {
 
     if (msg.type === "create-color-style-guide") {
         try {
+            figma.notify('Creating color style guide...', { timeout: 2000 });
             const colors = msg.colors;
             const includeStatus = msg.includeStatus;
             const includeNeutral = msg.includeNeutral;
@@ -2494,11 +3003,40 @@ figma.ui.onmessage = async (msg) => {
             frame.strokeLeftWeight = 0;
             frame.strokeRightWeight = 0;
 
-            // Load fonts
-            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
-            await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
-            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
-            await figma.loadFontAsync({ family: "Montserrat", style: "Regular" });
+            // Load fonts with fallback tracking
+            let poppinsSemiBoldLoaded = false;
+            let poppinsMediumLoaded = false;
+            let montserratMediumLoaded = false;
+            let montserratRegularLoaded = false;
+
+            try {
+                await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+                poppinsSemiBoldLoaded = true;
+            } catch (e) {
+                console.warn('Poppins SemiBold not available');
+            }
+
+            try {
+                await figma.loadFontAsync({ family: "Poppins", style: "Medium" });
+                poppinsMediumLoaded = true;
+            } catch (e) {
+                console.warn('Poppins Medium not available');
+            }
+
+            try {
+                await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+                montserratMediumLoaded = true;
+            } catch (e) {
+                console.warn('Montserrat Medium not available');
+            }
+
+            try {
+                await figma.loadFontAsync({ family: "Montserrat", style: "Regular" });
+                montserratRegularLoaded = true;
+            } catch (e) {
+                console.warn('Montserrat Regular not available');
+            }
+
             await figma.loadFontAsync({ family: "Inter", style: "Regular" });
             await figma.loadFontAsync({ family: "Inter", style: "Bold" });
 
@@ -2531,7 +3069,11 @@ figma.ui.onmessage = async (msg) => {
             const titleText = figma.createText();
             titleText.characters = "Color System";
             titleText.fontSize = 40;
-            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            if (poppinsSemiBoldLoaded) {
+                titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            } else {
+                titleText.fontName = { family: "Inter", style: "Bold" };
+            }
             titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
             titleText.lineHeight = { value: 150, unit: "PERCENT" };
 
@@ -2539,7 +3081,11 @@ figma.ui.onmessage = async (msg) => {
             const subtitleText = figma.createText();
             subtitleText.characters = "A comprehensive color palette designed for accessibility and visual harmony.";
             subtitleText.fontSize = 16;
-            subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            if (montserratMediumLoaded) {
+                subtitleText.fontName = { family: "Montserrat", style: "Medium" };
+            } else {
+                subtitleText.fontName = { family: "Inter", style: "Regular" };
+            }
             subtitleText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
             subtitleText.lineHeight = { value: 160, unit: "PERCENT" };
             subtitleText.letterSpacing = { value: 0.032, unit: "PIXELS" };
@@ -2574,13 +3120,21 @@ figma.ui.onmessage = async (msg) => {
                 const colorTitle = figma.createText();
                 colorTitle.characters = color.name;
                 colorTitle.fontSize = 20;
-                colorTitle.fontName = { family: "Poppins", style: "SemiBold" };
+                if (poppinsSemiBoldLoaded) {
+                    colorTitle.fontName = { family: "Poppins", style: "SemiBold" };
+                } else {
+                    colorTitle.fontName = { family: "Inter", style: "Bold" };
+                }
                 colorTitle.fills = [{ type: 'SOLID', color: hexToRgb('#151515') }];
 
                 const colorDesc = figma.createText();
                 colorDesc.characters = "A carefully crafted color that enhances your design system";
                 colorDesc.fontSize = 14;
-                colorDesc.fontName = { family: "Montserrat", style: "Medium" };
+                if (montserratMediumLoaded) {
+                    colorDesc.fontName = { family: "Montserrat", style: "Medium" };
+                } else {
+                    colorDesc.fontName = { family: "Inter", style: "Regular" };
+                }
                 colorDesc.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
                 colorDesc.resize(600, 23);
 
@@ -2640,21 +3194,25 @@ figma.ui.onmessage = async (msg) => {
                     const shadeName = figma.createText();
                     shadeName.characters = `${color.name}-${shadeValue}`;
                     shadeName.fontSize = 14;
-                    shadeName.fontName = { family: "Poppins", style: "Medium" };
+                    if (poppinsMediumLoaded) {
+                        shadeName.fontName = { family: "Poppins", style: "Medium" };
+                    } else {
+                        shadeName.fontName = { family: "Inter", style: "Regular" };
+                    }
                     shadeName.fills = [{ type: 'SOLID', color: hexToRgb('#151515') }];
 
                     // Hex value
                     const hexText = figma.createText();
                     hexText.characters = shadeHex.toUpperCase();
                     hexText.fontSize = 10;
-                    hexText.fontName = { family: "Montserrat", style: "Regular" };
+                    if (montserratRegularLoaded) { hexText.fontName = { family: "Montserrat", style: "Regular" }; } else { hexText.fontName = { family: "Inter", style: "Regular" }; }
                     hexText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
 
                     // RGB value
                     const rgbText = figma.createText();
                     rgbText.characters = `RGB(${Math.round(rgb.r * 255)}, ${Math.round(rgb.g * 255)}, ${Math.round(rgb.b * 255)})`;
                     rgbText.fontSize = 10;
-                    rgbText.fontName = { family: "Montserrat", style: "Regular" };
+                    if (montserratRegularLoaded) { rgbText.fontName = { family: "Montserrat", style: "Regular" }; } else { rgbText.fontName = { family: "Inter", style: "Regular" }; }
                     rgbText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
 
                     colorInfo.appendChild(shadeName);
@@ -2761,21 +3319,25 @@ figma.ui.onmessage = async (msg) => {
                         const shadeName = figma.createText();
                         shadeName.characters = `${colorName}-${shadeValue}`;
                         shadeName.fontSize = 14;
-                        shadeName.fontName = { family: "Poppins", style: "Medium" };
+                        if (poppinsMediumLoaded) {
+                            shadeName.fontName = { family: "Poppins", style: "Medium" };
+                        } else {
+                            shadeName.fontName = { family: "Inter", style: "Regular" };
+                        }
                         shadeName.fills = [{ type: 'SOLID', color: hexToRgb('#151515') }];
 
                         // Hex value
                         const hexText = figma.createText();
                         hexText.characters = shadeHex.toUpperCase();
                         hexText.fontSize = 10;
-                        hexText.fontName = { family: "Montserrat", style: "Regular" };
+                        if (montserratRegularLoaded) { hexText.fontName = { family: "Montserrat", style: "Regular" }; } else { hexText.fontName = { family: "Inter", style: "Regular" }; }
                         hexText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
 
                         // RGB value
                         const rgbText = figma.createText();
                         rgbText.characters = `RGB(${Math.round(rgb.r * 255)}, ${Math.round(rgb.g * 255)}, ${Math.round(rgb.b * 255)})`;
                         rgbText.fontSize = 10;
-                        rgbText.fontName = { family: "Montserrat", style: "Regular" };
+                        if (montserratRegularLoaded) { rgbText.fontName = { family: "Montserrat", style: "Regular" }; } else { rgbText.fontName = { family: "Inter", style: "Regular" }; }
                         rgbText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
 
                         colorInfo.appendChild(shadeName);
@@ -2881,21 +3443,25 @@ figma.ui.onmessage = async (msg) => {
                     const shadeName = figma.createText();
                     shadeName.characters = `Neutral-${shadeValue}`;
                     shadeName.fontSize = 14;
-                    shadeName.fontName = { family: "Poppins", style: "Medium" };
+                    if (poppinsMediumLoaded) {
+                        shadeName.fontName = { family: "Poppins", style: "Medium" };
+                    } else {
+                        shadeName.fontName = { family: "Inter", style: "Regular" };
+                    }
                     shadeName.fills = [{ type: 'SOLID', color: hexToRgb('#151515') }];
 
                     // Hex value
                     const hexText = figma.createText();
                     hexText.characters = shadeHex.toUpperCase();
                     hexText.fontSize = 10;
-                    hexText.fontName = { family: "Montserrat", style: "Regular" };
+                    if (montserratRegularLoaded) { hexText.fontName = { family: "Montserrat", style: "Regular" }; } else { hexText.fontName = { family: "Inter", style: "Regular" }; }
                     hexText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
 
                     // RGB value
                     const rgbText = figma.createText();
                     rgbText.characters = `RGB(${Math.round(rgb.r * 255)}, ${Math.round(rgb.g * 255)}, ${Math.round(rgb.b * 255)})`;
                     rgbText.fontSize = 10;
-                    rgbText.fontName = { family: "Montserrat", style: "Regular" };
+                    if (montserratRegularLoaded) { rgbText.fontName = { family: "Montserrat", style: "Regular" }; } else { rgbText.fontName = { family: "Inter", style: "Regular" }; }
                     rgbText.fills = [{ type: 'SOLID', color: hexToRgb('#444445') }];
 
                     colorInfo.appendChild(shadeName);
@@ -3178,7 +3744,7 @@ figma.ui.onmessage = async (msg) => {
         try {
             // Get user inputs
             const buttonText = msg.buttonText || 'Button';
-            const userRadius = msg.radius || 24;
+            const userRadius = (msg.radius !== undefined && msg.radius !== null) ? msg.radius : 24;
             const userPrimaryColor = msg.primaryColor || '#1350FF';
             const userTextColor = msg.textColor || '#FFFFFF';
 
@@ -4245,6 +4811,59 @@ figma.ui.onmessage = async (msg) => {
                 docFrame.appendChild(componentContainer);
             }
 
+            // Icons used section
+            const iconsUsedSection = figma.createFrame();
+            iconsUsedSection.name = "Icons Used Section";
+            iconsUsedSection.layoutMode = "VERTICAL";
+            iconsUsedSection.primaryAxisSizingMode = "AUTO";
+            iconsUsedSection.counterAxisSizingMode = "AUTO";
+            iconsUsedSection.itemSpacing = 24;
+            iconsUsedSection.fills = [];
+
+            const iconsUsedTitle = figma.createText();
+            iconsUsedTitle.characters = "Icons Used";
+            iconsUsedTitle.fontSize = 20;
+            iconsUsedTitle.fontName = { family: "Poppins", style: "SemiBold" };
+            iconsUsedTitle.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+            iconsUsedSection.appendChild(iconsUsedTitle);
+
+            const iconsGridContainer = figma.createFrame();
+            iconsGridContainer.name = "Icons Grid";
+            iconsGridContainer.layoutMode = "HORIZONTAL";
+            iconsGridContainer.primaryAxisSizingMode = "AUTO";
+            iconsGridContainer.counterAxisSizingMode = "AUTO";
+            iconsGridContainer.itemSpacing = 40;
+            iconsGridContainer.fills = [];
+            iconsUsedSection.appendChild(iconsGridContainer);
+
+            function addIconToDoc(component, labelName) {
+                const iconFrame = figma.createFrame();
+                iconFrame.name = labelName + " Icon Frame";
+                iconFrame.layoutMode = "VERTICAL";
+                iconFrame.primaryAxisSizingMode = "AUTO";
+                iconFrame.counterAxisSizingMode = "AUTO";
+                iconFrame.itemSpacing = 8;
+                iconFrame.fills = [];
+                iconFrame.counterAxisAlignItems = "CENTER";
+
+                // Move the main component here instead of creating an instance
+                iconFrame.appendChild(component);
+
+                const iconLabel = figma.createText();
+                iconLabel.characters = labelName;
+                iconLabel.fontSize = 12;
+                iconLabel.fontName = { family: "Inter", style: "Regular" };
+                iconLabel.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+                iconFrame.appendChild(iconLabel);
+
+                iconsGridContainer.appendChild(iconFrame);
+            }
+
+            addIconToDoc(sharedLeftIconComponent, "arrow-left");
+            addIconToDoc(sharedRightIconComponent, "arrow-right");
+
+            docFrame.appendChild(iconsUsedSection);
+
             // Footer section
             const footer = figma.createFrame();
             footer.name = "Footer Section";
@@ -4277,12 +4896,12 @@ figma.ui.onmessage = async (msg) => {
             figma.viewport.scrollAndZoomIntoView([docFrame]);
 
             if (componentSet && componentSet !== components[0]) {
-                figma.notify('Button Component Set with 72 variants created inside documentation frame!');
+                notifyUI('button-doc', true, 'Button Component Set with 72 variants created inside documentation frame!');
             } else {
-                figma.notify('72 Button components created! Select all buttons and use "Create component set" from the menu to combine them.');
+                notifyUI('button-doc', true, '72 Button components created! Select all buttons and use "Create component set" from the menu to combine them.');
             }
         } catch (error) {
-            figma.notify('Error creating button component: ' + error.message);
+            notifyUI('button-doc', false, 'Error creating button component', error.message);
             console.error(error);
         }
     }
@@ -4453,8 +5072,6 @@ figma.ui.onmessage = async (msg) => {
             sharedLeftIcon.name = "arrow-left";
             sharedLeftIcon.resize(20, 20);
             sharedLeftIcon.appendChild(leftIconNode);
-            sharedLeftIcon.x = -2000;
-            sharedLeftIcon.y = -2000;
 
             const rightIconSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.16675 10H15.8334M15.8334 10L10.0001 4.16667M15.8334 10L10.0001 15.8333" stroke="#000000" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
             const rightIconNode = figma.createNodeFromSvg(rightIconSvg);
@@ -4462,8 +5079,6 @@ figma.ui.onmessage = async (msg) => {
             sharedRightIcon.name = "arrow-right-1";
             sharedRightIcon.resize(20, 20);
             sharedRightIcon.appendChild(rightIconNode);
-            sharedRightIcon.x = -2000;
-            sharedRightIcon.y = -2000;
 
             const dropdownArrowSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.99982 14.0001C9.41649 14.0001 8.83315 13.7751 8.39149 13.3334L2.95815 7.90008C2.71649 7.65841 2.71649 7.25841 2.95815 7.01675C3.19982 6.77508 3.59982 6.77508 3.84149 7.01675L9.27482 12.4501C9.67482 12.8501 10.3248 12.8501 10.7248 12.4501L16.1581 7.01675C16.3998 6.77508 16.7998 6.77508 17.0415 7.01675C17.2831 7.25841 17.2831 7.65841 17.0415 7.90008L11.6081 13.3334C11.1665 13.7751 10.5831 14.0001 9.99982 14.0001Z" fill="#555555"/></svg>`;
             const dropdownArrowNode = figma.createNodeFromSvg(dropdownArrowSvg);
@@ -4471,8 +5086,6 @@ figma.ui.onmessage = async (msg) => {
             sharedDropdownArrow.name = "arrow-down-1";
             sharedDropdownArrow.resize(20, 20);
             sharedDropdownArrow.appendChild(dropdownArrowNode);
-            sharedDropdownArrow.x = -2000;
-            sharedDropdownArrow.y = -2000;
 
             const infoIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6" stroke="#6B7280" stroke-width="1.2"/><path d="M8 8V10.8M8 5.6V6" stroke="#6B7280" stroke-width="1.2" stroke-linecap="round"/></svg>`;
             const infoIconNode = figma.createNodeFromSvg(infoIconSvg);
@@ -4480,8 +5093,6 @@ figma.ui.onmessage = async (msg) => {
             sharedInfoIcon.name = "info-circle";
             sharedInfoIcon.resize(16, 16);
             sharedInfoIcon.appendChild(infoIconNode);
-            sharedInfoIcon.x = -2000;
-            sharedInfoIcon.y = -2000;
 
             function createInputField(type, state) {
                 const input = figma.createComponent();
@@ -5249,6 +5860,62 @@ figma.ui.onmessage = async (msg) => {
                     inputContainer.appendChild(componentSet);
                     docFrame.appendChild(inputContainer);
 
+                    // Icons used section
+                    const iconsUsedSection = figma.createFrame();
+                    iconsUsedSection.name = "Icons Used Section";
+                    iconsUsedSection.layoutMode = "VERTICAL";
+                    iconsUsedSection.primaryAxisSizingMode = "AUTO";
+                    iconsUsedSection.counterAxisSizingMode = "AUTO";
+                    iconsUsedSection.itemSpacing = 24;
+                    iconsUsedSection.fills = [];
+
+                    const iconsUsedTitle = figma.createText();
+                    iconsUsedTitle.characters = "Icons Used";
+                    iconsUsedTitle.fontSize = 20;
+                    iconsUsedTitle.fontName = { family: "Poppins", style: "SemiBold" };
+                    iconsUsedTitle.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+                    iconsUsedSection.appendChild(iconsUsedTitle);
+
+                    const iconsGridContainer = figma.createFrame();
+                    iconsGridContainer.name = "Icons Grid";
+                    iconsGridContainer.layoutMode = "HORIZONTAL";
+                    iconsGridContainer.primaryAxisSizingMode = "AUTO";
+                    iconsGridContainer.counterAxisSizingMode = "AUTO";
+                    iconsGridContainer.itemSpacing = 40;
+                    iconsGridContainer.fills = [];
+                    iconsUsedSection.appendChild(iconsGridContainer);
+
+                    function addIconToDoc(component, labelName) {
+                        const iconFrame = figma.createFrame();
+                        iconFrame.name = labelName + " Icon Frame";
+                        iconFrame.layoutMode = "VERTICAL";
+                        iconFrame.primaryAxisSizingMode = "AUTO";
+                        iconFrame.counterAxisSizingMode = "AUTO";
+                        iconFrame.itemSpacing = 8;
+                        iconFrame.fills = [];
+                        iconFrame.counterAxisAlignItems = "CENTER";
+
+                        // Move the main component here instead of creating an instance
+                        iconFrame.appendChild(component);
+
+                        const iconLabel = figma.createText();
+                        iconLabel.characters = labelName;
+                        iconLabel.fontSize = 12;
+                        iconLabel.fontName = { family: "Inter", style: "Regular" };
+                        iconLabel.fills = [{ type: 'SOLID', color: hexToRgb('#8A8A8A') }];
+                        iconFrame.appendChild(iconLabel);
+
+                        iconsGridContainer.appendChild(iconFrame);
+                    }
+
+                    addIconToDoc(sharedSearchIcon, "search-icon");
+                    addIconToDoc(sharedLeftIcon, "arrow-left");
+                    addIconToDoc(sharedRightIcon, "arrow-right");
+                    addIconToDoc(sharedDropdownArrow, "arrow-down");
+                    addIconToDoc(sharedInfoIcon, "info-circle");
+
+                    docFrame.appendChild(iconsUsedSection);
+
                     // Footer section
                     const footer = figma.createFrame();
                     footer.name = "Footer Section";
@@ -5278,16 +5945,16 @@ figma.ui.onmessage = async (msg) => {
 
                     figma.currentPage.selection = [docFrame];
                     figma.viewport.scrollAndZoomIntoView([docFrame]);
-                    figma.notify(`✓ Input Field Component Set created inside documentation frame!`);
+                    notifyUI('input-doc', true, 'Input Field Component Set created inside documentation frame!');
                 } else {
-                    figma.notify('Error: Failed to create component set');
+                    notifyUI('input-doc', false, 'Failed to create component set');
                 }
             } else {
-                figma.notify('Error: combineAsVariants is not available');
+                notifyUI('input-doc', false, 'combineAsVariants is not available');
             }
 
         } catch (error) {
-            figma.notify('Error: ' + error.message);
+            notifyUI('input-doc', false, 'Error creating input field component', error.message);
             console.error(error);
         }
     }

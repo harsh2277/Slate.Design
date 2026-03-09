@@ -196,6 +196,11 @@
             color: #3182CE;
         }
 
+        .toast-warning .toast-icon {
+            background: #FFFBEB;
+            color: #D97706;
+        }
+
         .toast-message {
             font-family: 'Poppins', sans-serif;
             font-size: 13px;
@@ -743,20 +748,22 @@
         .brand-color-picker-popup-unique {
             position: absolute;
             top: calc(100% + 8px);
-            right: 0;
-            width: 0px;
-            height: 0px;
-            border: 2px solid #E5E7EB;
-            border-radius: var(--radius-8);
+            left: 0;
+            width: auto;
+            height: auto;
+            border: none;
             cursor: pointer;
-            display: none;
             z-index: 1000;
-            display: none;
-            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            pointer-events: none;
         }
 
-        .brand-color-picker-popup-unique.active {
-            display: block;
+        .brand-color-picker-popup-unique::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .brand-color-picker-popup-unique::-webkit-color-swatch {
+            border: none;
         }
 
         .color-toggle-section-unique {
@@ -842,10 +849,13 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            transition: all 0.3s ease;
         }
 
         .add-color-modal-overlay.active {
@@ -854,88 +864,117 @@
 
         .add-color-modal {
             background: #FFFFFF;
-            border-radius: var(--radius-12);
-            padding: var(--padding-24);
-            width: 320px;
-            box-shadow: var(--shadow-2xl);
+            border-radius: 18px;
+            padding: 24px;
+            width: 360px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .add-color-modal-title {
-            font-family: 'Poppins', sans-serif;
-            font-size: 18px;
-            font-weight: 600;
-            color: #1F2937;
-            margin-bottom: var(--spacing-20);
+            font-family: 'Instrument Serif', serif;
+            font-size: 28px;
+            font-weight: 400;
+            color: #000000;
+            margin-bottom: 24px;
         }
 
         .add-color-modal-field {
-            margin-bottom: var(--spacing-16);
+            margin-bottom: 20px;
         }
 
         .add-color-modal-label {
             font-family: 'Poppins', sans-serif;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 500;
-            color: #374151;
-            margin-bottom: var(--spacing-8);
+            color: rgba(0, 0, 0, 0.5);
+            margin-bottom: 8px;
             display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .add-color-modal-input {
             width: 100%;
-            padding: var(--padding-12);
+            padding: 12px 16px;
             border: 1px solid #E5E7EB;
-            border-radius: var(--radius-8);
+            border-radius: 40px;
             font-family: 'Poppins', sans-serif;
             font-size: 14px;
             color: #1F2937;
+            background: #FAFAFA;
             outline: none;
             box-sizing: border-box;
+            transition: all 0.2s;
         }
 
         .add-color-modal-input:focus {
             border-color: #4F46E5;
+            background: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
         .add-color-modal-picker-wrapper {
             display: flex;
             align-items: center;
-            gap: var(--spacing-12);
+            gap: 12px;
+            padding: 6px 6px 6px 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 9999px;
+            background: #FAFAFA;
+            transition: all 0.2s;
+            position: relative;
         }
 
-        .add-color-modal-picker {
-            width: 60px;
-            height: 40px;
-            border: 1px solid #E5E7EB;
-            border-radius: var(--radius-8);
-            cursor: pointer;
+        .add-color-modal-picker-wrapper:focus-within {
+            border-color: #4F46E5;
+            background: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
         .add-color-modal-hex-input {
             flex: 1;
-            padding: var(--padding-12);
-            border: 1px solid #E5E7EB;
-            border-radius: var(--radius-8);
+            padding: 0;
+            border: none;
+            background: transparent;
             font-family: 'Poppins', sans-serif;
             font-size: 14px;
             color: #1F2937;
             outline: none;
         }
 
-        .add-color-modal-hex-input:focus {
-            border-color: #4F46E5;
+        .add-color-modal-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #E5E7EB;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: transform 0.2s;
+        }
+
+        .add-color-modal-circle:hover {
+            transform: scale(1.05);
+        }
+
+        .add-color-modal-picker-hidden {
+            position: absolute;
+            width: 0;
+            height: 0;
+            opacity: 0;
+            pointer-events: none;
         }
 
         .add-color-modal-buttons {
             display: flex;
-            gap: var(--spacing-12);
-            margin-top: var(--spacing-24);
+            gap: 12px;
+            margin-top: 32px;
         }
 
         .add-color-modal-button {
             flex: 1;
-            padding: var(--padding-12);
-            border-radius: var(--radius-8);
+            padding: 12px 24px;
+            border-radius: 9999px;
             font-family: 'Poppins', sans-serif;
             font-size: 14px;
             font-weight: 500;
@@ -945,12 +984,14 @@
         }
 
         .add-color-modal-button-cancel {
-            background: #F3F4F6;
-            color: #374151;
+            background: #FAFAFA;
+            color: #6B7280;
+            border: 1px solid #E5E7EB;
         }
 
         .add-color-modal-button-cancel:hover {
-            background: #E5E7EB;
+            background: #F3F4F6;
+            color: #1F2937;
         }
 
         .add-color-modal-button-add {
@@ -960,6 +1001,8 @@
 
         .add-color-modal-button-add:hover {
             background: #4338CA;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
         }
 
         .colors-right-panel-unique {
@@ -1731,7 +1774,7 @@
             border-radius: 12px;
             flex: none;
             order: 0;
-            flex-grow: 1;
+            flex-grow: 0;
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
@@ -1789,24 +1832,35 @@
             flex-direction: row;
             justify-content: center;
             align-items: center;
-            padding: 0px;
-            gap: 8px;
             position: absolute;
-            width: 242px;
-            height: 164px;
-            left: 0px;
-            top: 0px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
+            inset: 0;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             z-index: 2;
+            border-radius: 16px;
+            /* Matches card radius */
         }
 
         .component-coming-soon-text {
             font-family: 'Poppins', sans-serif;
             font-weight: 600;
-            font-size: 16px;
-            line-height: 160%;
+            font-size: 11px;
+            line-height: 1;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
             color: #1350FF;
+            background: #FFFFFF;
+            padding: 8px 18px;
+            border-radius: 100px;
+            box-shadow: 0 10px 15px -3px rgba(19, 80, 255, 0.1), 0 4px 6px -2px rgba(19, 80, 255, 0.05);
+            border: 1px solid rgba(19, 80, 255, 0.15);
+            transform: translateY(0);
+            transition: transform 0.2s ease;
+        }
+
+        .component-card:hover .component-coming-soon-text {
+            transform: translateY(-2px);
         }
 
         /* Component Detail View */
@@ -2807,7 +2861,8 @@
                                             <div class="spacing-grid-wrapper">
                                                 <!-- First Row -->
                                                 <div class="spacing-row">
-                                                    <div class="spacing-card" onclick="selectSpacingCard(this)">
+                                                    <div class="spacing-card selected"
+                                                        onclick="selectSpacingCard(this)">
                                                         <div class="spacing-visual" style="gap: 8px;">
                                                             <div class="spacing-box"></div>
                                                             <div class="spacing-box"></div>
@@ -2923,7 +2978,7 @@
                                             <div class="spacing-grid-wrapper">
                                                 <!-- First Row -->
                                                 <div class="spacing-row">
-                                                    <div class="spacing-card padding-card" data-padding="2"
+                                                    <div class="spacing-card padding-card selected" data-padding="2"
                                                         onclick="selectPaddingCard(this)">
                                                         <div class="spacing-visual">
                                                             <div class="padding-visual-wrapper">
@@ -3127,21 +3182,21 @@
                                             <div class="spacing-grid-wrapper">
                                                 <!-- First Row -->
                                                 <div class="spacing-row">
-                                                    <div class="spacing-card radius-card" data-radius="0"
+                                                    <div class="spacing-card radius-card selected" data-radius="1"
                                                         onclick="selectRadiusCard(this)">
                                                         <div class="spacing-visual">
                                                             <div class="radius-visual-wrapper">
                                                                 <svg width="60" height="60" viewBox="0 0 60 60"
                                                                     fill="none" xmlns="http://www.w3.org/2000/svg">
                                                                     <rect class="radius-rect" x="0.25" y="0.25"
-                                                                        width="59.5" height="59.5" rx="0"
+                                                                        width="59.5" height="59.5" rx="1"
                                                                         fill="rgba(0, 0, 0, 0.05)" stroke="black"
                                                                         stroke-width="0.5" stroke-dasharray="2 2" />
                                                                 </svg>
                                                             </div>
                                                         </div>
                                                         <div class="spacing-label-wrapper">
-                                                            <div class="spacing-label">0px</div>
+                                                            <div class="spacing-label">1px</div>
                                                         </div>
                                                     </div>
                                                     <div class="spacing-card radius-card" data-radius="2"
@@ -3304,7 +3359,7 @@
                                             <div class="spacing-grid-wrapper">
                                                 <div class="spacing-row">
                                                     <!-- 0.5px Stroke Card -->
-                                                    <div class="spacing-card stroke-card" data-stroke="0.5"
+                                                    <div class="spacing-card stroke-card selected" data-stroke="0.5"
                                                         onclick="selectStrokeCard(this)">
                                                         <div class="padding-visual-wrapper">
                                                             <svg width="60" height="60" viewBox="0 0 60 60" fill="none"
@@ -3665,12 +3720,11 @@
                                         style="width: 100%; padding: 8px 16px; border: 1px solid #E5E7EB; border-radius: 100px; font-family: 'Poppins'; font-size: 14px; outline: none; box-sizing: border-box;">
                                 </div>
 
-                                <!-- Secondary Font Toggle -->
-                                <div>
-                                    <div
-                                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <!-- Secondary Font Section -->
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
                                         <label
-                                            style="font-family: 'Poppins'; font-size: 14px; font-weight: 400; color: #9CA3AF;">
+                                            style="font-family: 'Poppins'; font-size: 14px; font-weight: 500; color: #000000;">
                                             Secondary Font
                                         </label>
                                         <div class="toggle-switch-unique" id="secondary-font-toggle"
@@ -3678,8 +3732,9 @@
                                             <div class="toggle-switch-knob-unique"></div>
                                         </div>
                                     </div>
-                                    <input type="text" id="secondary-font" placeholder="Enter Font Name" disabled
-                                        style="width: 100%; padding: 8px 16px; border: 1px solid #E5E7EB; border-radius: 100px; font-family: 'Poppins'; font-size: 14px; outline: none; box-sizing: border-box; background: #F9FAFB; color: #9CA3AF;">
+                                    <input type="text" id="secondary-font" placeholder="Enter Secondary Font"
+                                        value="Poppins" disabled
+                                        style="width: 100%; padding: 8px 16px; border: 1px solid #E5E7EB; border-radius: 100px; font-family: 'Poppins'; font-size: 14px; outline: none; box-sizing: border-box; opacity: 0.5; background-color: #F3F4F6;">
                                 </div>
 
                                 <!-- Base Font Size -->
@@ -4259,10 +4314,12 @@
             <div class="add-color-modal-field">
                 <label class="add-color-modal-label">Color</label>
                 <div class="add-color-modal-picker-wrapper">
-                    <input type="color" class="add-color-modal-picker" id="new-color-picker" value="#4F46E5"
-                        oninput="updateModalColorHex(this.value)">
                     <input type="text" class="add-color-modal-hex-input" id="new-color-hex" value="#4F46E5"
                         oninput="updateModalColorPicker(this.value)">
+                    <div class="add-color-modal-circle" id="new-color-circle" style="background-color: #4F46E5;"
+                        onclick="document.getElementById('new-color-picker').click()"></div>
+                    <input type="color" class="add-color-modal-picker-hidden" id="new-color-picker" value="#4F46E5"
+                        oninput="updateModalColorHex(this.value)">
                 </div>
             </div>
 
@@ -4358,7 +4415,7 @@
         }
 
         // Radius Card Click Handler
-        let selectedRadiusBase = 0; // Default base value
+        let selectedRadiusBase = 1; // Default base value
 
         function selectRadiusCard(cardElement) {
             // Remove selected class from all radius cards
@@ -4399,9 +4456,7 @@
                 const numberOfTokens = parseInt(dropdown.value);
 
                 if (!selectedSpacingBase) {
-                    parent.postMessage({
-                        pluginMessage: { type: 'notify', message: 'Please select a spacing base value first' }
-                    }, '*');
+                    showWarningToast('Select one spacing then create token');
                     return;
                 }
 
@@ -4430,9 +4485,7 @@
                 const numberOfTokens = parseInt(dropdown.value);
 
                 if (selectedPaddingBase === undefined) {
-                    parent.postMessage({
-                        pluginMessage: { type: 'notify', message: 'Please select a padding base value first' }
-                    }, '*');
+                    showWarningToast('Select one padding then create token');
                     return;
                 }
 
@@ -4461,9 +4514,7 @@
                 const numberOfTokens = parseInt(dropdown.value);
 
                 if (selectedRadiusBase === undefined) {
-                    parent.postMessage({
-                        pluginMessage: { type: 'notify', message: 'Please select a radius base value first' }
-                    }, '*');
+                    showWarningToast('Select one radius then create token');
                     return;
                 }
 
@@ -4492,9 +4543,7 @@
                 const numberOfTokens = parseInt(dropdown.value);
 
                 if (selectedStrokeBase === undefined) {
-                    parent.postMessage({
-                        pluginMessage: { type: 'notify', message: 'Please select a stroke base value first' }
-                    }, '*');
+                    showWarningToast('Select one stroke then create token');
                     return;
                 }
 
@@ -4590,9 +4639,13 @@
         // Create Button Component Documentation
         function createButtonComponentDoc() {
             const buttonText = document.getElementById('button-text-input').value || 'Button';
-            const radius = parseInt(document.getElementById('radius-input').value) || 12;
+            const radiusValue = document.getElementById('radius-input').value;
+            const radius = radiusValue !== "" ? parseInt(radiusValue) : 12;
             const primaryColor = document.getElementById('primary-color-input').value || '#1350FF';
             const textColor = document.getElementById('text-color-input').value || '#FFFFFF';
+
+            // Show loading toast
+            window.activeActionToastId = showLoadingToast('Creating button component set...');
 
             parent.postMessage({
                 pluginMessage: {
@@ -4609,9 +4662,13 @@
         function createInputFieldComponentDoc() {
             // Get values from UI
             const labelText = document.getElementById('textfield-label-input').value || 'label';
-            const radius = document.getElementById('textfield-radius-input').value || '8';
+            const radiusValue = document.getElementById('textfield-radius-input').value;
+            const radius = radiusValue !== "" ? radiusValue : '8';
             const borderColor = document.getElementById('textfield-border-color-input').value || '#D1D5DB';
             const primaryColor = document.getElementById('textfield-bg-color-input').value || '#3B82F6';
+
+            // Show loading toast
+            window.activeActionToastId = showLoadingToast('Creating input field component set...');
 
             parent.postMessage({
                 pluginMessage: {
@@ -4928,32 +4985,29 @@
         });
 
         // Typography Functions
-        let secondaryFontEnabled = false;
 
         function toggleSecondaryFont() {
             const toggle = document.getElementById('secondary-font-toggle');
             const input = document.getElementById('secondary-font');
+            const isActive = toggle.classList.toggle('active');
 
-            secondaryFontEnabled = !secondaryFontEnabled;
-
-            if (secondaryFontEnabled) {
-                toggle.classList.add('active');
+            if (isActive) {
                 input.disabled = false;
-                input.style.background = '#FFFFFF';
-                input.style.color = 'rgba(0, 0, 0, 0.6)';
+                input.style.opacity = '1';
+                input.style.backgroundColor = '#FFFFFF';
             } else {
-                toggle.classList.remove('active');
                 input.disabled = true;
-                input.style.background = '#F9FAFB';
-                input.style.color = '#9CA3AF';
+                input.style.opacity = '0.5';
+                input.style.backgroundColor = '#F3F4F6';
             }
-
             generateTypographyPreview();
         }
 
         function generateTypographyPreview() {
             const baseFontSize = parseFloat(document.getElementById('base-font-size').value);
             const primaryFont = document.getElementById('primary-font').value || 'Inter';
+            const secondaryFontToggle = document.getElementById('secondary-font-toggle');
+            const secondaryFont = secondaryFontToggle && secondaryFontToggle.classList.contains('active') ? document.getElementById('secondary-font').value : null;
 
             const previewArea = document.getElementById('typography-preview-area');
 
@@ -5008,6 +5062,10 @@
                             <div style="font-family: '${primaryFont}', sans-serif; font-size: 16px; font-weight: 500; line-height: 150%; color: #000000;">
                                 Whereas disregard and contempt for human rights have resulted
                             </div>
+                            ${secondaryFont ? `
+                            <div style="font-family: '${secondaryFont}', sans-serif; font-size: 16px; font-weight: 400; line-height: 150%; color: #000000; border-top: 1px dashed #E5E7EB; padding-top: 8px; margin-top: 4px;">
+                                Secondary: Whereas disregard and contempt for human rights
+                            </div>` : ''}
                         </div>
                         
                         <!-- Expandable Details Section -->
@@ -5072,9 +5130,17 @@
         }
 
         function createTypographyStyles() {
-            const baseFontSize = parseFloat(document.getElementById('base-font-size').value);
+            const baseFontSizeElement = document.getElementById('base-font-size');
+            const baseFontSize = baseFontSizeElement ? parseFloat(baseFontSizeElement.value) : NaN;
+
+            if (isNaN(baseFontSize) || baseFontSize <= 0) {
+                showErrorToast('Please enter a valid base font size');
+                return;
+            }
+
             const primaryFont = document.getElementById('primary-font').value || 'Inter';
-            const secondaryFont = secondaryFontEnabled ? document.getElementById('secondary-font').value : null;
+            const secondaryFontToggle = document.getElementById('secondary-font-toggle');
+            const secondaryFont = secondaryFontToggle && secondaryFontToggle.classList.contains('active') ? document.getElementById('secondary-font').value : null;
             const scale = 1.25; // Default scale ratio
 
             parent.postMessage({
@@ -5093,15 +5159,24 @@
                     type: 'create-typography-doc',
                     baseFontSize: baseFontSize,
                     primaryFont: primaryFont,
+                    secondaryFont: secondaryFont,
                     scale: scale
                 }
             }, '*');
         }
 
         function addTypographyTokens() {
-            const baseFontSize = parseFloat(document.getElementById('base-font-size').value);
+            const baseFontSizeElement = document.getElementById('base-font-size');
+            const baseFontSize = baseFontSizeElement ? parseFloat(baseFontSizeElement.value) : NaN;
+
+            if (isNaN(baseFontSize) || baseFontSize <= 0) {
+                showErrorToast('Please enter a valid base font size');
+                return;
+            }
+
             const primaryFont = document.getElementById('primary-font').value || 'Inter';
-            const secondaryFont = secondaryFontEnabled ? document.getElementById('secondary-font').value : null;
+            const secondaryFontToggle = document.getElementById('secondary-font-toggle');
+            const secondaryFont = secondaryFontToggle && secondaryFontToggle.classList.contains('active') ? document.getElementById('secondary-font').value : null;
 
             // Base multipliers (based on 12px base font)
             const typographyLevels = [
@@ -5174,7 +5249,8 @@
                 pluginMessage: {
                     type: 'create-typography-doc',
                     baseFontSize: baseFontSize,
-                    primaryFont: primaryFont
+                    primaryFont: primaryFont,
+                    secondaryFont: secondaryFont
                 }
             }, '*');
         }
@@ -5186,6 +5262,7 @@
             // Add event listeners for typography inputs
             document.getElementById('base-font-size').addEventListener('change', generateTypographyPreview);
             document.getElementById('primary-font').addEventListener('input', generateTypographyPreview);
+            document.getElementById('secondary-font').addEventListener('input', generateTypographyPreview);
         });
 
         // Setup Option Selection
@@ -5220,21 +5297,12 @@
         function toggleColorPicker() {
             const picker = document.getElementById('brand-color-picker');
             if (picker) {
-                picker.classList.toggle('active');
-                if (picker.classList.contains('active')) {
-                    picker.focus();
-                    picker.click();
-                }
+                picker.click();
             }
         }
 
         function hideColorPicker() {
-            const picker = document.getElementById('brand-color-picker');
-            if (picker) {
-                setTimeout(() => {
-                    picker.classList.remove('active');
-                }, 200);
-            }
+            // Native color picker closes automatically
         }
 
         // Toggle Color Section
@@ -5268,8 +5336,12 @@
         // Update Modal Color Hex from Picker
         function updateModalColorHex(hexValue) {
             const hexInput = document.getElementById('new-color-hex');
+            const circle = document.getElementById('new-color-circle');
             if (hexInput) {
                 hexInput.value = hexValue.toUpperCase();
+            }
+            if (circle) {
+                circle.style.backgroundColor = hexValue;
             }
         }
 
@@ -5279,8 +5351,12 @@
                 hexValue = '#' + hexValue;
             }
             const picker = document.getElementById('new-color-picker');
+            const circle = document.getElementById('new-color-circle');
             if (picker && /^#[0-9A-F]{6}$/i.test(hexValue)) {
                 picker.value = hexValue;
+            }
+            if (circle && /^#[0-9A-F]{6}$/i.test(hexValue)) {
+                circle.style.backgroundColor = hexValue;
             }
         }
 
@@ -5414,9 +5490,8 @@
             // Create hidden color picker
             const colorPicker = document.createElement('input');
             colorPicker.type = 'color';
-            colorPicker.className = 'custom-color-picker';
+            colorPicker.className = 'brand-color-picker-popup-unique custom-color-picker';
             colorPicker.value = colorHex;
-            colorPicker.style.display = 'none';
             colorPicker.onchange = function () {
                 updateCustomColorFromPicker(colorName, this.value);
             };
@@ -5425,10 +5500,9 @@
             colorWrapper.appendChild(colorCircle);
             colorWrapper.appendChild(colorPicker);
 
-            // Insert at the beginning (before Brand color)
-            const firstChild = colorsLeftContent.firstChild;
-            colorsLeftContent.insertBefore(colorWrapper, firstChild);
-            colorsLeftContent.insertBefore(sectionTitle, colorWrapper);
+            // Append at the end (after Brand color)
+            colorsLeftContent.appendChild(sectionTitle);
+            colorsLeftContent.appendChild(colorWrapper);
 
             // Create shade card for this color
             createShadeCard(colorName, colorHex, colorsShadesPreview);
@@ -5524,7 +5598,7 @@
             console.log('Include Neutral:', includeNeutral);
 
             if (colors.length === 0) {
-                alert('No colors found. Please add at least one color.');
+                showErrorToast('Please add at least one color before creating tokens');
                 return;
             }
 
@@ -5659,8 +5733,8 @@
             shadeCard.appendChild(header);
             shadeCard.appendChild(shadesGrid);
 
-            // Insert at the beginning
-            container.insertBefore(shadeCard, container.firstChild);
+            // Append at the end
+            container.appendChild(shadeCard);
 
             // Generate shades
             generateColorShadesForCard(colorName, colorHex, 10);
@@ -5689,23 +5763,28 @@
             const g = parseInt(hex.substring(2, 4), 16);
             const b = parseInt(hex.substring(4, 6), 16);
 
-            // Calculate the base color position (middle)
-            const baseIndex = Math.floor(shadeCount / 2);
             const shades = [];
 
-            // Generate shades
+            // Generate shades from light tint to very dark
+            // Maintains the color hue throughout
             for (let i = 0; i < shadeCount; i++) {
-                if (i < baseIndex) {
-                    // Lighter shades
-                    const amount = 1 - (i / baseIndex) * 0.95;
-                    shades.push(lightenColor(r, g, b, amount));
-                } else if (i === baseIndex) {
-                    // Base color
-                    shades.push(rgbToHex(r, g, b));
+                const position = i / (shadeCount - 1); // 0 to 1
+
+                if (position <= 0.5) {
+                    // First half: light tints (mix with white but keep color hue)
+                    // Start at 95% white, go to base color
+                    const lightness = 0.95 - (position * 1.9); // 0.95 to 0
+                    const newR = Math.round(r + (255 - r) * lightness);
+                    const newG = Math.round(g + (255 - g) * lightness);
+                    const newB = Math.round(b + (255 - b) * lightness);
+                    shades.push(rgbToHex(newR, newG, newB));
                 } else {
-                    // Darker shades
-                    const amount = ((i - baseIndex) / (shadeCount - baseIndex - 1)) * 0.90;
-                    shades.push(darkenColor(r, g, b, amount));
+                    // Second half: darker shades
+                    const darkness = (position - 0.5) * 2; // 0 to 1
+                    const newR = Math.round(r * (1 - darkness * 0.85));
+                    const newG = Math.round(g * (1 - darkness * 0.85));
+                    const newB = Math.round(b * (1 - darkness * 0.85));
+                    shades.push(rgbToHex(newR, newG, newB));
                 }
             }
 
@@ -5722,7 +5801,7 @@
                 shadeBox.style.background = shade;
 
                 // Add border for very light colors
-                if (index === 0) {
+                if (index === 0 || index === 1) {
                     shadeBox.classList.add('with-border');
                 }
 
@@ -5738,8 +5817,8 @@
 
                 shadeBox.appendChild(shadeLabel);
 
-                // Add indicator to base color
-                if (index === baseIndex) {
+                // Add indicator to base color (middle shade)
+                if (index === Math.floor(shadeCount / 2)) {
                     const indicator = document.createElement('div');
                     indicator.className = 'color-shade-indicator';
                     shadeBox.appendChild(indicator);
@@ -5788,7 +5867,6 @@
             }
         });
 
-        // Initialize Brand Color Shade Card on page load
         window.addEventListener('DOMContentLoaded', function () {
             const brandColorHex = document.getElementById('brand-color-hex');
             if (brandColorHex) {
@@ -5796,6 +5874,38 @@
                 if (colorsShadesPreview) {
                     createShadeCard('Brand color', brandColorHex.value || '#000000', colorsShadesPreview);
                 }
+            }
+        });
+
+        // Components Search Filtering
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchInput = document.querySelector('.components-search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', function (e) {
+                    const query = e.target.value.toLowerCase().trim();
+                    const cards = document.querySelectorAll('.component-card');
+                    const rows = document.querySelectorAll('.components-grid-row');
+
+                    cards.forEach(card => {
+                        const title = card.querySelector('.component-card-title').textContent.toLowerCase();
+                        const isComingSoon = card.querySelector('.component-coming-soon-overlay') !== null;
+
+                        // Show card if title matches query AND it's not a search or it's not coming soon
+                        if (query === '') {
+                            card.style.display = 'flex';
+                        } else if (title.includes(query) && !isComingSoon) {
+                            card.style.display = 'flex';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+
+                    // Hide rows if all cards inside them are hidden
+                    rows.forEach(row => {
+                        const visibleCardsInRow = Array.from(row.querySelectorAll('.component-card')).some(card => card.style.display !== 'none');
+                        row.style.display = visibleCardsInRow ? 'flex' : 'none';
+                    });
+                });
             }
         });
 
@@ -6101,12 +6211,12 @@
             console.log(`[UI] createIconsLibraryDoc called - Library: ${library}, CategoryPath: ${categoryPath}, CategoryLabel: ${categoryLabel}`);
 
             if (!library) {
-                parent.postMessage({ pluginMessage: { type: 'notify', message: 'Please select an icon library first' } }, '*');
+                showErrorToast('Select one icon library then create documentation');
                 return;
             }
 
             if (!categoryPath) {
-                parent.postMessage({ pluginMessage: { type: 'notify', message: 'Please select a category first' } }, '*');
+                showErrorToast('Select one category then create documentation');
                 return;
             }
 
@@ -6241,6 +6351,14 @@
             }
         }
 
+        function showWarningToast(message, idToUpdate = null) {
+            if (idToUpdate) {
+                updateToast(idToUpdate, message, 'warning', 4000);
+            } else {
+                showToast(message, 'warning', 4000);
+            }
+        }
+
         function showToast(message, type = 'success', duration = 3000) {
             const container = document.getElementById('toast-container');
             const id = 'toast-' + (toastCount++);
@@ -6254,6 +6372,8 @@
                 iconCode = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11.6667 3.5L5.25 9.91667L2.33334 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
             } else if (type === 'error') {
                 iconCode = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            } else if (type === 'warning') {
+                iconCode = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 3.5V7M7 10.15V10.5M12.6 7C12.6 10.0928 10.0928 12.6 7 12.6C3.90721 12.6 1.4 10.0928 1.4 7C1.4 3.90721 3.90721 1.4 7 1.4C10.0928 1.4 12.6 3.90721 12.6 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
             } else if (type === 'loading') {
                 iconCode = '<div class="toast-spinner"></div>';
             }
@@ -6281,6 +6401,8 @@
                     iconCode = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11.6667 3.5L5.25 9.91667L2.33334 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
                 } else if (type === 'error') {
                     iconCode = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                } else if (type === 'warning') {
+                    iconCode = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 3.5V7M7 10.15V10.5M12.6 7C12.6 10.0928 10.0928 12.6 7 12.6C3.90721 12.6 1.4 10.0928 1.4 7C1.4 3.90721 3.90721 1.4 7 1.4C10.0928 1.4 12.6 3.90721 12.6 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
                 } else if (type === 'loading') {
                     iconCode = '<div class="toast-spinner"></div>';
                 }

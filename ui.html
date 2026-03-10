@@ -9,7 +9,58 @@
         href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <style>
+        /* Ensure fonts display immediately with fallback */
+        @font-face {
+            font-family: 'Poppins';
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Instrument Serif';
+            font-display: swap;
+        }
+    </style>
+    <script>
+        // Font loading fallback with better error handling
+        document.fonts.ready.then(function () {
+            console.log('Fonts loaded successfully');
+            document.body.classList.add('fonts-loaded');
+        }).catch(function (error) {
+            console.warn('Font loading failed, using system fonts:', error);
+            document.body.classList.add('fonts-not-loaded');
+        });
+
+        // Ensure fonts are loaded before showing content with timeout
+        if (document.fonts && document.fonts.load) {
+            const fontPromises = [
+                document.fonts.load('400 16px Poppins').catch(() => console.warn('Poppins 400 failed to load')),
+                document.fonts.load('500 16px Poppins').catch(() => console.warn('Poppins 500 failed to load')),
+                document.fonts.load('600 16px Poppins').catch(() => console.warn('Poppins 600 failed to load')),
+                document.fonts.load('700 16px Poppins').catch(() => console.warn('Poppins 700 failed to load')),
+                document.fonts.load('400 16px "Instrument Serif"').catch(() => console.warn('Instrument Serif failed to load'))
+            ];
+
+            // Set a timeout to prevent indefinite waiting
+            Promise.race([
+                Promise.allSettled(fontPromises),
+                new Promise(resolve => setTimeout(resolve, 3000)) // 3 second timeout
+            ]).then(() => {
+                document.body.classList.add('fonts-ready');
+            });
+        } else {
+            // Fallback for browsers that don't support document.fonts
+            setTimeout(() => {
+                document.body.classList.add('fonts-ready');
+            }, 1000);
+        }
+    </script>
+    <style>
         :root {
+            /* Font Family Variables */
+            --font-primary: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            --font-serif: 'Instrument Serif', Georgia, 'Times New Roman', Times, serif;
+            --font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+
             /* Primary Colors - 10 shades */
             --primary-50: #E6EDFF;
             --primary-100: #CCE0FF;
@@ -202,7 +253,7 @@
         }
 
         .toast-message {
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-primary);
             font-size: 13px;
             font-weight: 500;
             color: #1F2937;
@@ -230,10 +281,66 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: var(--font-system);
             width: 100%;
             height: 100vh;
             overflow: hidden;
+        }
+
+        /* Global font fallback rules */
+        * {
+            font-family: var(--font-system);
+        }
+
+        .font-primary,
+        [class*="poppins"],
+        .toast-message,
+        .tab-button,
+        .welcome-subtitle-unique,
+        .welcome-start-button-unique,
+        .welcome-footer-right-link-unique,
+        .onboarding-subheading-unique,
+        .onboarding-card-description-unique,
+        .onboarding-continue-button-unique,
+        .auto-setup-topbar-left-unique,
+        .auto-setup-description-unique,
+        .auto-setup-subtitle-unique,
+        .auto-setup-back-button-unique,
+        .main-topbar-right-logo-unique,
+        .colors-section-title-unique,
+        .brand-color-hex-input-unique,
+        .color-toggle-label-unique,
+        .colors-add-button-unique {
+            font-family: var(--font-primary) !important;
+        }
+
+        .font-serif,
+        [class*="serif"],
+        .welcome-title-unique,
+        .onboarding-heading-unique,
+        .onboarding-card-title-unique {
+            font-family: var(--font-serif) !important;
+        }
+
+        /* Fallback styles when fonts are not loaded */
+        body.fonts-not-loaded * {
+            font-family: var(--font-system) !important;
+        }
+
+        body.fonts-not-loaded .welcome-title-unique,
+        body.fonts-not-loaded .onboarding-heading-unique,
+        body.fonts-not-loaded .onboarding-card-title-unique {
+            font-family: Georgia, 'Times New Roman', Times, serif !important;
+        }
+
+        /* Initial state - hide content until fonts are ready */
+        body:not(.fonts-ready) .screen {
+            opacity: 0.7;
+        }
+
+        body.fonts-ready .screen {
+            opacity: 1;
+            transition: opacity 0.3s ease;
         }
 
         /* Screen Management */
@@ -290,7 +397,7 @@
 
         /* Active States */
         .tab-button {
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-primary);
             font-size: 16px;
             font-weight: 500;
             cursor: pointer;
@@ -366,7 +473,7 @@
         }
 
         .welcome-title-unique {
-            font-family: 'Instrument Serif', serif;
+            font-family: var(--font-serif);
             font-size: 40px;
             font-weight: 400;
             color: #000000;
@@ -4335,6 +4442,39 @@
     </div>
 
     <script>
+        // Font Loading Check and Fallback
+        function checkFontLoading() {
+            const testElement = document.createElement('div');
+            testElement.style.fontFamily = 'Poppins, sans-serif';
+            testElement.style.fontSize = '16px';
+            testElement.style.position = 'absolute';
+            testElement.style.visibility = 'hidden';
+            testElement.textContent = 'Test';
+            document.body.appendChild(testElement);
+
+            const computedStyle = window.getComputedStyle(testElement);
+            const actualFont = computedStyle.fontFamily;
+
+            document.body.removeChild(testElement);
+
+            // If Poppins is not loaded, add a class to body for fallback styling
+            if (!actualFont.includes('Poppins')) {
+                document.body.classList.add('fonts-not-loaded');
+                console.warn('Poppins font not loaded, using system fonts');
+            } else {
+                console.log('Fonts loaded successfully');
+            }
+        }
+
+        // Check fonts when DOM is ready
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check immediately
+            checkFontLoading();
+
+            // Check again after a delay to ensure fonts have time to load
+            setTimeout(checkFontLoading, 1000);
+        });
+
         // Screen Navigation
         function navigateTo(screenId) {
             const screens = document.querySelectorAll('.screen');

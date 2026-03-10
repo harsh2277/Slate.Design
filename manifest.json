@@ -1,11 +1,16 @@
 {
   "name": "Slate.Design",
-  "id": "1577584937261419785",
+  "id": "1596926108027643850",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
-  "documentAccess": "dynamic-page",
   "editorType": [
     "figma"
-  ]
+  ],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": [
+      "https://www.codetheorem.co"
+    ]
+  }
 }

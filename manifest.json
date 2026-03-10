@@ -1,9 +1,10 @@
 {
   "name": "Slate.Design",
-  "id": "1596926108027643850",
+  "id": "1613203231191792370",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
+  "documentAccess": "dynamic-page",
   "editorType": [
     "figma"
   ],

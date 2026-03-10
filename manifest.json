@@ -7,7 +7,6 @@
   "editorType": [
     "figma"
   ],
-  "documentAccess": "dynamic-page",
   "networkAccess": {
     "allowedDomains": [
       "https://www.codetheorem.co"

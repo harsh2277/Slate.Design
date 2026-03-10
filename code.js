@@ -1,5 +1,94 @@
 figma.showUI(__html__, { width: 400, height: 700 });
 
+// Helper function to load fonts with fallbacks
+async function loadFontsWithFallback() {
+    const fontLoadResults = {
+        title: { family: "Inter", style: "Bold" },
+        subtitle: { family: "Inter", style: "Medium" },
+        body: { family: "Inter", style: "Regular" },
+        small: { family: "Inter", style: "Regular" }
+    };
+
+    // Try to load preferred fonts with fallbacks
+    const fontPreferences = [
+        {
+            target: 'title', fonts: [
+                { family: "Poppins", style: "SemiBold" },
+                { family: "Inter", style: "Bold" },
+                { family: "Roboto", style: "Bold" }
+            ]
+        },
+        {
+            target: 'subtitle', fonts: [
+                { family: "Montserrat", style: "Medium" },
+                { family: "Inter", style: "Medium" },
+                { family: "Roboto", style: "Medium" }
+            ]
+        },
+        {
+            target: 'body', fonts: [
+                { family: "Inter", style: "Medium" },
+                { family: "Roboto", style: "Regular" }
+            ]
+        },
+        {
+            target: 'small', fonts: [
+                { family: "Inter", style: "Regular" },
+                { family: "Roboto", style: "Regular" }
+            ]
+        }
+    ];
+
+    // Load Inter as guaranteed fallback first
+    try {
+        await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+        await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+        await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+    } catch (e) {
+        console.warn('Inter font not available, using system defaults');
+    }
+
+    // Try preferred fonts
+    for (const preference of fontPreferences) {
+        for (const font of preference.fonts) {
+            try {
+                await figma.loadFontAsync(font);
+                fontLoadResults[preference.target] = font;
+                break; // Use first successful font
+            } catch (e) {
+                continue; // Try next font
+            }
+        }
+    }
+
+    return fontLoadResults;
+}
+
+// Simple font loading function for backward compatibility
+async function loadBasicFonts() {
+    try {
+        // Try to load preferred fonts, fall back to Inter if they fail
+        try {
+            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
+        } catch (e) {
+            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+        }
+
+        try {
+            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
+        } catch (e) {
+            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+        }
+
+        await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+        await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+        await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+    } catch (e) {
+        console.error('Critical font loading error:', e);
+        // Continue with system fonts
+    }
+}
+
 function notifyUI(actionType, success, message, errorDetails = null) {
     const finalMessage = success ? message : (errorDetails ? `${message}: ${errorDetails}` : message);
     figma.ui.postMessage({
@@ -245,12 +334,8 @@ figma.ui.onmessage = async (msg) => {
             const baseValue = msg.baseValue;
             const numberOfTokens = msg.numberOfTokens;
 
-            // Load fonts
-            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
-            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
-            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
-            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+            // Load fonts with fallback
+            const fonts = await loadFontsWithFallback();
 
             // Helper function to convert hex to RGB
             function hexToRgb(hex) {
@@ -316,7 +401,7 @@ figma.ui.onmessage = async (msg) => {
             const titleText = figma.createText();
             titleText.characters = "Spacing";
             titleText.fontSize = 40;
-            titleText.fontName = { family: "Poppins", style: "SemiBold" };
+            titleText.fontName = fonts.title;
             titleText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
             titleText.lineHeight = { value: 150, unit: "PERCENT" };
 
@@ -419,14 +504,14 @@ figma.ui.onmessage = async (msg) => {
                 const tokenName = figma.createText();
                 tokenName.characters = `Spacing-${spacingValue}px`;
                 tokenName.fontSize = 12;
-                tokenName.fontName = { family: "Inter", style: "Medium" };
+                tokenName.fontName = fonts.body;
                 tokenName.fills = [{ type: 'SOLID', color: hexToRgb('#2D3339') }];
 
                 // Token value
                 const tokenValue = figma.createText();
                 tokenValue.characters = `${spacingValue}px`;
                 tokenValue.fontSize = 9;
-                tokenValue.fontName = { family: "Inter", style: "Regular" };
+                tokenValue.fontName = fonts.small;
                 tokenValue.fills = [{ type: 'SOLID', color: hexToRgb('#7F7F7F') }];
 
                 tokenInfo.appendChild(tokenName);
@@ -543,12 +628,8 @@ figma.ui.onmessage = async (msg) => {
             const baseValue = msg.baseValue;
             const numberOfTokens = msg.numberOfTokens;
 
-            // Load fonts
-            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
-            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
-            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
-            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+            // Load fonts with fallback
+            await loadBasicFonts();
 
             // Helper function to convert hex to RGB
             function hexToRgb(hex) {
@@ -841,12 +922,8 @@ figma.ui.onmessage = async (msg) => {
             const baseValue = msg.baseValue;
             const numberOfTokens = msg.numberOfTokens;
 
-            // Load fonts
-            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
-            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
-            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
-            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+            // Load fonts with fallback
+            await loadBasicFonts();
 
             // Helper function to convert hex to RGB
             function hexToRgb(hex) {
@@ -1385,12 +1462,8 @@ figma.ui.onmessage = async (msg) => {
 
     if (msg.type === "create-shadow-doc") {
         try {
-            // Load fonts
-            await figma.loadFontAsync({ family: "Poppins", style: "SemiBold" });
-            await figma.loadFontAsync({ family: "Montserrat", style: "Medium" });
-            await figma.loadFontAsync({ family: "Inter", style: "Medium" });
-            await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-            await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+            // Load fonts with fallback
+            await loadBasicFonts();
 
             // Helper function to convert hex to RGB
             function hexToRgb(hex) {

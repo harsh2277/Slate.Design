@@ -711,6 +711,268 @@
             background: #1D4ED8;
         }
 
+        /* Auto Setup Wizard Styles */
+        .auto-setup-wizard-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .auto-setup-step {
+            display: none;
+        }
+
+        .auto-setup-step.active {
+            display: block;
+        }
+
+        .auto-setup-step-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: 32px;
+            font-weight: 400;
+            color: #000000;
+            margin-bottom: 12px;
+        }
+
+        .auto-setup-step-description {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            color: #6B7280;
+            margin-bottom: 32px;
+        }
+
+        .auto-setup-input-group {
+            margin-bottom: 24px;
+        }
+
+        .auto-setup-input-label {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1F2937;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .auto-setup-color-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 9999px;
+            background: #FFFFFF;
+        }
+
+        .auto-setup-color-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            color: #1F2937;
+            background: transparent;
+        }
+
+        .auto-setup-color-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #E5E7EB;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .auto-setup-toggle-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .auto-setup-toggle-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 9999px;
+            cursor: pointer;
+        }
+
+        .auto-setup-toggle-item.neutral-bg {
+            background: #FFFFFF;
+        }
+
+        .auto-setup-toggle-label {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1F2937;
+        }
+
+        .auto-setup-font-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 9999px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            color: #1F2937;
+            outline: none;
+        }
+
+        .auto-setup-font-input:focus {
+            border-color: #4F46E5;
+        }
+
+        .auto-setup-icon-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .auto-setup-icon-card {
+            padding: 24px;
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .auto-setup-icon-card:hover {
+            border-color: #4F46E5;
+        }
+
+        .auto-setup-icon-card.selected {
+            border-color: #4F46E5;
+            background: #EFF6FF;
+        }
+
+        .auto-setup-icon-name {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1F2937;
+            margin-top: 12px;
+        }
+
+        .auto-setup-component-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .auto-setup-component-card {
+            padding: 20px;
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .auto-setup-component-card:hover {
+            border-color: #4F46E5;
+        }
+
+        .auto-setup-component-card.selected {
+            border-color: #4F46E5;
+            background: #EFF6FF;
+        }
+
+        .auto-setup-component-name {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1F2937;
+        }
+
+        .auto-setup-footer {
+            padding: 20px 40px;
+            border-top: 1px solid #E5E7EB;
+            background: #FFFFFF;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .auto-setup-progress {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            color: #6B7280;
+        }
+
+        .auto-setup-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .auto-setup-btn {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 12px 24px;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .auto-setup-btn-secondary {
+            background: #F3F4F6;
+            color: #1F2937;
+        }
+
+        .auto-setup-btn-secondary:hover {
+            background: #E5E7EB;
+        }
+
+        .auto-setup-btn-primary {
+            background: #4F46E5;
+            color: #FFFFFF;
+        }
+
+        .auto-setup-btn-primary:hover {
+            background: #4338CA;
+        }
+
+        .auto-setup-success {
+            text-align: center;
+            padding: 60px 40px;
+        }
+
+        .auto-setup-success-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+        }
+
+        .auto-setup-success-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: 32px;
+            font-weight: 400;
+            color: #000000;
+            margin-bottom: 12px;
+        }
+
+        .auto-setup-success-message {
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            color: #6B7280;
+            margin-bottom: 32px;
+        }
+
+        .auto-setup-success-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
         /* Main App Screen */
         .main-app-wrapper-unique {
             display: flex;
@@ -2736,41 +2998,277 @@
                 </a>
             </div>
 
-            <div class="auto-setup-main-content-unique">
-                <div class="auto-setup-emoji-unique">
-                    <svg width="124" height="124" viewBox="0 0 124 124" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <g clip-path="url(#clip0_104_3969)">
-                            <path
-                                d="M124 62C124 96.2356 96.2356 124 62 124C46.3838 124 32.1044 118.226 21.1962 108.674C8.215 97.3013 0 80.6194 0 62C0 27.7644 27.7644 0 62 0C80.6194 0 97.3013 8.215 108.674 21.1962C118.226 32.1044 124 46.3838 124 62Z"
-                                fill="#FFCC4D" />
-                            <path
-                                d="M86.0056 78.9531C85.1531 84.6493 82.2081 89.7062 77.965 93.3293C73.7025 96.9718 68.1225 99.1612 62.0194 99.1612C55.9163 99.1612 50.3169 96.9718 46.0544 93.3293C41.7919 89.7062 38.8663 84.6493 38.0138 78.9531C37.7425 77.1512 39.1956 75.5237 41.0363 75.5237H83.0025C84.8238 75.5431 86.2769 77.1512 86.0056 78.9531Z"
-                                fill="#2E435A" />
-                            <path
-                                d="M77.9457 93.3486C73.6832 96.9911 68.1032 99.1804 62 99.1804C55.8969 99.1804 50.2975 96.9911 46.035 93.3486C49.7744 89.6867 55.5288 87.3617 62 87.3617C68.4713 87.3423 74.2257 89.6867 77.9457 93.3486Z"
-                                fill="#D3333F" />
-                            <path
-                                d="M13.9694 47.1782C13.4463 47.1782 12.9038 47.062 12.4 46.8295C10.5788 45.9576 9.78439 43.7876 10.6563 41.947C13.64 35.6501 18.9681 31.0582 24.9356 29.6438C30.1281 28.4232 35.495 29.702 40.0288 33.267C41.6175 34.5263 41.8888 36.8126 40.6488 38.4207C39.3894 40.0095 37.1031 40.2807 35.495 39.0407C32.6663 36.8126 29.6825 36.057 26.6213 36.7738C22.8625 37.6651 19.2781 40.8426 17.2825 45.0663C16.6625 46.4032 15.345 47.1782 13.9694 47.1782ZM110.031 47.1782C108.655 47.1782 107.338 46.4032 106.718 45.0857C104.722 40.862 101.138 37.6651 97.3788 36.7932C94.3175 36.0763 91.3338 36.832 88.505 39.0601C86.9163 40.3195 84.6106 40.0288 83.3513 38.4401C82.0919 36.8513 82.3825 34.5457 83.9713 33.2863C88.505 29.7213 93.8719 28.4232 99.0644 29.6632C105.032 31.0776 110.379 35.6695 113.344 41.9663C114.216 43.7876 113.421 45.977 111.6 46.8488C111.096 47.062 110.554 47.1782 110.031 47.1782Z"
-                                fill="#2E435A" />
-                            <path
-                                d="M105.245 58.8418C105.245 64.3443 100.789 68.8006 95.2862 68.8006C89.7837 68.8006 85.3275 64.3443 85.3275 58.8418C85.3275 53.3393 89.7837 48.8831 95.2862 48.8831C100.789 48.9024 105.245 53.3587 105.245 58.8418Z"
-                                fill="#2E435A" />
-                            <path
-                                d="M28.6943 68.8006C34.1944 68.8006 38.6531 64.3419 38.6531 58.8418C38.6531 53.3417 34.1944 48.8831 28.6943 48.8831C23.1943 48.8831 18.7356 53.3417 18.7356 58.8418C18.7356 64.3419 23.1943 68.8006 28.6943 68.8006Z"
-                                fill="#2E435A" />
-                        </g>
-                        <defs>
-                            <clipPath id="clip0_104_3969">
-                                <rect width="124" height="124" fill="white" />
-                            </clipPath>
-                        </defs>
-                    </svg>
+            <!-- Wizard Container -->
+            <div class="auto-setup-wizard-container">
+                <!-- Step 1: Brand Colors -->
+                <div class="auto-setup-step active" id="auto-setup-step-1">
+                    <h2 class="auto-setup-step-title">Brand Colors</h2>
+                    <p class="auto-setup-step-description">Define your primary and secondary brand colors</p>
+
+                    <div class="auto-setup-input-group">
+                        <label class="auto-setup-input-label">Primary Color</label>
+                        <div class="auto-setup-color-input-wrapper">
+                            <input type="text" class="auto-setup-color-input" id="auto-primary-color" value="#1350FF"
+                                placeholder="#1350FF">
+                            <div class="auto-setup-color-circle" id="auto-primary-circle"
+                                style="background-color: #1350FF;"
+                                onclick="document.getElementById('auto-primary-picker').click()"></div>
+                            <input type="color" id="auto-primary-picker" value="#1350FF" style="display: none;"
+                                onchange="updateAutoColor('primary', this.value)">
+                        </div>
+                    </div>
+
+                    <div class="auto-setup-input-group">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label class="auto-setup-input-label" style="margin-bottom: 0;">Secondary Color</label>
+                            <div class="auto-setup-toggle-item" onclick="toggleSecondaryColor()"
+                                style="padding: 4px 8px; margin: 0; width: auto; border: none;">
+                                <div class="toggle-switch-unique" id="auto-secondary-color-toggle">
+                                    <div class="toggle-switch-knob-unique"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="auto-setup-color-input-wrapper" id="auto-secondary-color-wrapper"
+                            style="opacity: 0.5; pointer-events: none;">
+                            <input type="text" class="auto-setup-color-input" id="auto-secondary-color" value="#D900FF"
+                                placeholder="#D900FF" disabled>
+                            <div class="auto-setup-color-circle" id="auto-secondary-circle"
+                                style="background-color: #D900FF;"
+                                onclick="document.getElementById('auto-secondary-picker').click()"></div>
+                            <input type="color" id="auto-secondary-picker" value="#D900FF" style="display: none;"
+                                onchange="updateAutoColor('secondary', this.value)">
+                        </div>
+                    </div>
+
+                    <div class="auto-setup-toggle-group">
+                        <div class="auto-setup-toggle-item neutral-bg" onclick="toggleAutoSetupOption('neutral')">
+                            <span class="auto-setup-toggle-label">Enable Neutral Colors</span>
+                            <div class="toggle-switch-unique active" id="auto-neutral-toggle">
+                                <div class="toggle-switch-knob-unique"></div>
+                            </div>
+                        </div>
+                        <div class="auto-setup-toggle-item" onclick="toggleAutoSetupOption('status')">
+                            <span class="auto-setup-toggle-label">Enable Status Colors</span>
+                            <div class="toggle-switch-unique active" id="auto-status-toggle">
+                                <div class="toggle-switch-knob-unique"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <p class="auto-setup-description-unique">We're building this feature.</p>
-                <p class="auto-setup-subtitle-unique">Thanks for using the plugin 🙌</p>
-                <button class="auto-setup-back-button-unique" onclick="navigateTo('onboarding-screen')">
-                    Go to Home Screen
-                </button>
+
+                <!-- Step 2: Tokens -->
+                <div class="auto-setup-step" id="auto-setup-step-2">
+                    <h2 class="auto-setup-step-title">Design Tokens</h2>
+                    <p class="auto-setup-step-description">Tokens will be automatically generated with optimal values
+                    </p>
+
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 32px;">
+                        <div
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            <div
+                                style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
+                                Spacing</div>
+                            <div style="font-family: 'Poppins', sans-serif; font-size: 12px; color: #6B7280;">Base: 2px,
+                                20 tokens</div>
+                        </div>
+                        <div
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            <div
+                                style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
+                                Padding</div>
+                            <div style="font-family: 'Poppins', sans-serif; font-size: 12px; color: #6B7280;">Base: 2px,
+                                20 tokens</div>
+                        </div>
+                        <div
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            <div
+                                style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
+                                Border Radius</div>
+                            <div style="font-family: 'Poppins', sans-serif; font-size: 12px; color: #6B7280;">Base: 2px,
+                                20 tokens</div>
+                        </div>
+                        <div
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            <div
+                                style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
+                                Stroke</div>
+                            <div style="font-family: 'Poppins', sans-serif; font-size: 12px; color: #6B7280;">Base: 1px,
+                                10 tokens</div>
+                        </div>
+                        <div
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            <div
+                                style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
+                                Shadow</div>
+                            <div style="font-family: 'Poppins', sans-serif; font-size: 12px; color: #6B7280;">8
+                                predefined styles</div>
+                        </div>
+                        <div
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            <div
+                                style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
+                                Grid</div>
+                            <div style="font-family: 'Poppins', sans-serif; font-size: 12px; color: #6B7280;">Desktop,
+                                Tablet, Mobile</div>
+                        </div>
+                    </div>
+
+                    <div
+                        style="margin-top: 32px; padding: 16px; background: #EFF6FF; border-radius: 12px; border: 1px solid #DBEAFE;">
+                        <div
+                            style="font-family: 'Poppins', sans-serif; font-size: 13px; color: #1E40AF; line-height: 1.6;">
+                            💡 These tokens follow industry best practices and will work seamlessly with your design
+                            system.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Typography -->
+                <div class="auto-setup-step" id="auto-setup-step-3">
+                    <h2 class="auto-setup-step-title">Typography</h2>
+                    <p class="auto-setup-step-description">Set up your font system</p>
+
+                    <div class="auto-setup-input-group">
+                        <label class="auto-setup-input-label">Primary Font</label>
+                        <input type="text" class="auto-setup-font-input" id="auto-primary-font" value="Inter"
+                            placeholder="Inter">
+                    </div>
+
+                    <div class="auto-setup-input-group">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label class="auto-setup-input-label" style="margin-bottom: 0;">Secondary Font</label>
+                            <div class="auto-setup-toggle-item" onclick="toggleSecondaryFont()"
+                                style="padding: 4px 8px; margin: 0; width: auto; border: none;">
+                                <div class="toggle-switch-unique" id="auto-secondary-font-toggle">
+                                    <div class="toggle-switch-knob-unique"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="text" class="auto-setup-font-input" id="auto-secondary-font"
+                            value="Instrument Serif" placeholder="Instrument Serif" disabled style="opacity: 0.5;">
+                    </div>
+
+                    <div class="auto-setup-input-group">
+                        <label class="auto-setup-input-label">Base Font Size</label>
+                        <input type="number" class="auto-setup-font-input" id="auto-base-font-size" value="16"
+                            placeholder="16">
+                    </div>
+                </div>
+
+                <!-- Step 4: Icon Library -->
+                <div class="auto-setup-step" id="auto-setup-step-4">
+                    <h2 class="auto-setup-step-title">Icon Library</h2>
+                    <p class="auto-setup-step-description">Choose an icon library for your design system</p>
+
+                    <div class="auto-setup-icon-grid">
+                        <div class="auto-setup-icon-card selected" onclick="selectAutoIcon(this, 'unicons')"
+                            data-library="unicons">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none"
+                                viewBox="0 0 72 72">
+                                <path fill="#595bff" fill-rule="evenodd"
+                                    d="M41.573 55.504a2.282 2.282 0 0 0-2.414-1.087 18.057 18.057 0 0 1-3.376.318c-10.29 0-18.576-8.584-18.098-18.986.427-9.289 7.96-16.828 17.242-17.255 10.396-.479 18.974 7.814 18.974 18.11 0 4.458-1.608 8.54-4.275 11.697a2.275 2.275 0 0 0-.244 2.607l5.173 8.966c.872 1.511 3.051 1.511 3.923 0L70.712 38.67a4.537 4.537 0 0 0 0-4.532L55.209 7.267A4.529 4.529 0 0 0 51.286 5H20.28a4.528 4.528 0 0 0-3.922 2.266L.855 34.136a4.535 4.535 0 0 0 0 4.533L16.358 65.54a4.528 4.528 0 0 0 3.922 2.266h24.468c1.744 0 2.833-1.888 1.962-3.4l-5.137-8.902Z"
+                                    clip-rule="evenodd" />
+                                <path fill="#595bff" fill-rule="evenodd"
+                                    d="M35.783 27.425c-5.003 0-9.059 4.058-9.059 9.065s4.056 9.065 9.06 9.065c5.003 0 9.058-4.058 9.058-9.065s-4.055-9.065-9.059-9.065Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            <div class="auto-setup-icon-name">Unicons</div>
+                        </div>
+                        <div class="auto-setup-icon-card" onclick="selectAutoIcon(this, 'Vuesax-Icon')"
+                            data-library="Vuesax-Icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 1453.14 355.98">
+                                <g>
+                                    <polygon
+                                        points="333.73 29.11 272.23 29.11 166.93 192.18 61.64 29.11 0.13 29.11 166.93 287.42 333.73 29.11"
+                                        fill="#10B981" />
+                                    <polygon
+                                        points="166.93 316.16 25.71 97.46 0 97.46 166.93 355.98 333.87 97.46 308.15 97.46 166.93 316.16"
+                                        fill="#059669" />
+                                    <polygon
+                                        points="254.47 4.97 166.93 138.08 79.39 4.97 143.81 21.23 143.81 0 190.05 0 190.05 21.23 254.47 4.97"
+                                        fill="#10B981" />
+                                </g>
+                            </svg>
+                            <div class="auto-setup-icon-name">Vuesax Icon</div>
+                        </div>
+                        <div class="auto-setup-icon-card" onclick="selectAutoIcon(this, 'Box-Icon')"
+                            data-library="Box-Icon">
+                            <svg width="48" height="48" viewBox="0 0 32 32" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <circle r="10" cx="16" cy="16" fill="white" />
+                                <mask id="mask0_58_46" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="3" y="2"
+                                    width="27" height="28">
+                                    <path
+                                        d="M26.1261 6.88263L18.9116 2.76173C17.1255 1.74609 14.9308 1.74609 13.1447 2.76173L5.93016 6.88263C4.1207 7.92162 3 9.84782 3 11.9258V20.0742C3 22.1639 4.1207 24.0901 5.93016 25.1174L13.1447 29.2383C14.9308 30.2539 17.1255 30.2539 18.9116 29.2383L26.1261 25.1174C27.9356 24.0784 29.0563 22.1522 29.0563 20.0742V11.9258C29.0563 9.83615 27.9356 7.90994 26.1261 6.88263ZM22.4838 13.35L17.429 16.1634C17.1138 16.3385 16.9037 16.6771 16.9037 17.0507V22.6308C16.9037 23.8099 15.6196 24.5337 14.6156 23.9383L9.68918 21.0081C9.2339 20.7396 8.94205 20.2376 8.94205 19.7006V12.9181C8.94205 12.3694 9.24557 11.8557 9.7242 11.5872L16.1682 8.00334C16.6235 7.74651 17.1839 7.74651 17.6391 8.00334L22.4722 10.6883C23.5112 11.2604 23.5112 12.7663 22.4722 13.3383L22.4838 13.35Z"
+                                        fill="black" />
+                                </mask>
+                                <g mask="url(#mask0_58_46)">
+                                    <rect x="-3" y="-4" width="35" height="38" fill="url(#paint0_angular)" />
+                                </g>
+                                <defs>
+                                    <radialGradient id="paint0_angular" cx="0" cy="0" r="1"
+                                        gradientUnits="userSpaceOnUse"
+                                        gradientTransform="translate(14.5 15) rotate(90) scale(19)">
+                                        <stop offset="0" stop-color="#209BF6" />
+                                        <stop offset="0.25" stop-color="#12DA6C" />
+                                        <stop offset="0.5" stop-color="#E1FE42" />
+                                        <stop offset="0.75" stop-color="#ED7EFF" />
+                                        <stop offset="1" stop-color="#902FFB" />
+                                    </radialGradient>
+                                </defs>
+                            </svg>
+                            <div class="auto-setup-icon-name">Box Icon</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Components -->
+                <div class="auto-setup-step" id="auto-setup-step-5">
+                    <h2 class="auto-setup-step-title">Components</h2>
+                    <p class="auto-setup-step-description">Select components to include in your design system</p>
+
+                    <div class="auto-setup-component-grid">
+                        <div class="auto-setup-component-card selected" onclick="toggleAutoComponent(this)"
+                            data-component="button">
+                            <div class="auto-setup-component-name">Button</div>
+                        </div>
+                        <div class="auto-setup-component-card selected" onclick="toggleAutoComponent(this)"
+                            data-component="textfield">
+                            <div class="auto-setup-component-name">Text Field</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 6: Success -->
+                <div class="auto-setup-step" id="auto-setup-step-6">
+                    <div class="auto-setup-success">
+                        <div class="auto-setup-success-icon">✅</div>
+                        <h2 class="auto-setup-success-title">Your design system is ready!</h2>
+                        <p class="auto-setup-success-message">All styles, variables, and components have been created
+                            successfully.</p>
+                        <div class="auto-setup-success-buttons">
+                            <button class="auto-setup-btn auto-setup-btn-secondary"
+                                onclick="navigateTo('main-app-screen')">Open Design System</button>
+                            <button class="auto-setup-btn auto-setup-btn-primary"
+                                onclick="navigateTo('onboarding-screen')">Return to Home</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer with Navigation -->
+            <div class="auto-setup-footer">
+                <div class="auto-setup-progress">
+                    <span id="auto-setup-progress-text">Step 1 of 4</span>
+                </div>
+                <div class="auto-setup-buttons">
+                    <button class="auto-setup-btn auto-setup-btn-secondary" id="auto-setup-back-btn"
+                        onclick="autoSetupPrevStep()" style="display: none;">Back</button>
+                    <button class="auto-setup-btn auto-setup-btn-primary" id="auto-setup-next-btn"
+                        onclick="autoSetupNextStep()">Next</button>
+                </div>
             </div>
         </div>
     </div>
@@ -5424,12 +5922,384 @@
             // Check which setup option was selected
             if (window.selectedSetupType === 'auto') {
                 navigateTo('auto-setup-screen');
+                initializeAutoSetup();
             } else if (window.selectedSetupType === 'manual') {
                 navigateTo('main-app-screen');
             } else {
                 // If nothing selected, show error toast
                 showErrorToast('Please select a setup type to continue');
             }
+        }
+
+        // Auto Setup Functions
+        let autoSetupCurrentStep = 1;
+        const autoSetupTotalSteps = 5;
+        let autoSetupData = {
+            primaryColor: '#1350FF',
+            secondaryColor: '#D900FF',
+            enableSecondaryColor: false,
+            enableNeutral: true,
+            enableStatus: true,
+            primaryFont: 'Inter',
+            secondaryFont: 'Instrument Serif',
+            enableSecondaryFont: false,
+            baseFontSize: 16,
+            iconLibrary: 'material',
+            components: ['button', 'input']
+        };
+
+        function initializeAutoSetup() {
+            autoSetupCurrentStep = 1;
+            updateAutoSetupUI();
+        }
+
+        function toggleSecondaryColor() {
+            const toggle = document.getElementById('auto-secondary-color-toggle');
+            const wrapper = document.getElementById('auto-secondary-color-wrapper');
+            const input = document.getElementById('auto-secondary-color');
+
+            if (toggle && wrapper && input) {
+                toggle.classList.toggle('active');
+                const isEnabled = toggle.classList.contains('active');
+                autoSetupData.enableSecondaryColor = isEnabled;
+
+                if (isEnabled) {
+                    wrapper.style.opacity = '1';
+                    wrapper.style.pointerEvents = 'auto';
+                    input.disabled = false;
+                } else {
+                    wrapper.style.opacity = '0.5';
+                    wrapper.style.pointerEvents = 'none';
+                    input.disabled = true;
+                }
+            }
+        }
+
+        function toggleSecondaryFont() {
+            const toggle = document.getElementById('auto-secondary-font-toggle');
+            const input = document.getElementById('auto-secondary-font');
+
+            if (toggle && input) {
+                toggle.classList.toggle('active');
+                const isEnabled = toggle.classList.contains('active');
+                autoSetupData.enableSecondaryFont = isEnabled;
+
+                if (isEnabled) {
+                    input.style.opacity = '1';
+                    input.disabled = false;
+                } else {
+                    input.style.opacity = '0.5';
+                    input.disabled = true;
+                }
+            }
+        }
+
+        function updateAutoColor(type, value) {
+            const input = document.getElementById(`auto-${type}-color`);
+            const circle = document.getElementById(`auto-${type}-circle`);
+            if (input) input.value = value.toUpperCase();
+            if (circle) circle.style.backgroundColor = value;
+            autoSetupData[type + 'Color'] = value;
+        }
+
+        function toggleAutoSetupOption(option) {
+            const toggle = document.getElementById(`auto-${option}-toggle`);
+            if (toggle) {
+                toggle.classList.toggle('active');
+                autoSetupData[`enable${option.charAt(0).toUpperCase() + option.slice(1)}`] = toggle.classList.contains('active');
+            }
+        }
+
+        function selectAutoIcon(element, library) {
+            document.querySelectorAll('.auto-setup-icon-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            autoSetupData.iconLibrary = library;
+        }
+
+        function toggleAutoComponent(element) {
+            element.classList.toggle('selected');
+            const component = element.getAttribute('data-component');
+            const index = autoSetupData.components.indexOf(component);
+            if (index > -1) {
+                autoSetupData.components.splice(index, 1);
+            } else {
+                autoSetupData.components.push(component);
+            }
+        }
+
+        function autoSetupNextStep() {
+            if (autoSetupCurrentStep < autoSetupTotalSteps) {
+                // Collect data from current step
+                collectAutoSetupStepData();
+
+                // Move to next step
+                autoSetupCurrentStep++;
+                updateAutoSetupUI();
+            } else if (autoSetupCurrentStep === autoSetupTotalSteps) {
+                // Generate everything
+                generateAutoSetup();
+            }
+        }
+
+        function autoSetupPrevStep() {
+            if (autoSetupCurrentStep > 1) {
+                autoSetupCurrentStep--;
+                updateAutoSetupUI();
+            }
+        }
+
+        function collectAutoSetupStepData() {
+            if (autoSetupCurrentStep === 1) {
+                autoSetupData.primaryColor = document.getElementById('auto-primary-color').value;
+                if (autoSetupData.enableSecondaryColor) {
+                    autoSetupData.secondaryColor = document.getElementById('auto-secondary-color').value;
+                }
+            } else if (autoSetupCurrentStep === 2) {
+                // Step 2 is Tokens - no data to collect
+            } else if (autoSetupCurrentStep === 3) {
+                autoSetupData.primaryFont = document.getElementById('auto-primary-font').value;
+                if (autoSetupData.enableSecondaryFont) {
+                    autoSetupData.secondaryFont = document.getElementById('auto-secondary-font').value;
+                }
+                autoSetupData.baseFontSize = parseInt(document.getElementById('auto-base-font-size').value);
+            }
+        }
+
+        function updateAutoSetupUI() {
+            // Hide all steps
+            document.querySelectorAll('.auto-setup-step').forEach(step => {
+                step.classList.remove('active');
+            });
+
+            // Show current step
+            const currentStepElement = document.getElementById(`auto-setup-step-${autoSetupCurrentStep}`);
+            if (currentStepElement) {
+                currentStepElement.classList.add('active');
+            }
+
+            // Update progress text
+            const progressText = document.getElementById('auto-setup-progress-text');
+            if (progressText) {
+                if (autoSetupCurrentStep <= autoSetupTotalSteps) {
+                    progressText.textContent = `Step ${autoSetupCurrentStep} of ${autoSetupTotalSteps}`;
+                } else {
+                    progressText.textContent = 'Complete';
+                }
+            }
+
+            // Update buttons
+            const backBtn = document.getElementById('auto-setup-back-btn');
+            const nextBtn = document.getElementById('auto-setup-next-btn');
+
+            if (backBtn) {
+                backBtn.style.display = autoSetupCurrentStep > 1 && autoSetupCurrentStep <= autoSetupTotalSteps ? 'block' : 'none';
+            }
+
+            if (nextBtn) {
+                if (autoSetupCurrentStep < autoSetupTotalSteps) {
+                    nextBtn.textContent = 'Next';
+                    nextBtn.style.display = 'block';
+                } else if (autoSetupCurrentStep === autoSetupTotalSteps) {
+                    nextBtn.textContent = 'Generate';
+                    nextBtn.style.display = 'block';
+                } else {
+                    nextBtn.style.display = 'none';
+                }
+            }
+        }
+
+        async function generateAutoSetup() {
+            showLoadingToast('Generating your design system...');
+
+            try {
+                // Step 1: Generate Colors
+                await generateAutoColors();
+
+                // Step 2: Generate Tokens
+                await generateAutoTokens();
+
+                // Step 3: Generate Typography
+                await generateAutoTypography();
+
+                // Step 4: Generate Icons
+                await generateAutoIcons();
+
+                // Step 5: Generate Components
+                await generateAutoComponents();
+
+                // Show success step
+                autoSetupCurrentStep = 6;
+                updateAutoSetupUI();
+
+                showSuccessToast('Design system created successfully!');
+            } catch (error) {
+                showErrorToast('Error generating design system: ' + error.message);
+            }
+        }
+
+        async function generateAutoColors() {
+            return new Promise((resolve) => {
+                // Generate shades for primary color
+                const primaryShades = generateColorShades(autoSetupData.primaryColor);
+                const secondaryShades = (autoSetupData.enableSecondaryColor && autoSetupData.secondaryColor) ? generateColorShades(autoSetupData.secondaryColor) : null;
+
+                const colors = [
+                    { name: 'Primary', shades: primaryShades }
+                ];
+
+                if (secondaryShades) {
+                    colors.push({ name: 'Secondary', shades: secondaryShades });
+                }
+
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-variables',
+                        colors: colors,
+                        includeNeutral: autoSetupData.enableNeutral,
+                        includeStatus: autoSetupData.enableStatus
+                    }
+                }, '*');
+
+                setTimeout(resolve, 1000);
+            });
+        }
+
+        async function generateAutoTokens() {
+            return new Promise((resolve) => {
+                // Generate spacing tokens
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-spacing-tokens',
+                        baseValue: 4,
+                        numberOfTokens: 20
+                    }
+                }, '*');
+
+                // Generate padding tokens
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-padding-tokens',
+                        baseValue: 4,
+                        numberOfTokens: 12
+                    }
+                }, '*');
+
+                // Generate radius tokens
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-radius-tokens',
+                        baseValue: 4,
+                        numberOfTokens: 8
+                    }
+                }, '*');
+
+                // Generate stroke tokens
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-stroke-tokens',
+                        baseValue: 1,
+                        numberOfTokens: 6
+                    }
+                }, '*');
+
+                // Generate shadow styles
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-shadow-styles'
+                    }
+                }, '*');
+
+                // Generate grid styles
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-grid-styles',
+                        grids: [
+                            { name: 'Desktop', columns: 12, gutter: 24, margin: 80 },
+                            { name: 'Tablet', columns: 8, gutter: 20, margin: 40 },
+                            { name: 'Mobile', columns: 4, gutter: 16, margin: 20 }
+                        ]
+                    }
+                }, '*');
+
+                setTimeout(resolve, 2000);
+            });
+        }
+
+        async function generateAutoTypography() {
+            return new Promise((resolve) => {
+                const typographyData = {
+                    primaryFont: autoSetupData.primaryFont,
+                    secondaryFont: autoSetupData.enableSecondaryFont ? autoSetupData.secondaryFont : null,
+                    baseFontSize: autoSetupData.baseFontSize,
+                    styles: [
+                        { name: 'H1', fontSize: 48, lineHeight: 1.2, fontWeight: 'Bold', fontFamily: 'primary' },
+                        { name: 'H2', fontSize: 40, lineHeight: 1.2, fontWeight: 'Bold', fontFamily: 'primary' },
+                        { name: 'H3', fontSize: 32, lineHeight: 1.3, fontWeight: 'SemiBold', fontFamily: 'primary' },
+                        { name: 'H4', fontSize: 24, lineHeight: 1.3, fontWeight: 'SemiBold', fontFamily: 'primary' },
+                        { name: 'H5', fontSize: 20, lineHeight: 1.4, fontWeight: 'Medium', fontFamily: 'primary' },
+                        { name: 'H6', fontSize: 18, lineHeight: 1.4, fontWeight: 'Medium', fontFamily: 'primary' },
+                        { name: 'Body/Large', fontSize: 18, lineHeight: 1.6, fontWeight: 'Regular', fontFamily: 'primary' },
+                        { name: 'Body/Medium', fontSize: 16, lineHeight: 1.6, fontWeight: 'Regular', fontFamily: 'primary' },
+                        { name: 'Body/Small', fontSize: 14, lineHeight: 1.6, fontWeight: 'Regular', fontFamily: 'primary' },
+                        { name: 'Caption', fontSize: 12, lineHeight: 1.5, fontWeight: 'Regular', fontFamily: 'primary' }
+                    ]
+                };
+
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-typography-styles',
+                        typographyData: typographyData
+                    }
+                }, '*');
+
+                setTimeout(resolve, 1500);
+            });
+        }
+
+        async function generateAutoIcons() {
+            return new Promise((resolve) => {
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-icons-doc',
+                        library: autoSetupData.iconLibrary
+                    }
+                }, '*');
+
+                setTimeout(resolve, 1000);
+            });
+        }
+
+        async function generateAutoComponents() {
+            return new Promise((resolve) => {
+                // Generate selected components
+                autoSetupData.components.forEach(component => {
+                    if (component === 'button') {
+                        parent.postMessage({
+                            pluginMessage: {
+                                type: 'create-button-doc',
+                                primaryColor: autoSetupData.primaryColor,
+                                cornerRadius: 8,
+                                paddingHorizontal: 24,
+                                paddingVertical: 12
+                            }
+                        }, '*');
+                    } else if (component === 'input') {
+                        parent.postMessage({
+                            pluginMessage: {
+                                type: 'create-input-doc',
+                                borderColor: '#E5E7EB',
+                                cornerRadius: 8,
+                                paddingHorizontal: 16,
+                                paddingVertical: 12
+                            }
+                        }, '*');
+                    }
+                });
+
+                setTimeout(resolve, 1500);
+            });
         }
 
         // Brand Color Functions - Moved below with shade generation

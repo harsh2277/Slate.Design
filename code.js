@@ -112,7 +112,8 @@ figma.ui.onmessage = async (msg) => {
     if (msg.type === "create-variables") {
         try {
             // Get or create a collection for color variables
-            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Colors");
+            const collections = await figma.variables.getLocalVariableCollectionsAsync();
+            let collection = collections.find(c => c.name === "Colors");
             if (!collection) {
                 collection = figma.variables.createVariableCollection("Colors");
             }
@@ -175,7 +176,7 @@ figma.ui.onmessage = async (msg) => {
 
                     try {
                         // Check if variable already exists in this collection
-                        let variable = figma.variables.getLocalVariables().find(v =>
+                        let variable = (await figma.variables.getLocalVariablesAsync()).find(v =>
                             v.name === variableName && v.variableCollectionId === collection.id
                         );
 
@@ -214,7 +215,7 @@ figma.ui.onmessage = async (msg) => {
                         const shadeNumber = (i + 1) * 100;
                         const variableName = `Status/${colorName}/${shadeNumber}`;
 
-                        let variable = figma.variables.getLocalVariables().find(v =>
+                        let variable = (await figma.variables.getLocalVariablesAsync()).find(v =>
                             v.name === variableName && v.variableCollectionId === collection.id
                         );
 
@@ -244,7 +245,7 @@ figma.ui.onmessage = async (msg) => {
                     const shadeNumber = (i + 1) * 100;
                     const variableName = `Neutral/${shadeNumber}`;
 
-                    let variable = figma.variables.getLocalVariables().find(v =>
+                    let variable = (await figma.variables.getLocalVariablesAsync()).find(v =>
                         v.name === variableName && v.variableCollectionId === collection.id
                     );
 
@@ -274,7 +275,8 @@ figma.ui.onmessage = async (msg) => {
             const numberOfTokens = msg.numberOfTokens;
 
             // Get or create a collection for spacing variables
-            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Spacing");
+            const collections = await figma.variables.getLocalVariableCollectionsAsync();
+            let collection = collections.find(c => c.name === "Spacing");
             if (!collection) {
                 collection = figma.variables.createVariableCollection("Spacing");
             }
@@ -310,7 +312,7 @@ figma.ui.onmessage = async (msg) => {
                 const variableName = `spacing-${desktopValue}px`;
 
                 // Check if variable already exists
-                let variable = figma.variables.getLocalVariables().find(v => v.name === variableName);
+                let variable = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === variableName);
 
                 if (!variable) {
                     variable = figma.variables.createVariable(variableName, collection, "FLOAT");
@@ -569,7 +571,8 @@ figma.ui.onmessage = async (msg) => {
             const numberOfTokens = msg.numberOfTokens;
 
             // Get or create a collection for padding variables
-            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Padding");
+            const collections = await figma.variables.getLocalVariableCollectionsAsync();
+            let collection = collections.find(c => c.name === "Padding");
             if (!collection) {
                 collection = figma.variables.createVariableCollection("Padding");
             }
@@ -605,7 +608,7 @@ figma.ui.onmessage = async (msg) => {
                 const variableName = `padding-${desktopValue}px`;
 
                 // Check if variable already exists
-                let variable = figma.variables.getLocalVariables().find(v => v.name === variableName);
+                let variable = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === variableName);
 
                 if (!variable) {
                     variable = figma.variables.createVariable(variableName, collection, "FLOAT");
@@ -863,7 +866,8 @@ figma.ui.onmessage = async (msg) => {
             const numberOfTokens = msg.numberOfTokens;
 
             // Get or create a collection for radius variables
-            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Radius");
+            const collections = await figma.variables.getLocalVariableCollectionsAsync();
+            let collection = collections.find(c => c.name === "Radius");
             if (!collection) {
                 collection = figma.variables.createVariableCollection("Radius");
             }
@@ -899,7 +903,7 @@ figma.ui.onmessage = async (msg) => {
                 const variableName = `radius-${desktopValue}px`;
 
                 // Check if variable already exists
-                let variable = figma.variables.getLocalVariables().find(v => v.name === variableName);
+                let variable = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === variableName);
 
                 if (!variable) {
                     variable = figma.variables.createVariable(variableName, collection, "FLOAT");
@@ -1144,7 +1148,8 @@ figma.ui.onmessage = async (msg) => {
             const numberOfTokens = msg.numberOfTokens;
 
             // Get or create a collection for stroke variables
-            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Stroke");
+            const collections = await figma.variables.getLocalVariableCollectionsAsync();
+            let collection = collections.find(c => c.name === "Stroke");
             if (!collection) {
                 collection = figma.variables.createVariableCollection("Stroke");
             }
@@ -1182,7 +1187,7 @@ figma.ui.onmessage = async (msg) => {
                 const variableName = `stroke-${formattedValue}px`;
 
                 // Check if variable already exists
-                let variable = figma.variables.getLocalVariables().find(v => v.name === variableName);
+                let variable = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === variableName);
 
                 if (!variable) {
                     variable = figma.variables.createVariable(variableName, collection, "FLOAT");
@@ -2038,7 +2043,8 @@ figma.ui.onmessage = async (msg) => {
             ];
 
             // Get or create Typography collection
-            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Typography");
+            const collections = await figma.variables.getLocalVariableCollectionsAsync();
+            let collection = collections.find(c => c.name === "Typography");
             if (!collection) {
                 collection = figma.variables.createVariableCollection("Typography");
             }
@@ -2059,7 +2065,7 @@ figma.ui.onmessage = async (msg) => {
             };
 
             // Create/Update Font Family Variable
-            let fontFamilyVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/primary");
+            let fontFamilyVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === "font-family/primary");
             if (!fontFamilyVar) {
                 fontFamilyVar = figma.variables.createVariable("font-family/primary", collection, "STRING");
             }
@@ -2067,7 +2073,7 @@ figma.ui.onmessage = async (msg) => {
 
             let secondaryFontVar = null;
             if (msg.secondaryFont) {
-                secondaryFontVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/secondary");
+                secondaryFontVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === "font-family/secondary");
                 if (!secondaryFontVar) {
                     secondaryFontVar = figma.variables.createVariable("font-family/secondary", collection, "STRING");
                 }
@@ -2077,7 +2083,7 @@ figma.ui.onmessage = async (msg) => {
             // Create/Update Weight Variables
             for (const weight of fontWeights) {
                 const weightVarName = `font-weight/${weight.name.toLowerCase()}`;
-                let weightVar = figma.variables.getLocalVariables().find(v => v.name === weightVarName);
+                let weightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === weightVarName);
                 if (!weightVar) {
                     weightVar = figma.variables.createVariable(weightVarName, collection, "FLOAT");
                 }
@@ -2097,14 +2103,14 @@ figma.ui.onmessage = async (msg) => {
 
                     // Create/Update Size and Line Height Variables
                     const fontSizeVarName = `font-size/${level.name.toLowerCase()}`;
-                    let fontSizeVar = figma.variables.getLocalVariables().find(v => v.name === fontSizeVarName);
+                    let fontSizeVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === fontSizeVarName);
                     if (!fontSizeVar) {
                         fontSizeVar = figma.variables.createVariable(fontSizeVarName, collection, "FLOAT");
                     }
                     fontSizeVar.setValueForMode(modeId, fontSize);
 
                     const lineHeightVarName = `line-height/${level.name.toLowerCase()}`;
-                    let lineHeightVar = figma.variables.getLocalVariables().find(v => v.name === lineHeightVarName);
+                    let lineHeightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === lineHeightVarName);
                     if (!lineHeightVar) {
                         lineHeightVar = figma.variables.createVariable(lineHeightVarName, collection, "FLOAT");
                     }
@@ -2138,7 +2144,7 @@ figma.ui.onmessage = async (msg) => {
                         textStyle.fontName = { family: fontInfo.family, style: loadedStyle };
 
                         // Bind variables
-                        const weightVar = figma.variables.getLocalVariables().find(v => v.name === `font-weight/${weight.name.toLowerCase()}`);
+                        const weightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === `font-weight/${weight.name.toLowerCase()}`);
 
                         try {
                             if (fontInfo.var) textStyle.setBoundVariable('fontFamily', fontInfo.var);
@@ -2627,7 +2633,8 @@ figma.ui.onmessage = async (msg) => {
                 console.log('Creating text styles...');
 
                 // Get or create Typography collection
-                let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Typography");
+                const collections = await figma.variables.getLocalVariableCollectionsAsync();
+                let collection = collections.find(c => c.name === "Typography");
                 if (!collection) {
                     collection = figma.variables.createVariableCollection("Typography");
                 }
@@ -2635,7 +2642,7 @@ figma.ui.onmessage = async (msg) => {
                 const modeId = collection.modes[0].modeId;
 
                 // Create Font Family variables
-                let fontFamilyVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/primary");
+                let fontFamilyVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === "font-family/primary");
                 if (!fontFamilyVar) {
                     fontFamilyVar = figma.variables.createVariable("font-family/primary", collection, "STRING");
                 }
@@ -2652,7 +2659,7 @@ figma.ui.onmessage = async (msg) => {
 
                 for (const weight of fontWeights) {
                     const weightVarName = `font-weight/${weight.name.toLowerCase()}`;
-                    let weightVar = figma.variables.getLocalVariables().find(v => v.name === weightVarName);
+                    let weightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === weightVarName);
                     if (!weightVar) {
                         weightVar = figma.variables.createVariable(weightVarName, collection, "FLOAT");
                     }
@@ -2668,7 +2675,7 @@ figma.ui.onmessage = async (msg) => {
 
                     // Font Size
                     const fontSizeVarName = `font-size/${level.name.toLowerCase()}`;
-                    let fontSizeVar = figma.variables.getLocalVariables().find(v => v.name === fontSizeVarName);
+                    let fontSizeVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === fontSizeVarName);
                     if (!fontSizeVar) {
                         fontSizeVar = figma.variables.createVariable(fontSizeVarName, collection, "FLOAT");
                     }
@@ -2677,7 +2684,7 @@ figma.ui.onmessage = async (msg) => {
 
                     // Line Height
                     const lineHeightVarName = `line-height/${level.name.toLowerCase()}`;
-                    let lineHeightVar = figma.variables.getLocalVariables().find(v => v.name === lineHeightVarName);
+                    let lineHeightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === lineHeightVarName);
                     if (!lineHeightVar) {
                         lineHeightVar = figma.variables.createVariable(lineHeightVarName, collection, "FLOAT");
                     }
@@ -2686,7 +2693,7 @@ figma.ui.onmessage = async (msg) => {
 
                     // Letter Spacing
                     const letterSpacingVarName = `letter-spacing/${level.name.toLowerCase()}`;
-                    let letterSpacingVar = figma.variables.getLocalVariables().find(v => v.name === letterSpacingVarName);
+                    let letterSpacingVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === letterSpacingVarName);
                     if (!letterSpacingVar) {
                         letterSpacingVar = figma.variables.createVariable(letterSpacingVarName, collection, "FLOAT");
                     }
@@ -2706,7 +2713,7 @@ figma.ui.onmessage = async (msg) => {
 
                 // Cache variables for faster lookup
                 const variableCache = {};
-                figma.variables.getLocalVariables().forEach(v => {
+                (await figma.variables.getLocalVariablesAsync()).forEach(v => {
                     variableCache[v.name] = v;
                 });
 
@@ -2818,7 +2825,8 @@ figma.ui.onmessage = async (msg) => {
             const primaryFont = msg.primaryFont;
 
             // Get or create Typography collection
-            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Typography");
+            const collections = await figma.variables.getLocalVariableCollectionsAsync();
+            let collection = collections.find(c => c.name === "Typography");
             if (!collection) {
                 collection = figma.variables.createVariableCollection("Typography");
             }
@@ -2826,7 +2834,7 @@ figma.ui.onmessage = async (msg) => {
             const modeId = collection.modes[0].modeId;
 
             // Create/Update Font Family Variables
-            let primaryFontVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/primary");
+            let primaryFontVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === "font-family/primary");
             if (!primaryFontVar) {
                 primaryFontVar = figma.variables.createVariable("font-family/primary", collection, "STRING");
             }
@@ -2834,7 +2842,7 @@ figma.ui.onmessage = async (msg) => {
 
             let secondaryFontVar = null;
             if (msg.secondaryFont) {
-                secondaryFontVar = figma.variables.getLocalVariables().find(v => v.name === "font-family/secondary");
+                secondaryFontVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === "font-family/secondary");
                 if (!secondaryFontVar) {
                     secondaryFontVar = figma.variables.createVariable("font-family/secondary", collection, "STRING");
                 }
@@ -2844,7 +2852,7 @@ figma.ui.onmessage = async (msg) => {
             // Create/Update Weight Variables
             for (const weight of fontWeights) {
                 const weightVarName = `font-weight/${weight.name.toLowerCase()}`;
-                let weightVar = figma.variables.getLocalVariables().find(v => v.name === weightVarName);
+                let weightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === weightVarName);
                 if (!weightVar) {
                     weightVar = figma.variables.createVariable(weightVarName, collection, "FLOAT");
                 }
@@ -2856,7 +2864,7 @@ figma.ui.onmessage = async (msg) => {
             for (const typo of typographyData) {
                 // Font Size
                 const fontSizeVarName = `font-size/${typo.name.toLowerCase()}`;
-                let fontSizeVar = figma.variables.getLocalVariables().find(v => v.name === fontSizeVarName);
+                let fontSizeVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === fontSizeVarName);
                 if (!fontSizeVar) {
                     fontSizeVar = figma.variables.createVariable(fontSizeVarName, collection, "FLOAT");
                 }
@@ -2865,7 +2873,7 @@ figma.ui.onmessage = async (msg) => {
 
                 // Line Height (in pixels, not percentage)
                 const lineHeightVarName = `line-height/${typo.name.toLowerCase()}`;
-                let lineHeightVar = figma.variables.getLocalVariables().find(v => v.name === lineHeightVarName);
+                let lineHeightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === lineHeightVarName);
                 if (!lineHeightVar) {
                     lineHeightVar = figma.variables.createVariable(lineHeightVarName, collection, "FLOAT");
                 }
@@ -2874,7 +2882,7 @@ figma.ui.onmessage = async (msg) => {
 
                 // Letter Spacing
                 const letterSpacingVarName = `letter-spacing/${typo.name.toLowerCase()}`;
-                let letterSpacingVar = figma.variables.getLocalVariables().find(v => v.name === letterSpacingVarName);
+                let letterSpacingVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === letterSpacingVarName);
                 if (!letterSpacingVar) {
                     letterSpacingVar = figma.variables.createVariable(letterSpacingVarName, collection, "FLOAT");
                 }
@@ -2893,7 +2901,7 @@ figma.ui.onmessage = async (msg) => {
 
             // Cache variables
             const variableCache = {};
-            figma.variables.getLocalVariables().forEach(v => {
+            (await figma.variables.getLocalVariablesAsync()).forEach(v => {
                 variableCache[v.name] = v;
             });
 
@@ -3593,7 +3601,8 @@ figma.ui.onmessage = async (msg) => {
     if (msg.type === "create-button-variables") {
         try {
             // Get or create a collection for button variables
-            let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Button");
+            const collections = await figma.variables.getLocalVariableCollectionsAsync();
+            let collection = collections.find(c => c.name === "Button");
             if (!collection) {
                 collection = figma.variables.createVariableCollection("Button");
             }
@@ -3654,7 +3663,7 @@ figma.ui.onmessage = async (msg) => {
                         const variableName = `button/${type}/${state}/${property}`;
 
                         // Check if variable already exists
-                        let variable = figma.variables.getLocalVariables().find(v =>
+                        let variable = (await figma.variables.getLocalVariablesAsync()).find(v =>
                             v.name === variableName && v.variableCollectionId === collection.id
                         );
 
@@ -3824,7 +3833,8 @@ figma.ui.onmessage = async (msg) => {
             // First, create button variables
             try {
                 // Get or create a collection for button variables
-                let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Button");
+                const collections = await figma.variables.getLocalVariableCollectionsAsync();
+                let collection = collections.find(c => c.name === "Button");
                 if (!collection) {
                     collection = figma.variables.createVariableCollection("Button");
                 }
@@ -3885,7 +3895,7 @@ figma.ui.onmessage = async (msg) => {
                             const variableName = `button/${type}/${state}/${property}`;
 
                             // Check if variable already exists
-                            let variable = figma.variables.getLocalVariables().find(v =>
+                            let variable = (await figma.variables.getLocalVariablesAsync()).find(v =>
                                 v.name === variableName && v.variableCollectionId === collection.id
                             );
 
@@ -4047,7 +4057,7 @@ figma.ui.onmessage = async (msg) => {
                 for (const [sizeName, padding] of Object.entries(paddingConfig)) {
                     // Vertical padding
                     const vPaddingName = `button/padding/${sizeName}/vertical`;
-                    let vPaddingVar = figma.variables.getLocalVariables().find(v =>
+                    let vPaddingVar = (await figma.variables.getLocalVariablesAsync()).find(v =>
                         v.name === vPaddingName && v.variableCollectionId === collection.id
                     );
                     if (!vPaddingVar) {
@@ -4057,7 +4067,7 @@ figma.ui.onmessage = async (msg) => {
 
                     // Horizontal padding
                     const hPaddingName = `button/padding/${sizeName}/horizontal`;
-                    let hPaddingVar = figma.variables.getLocalVariables().find(v =>
+                    let hPaddingVar = (await figma.variables.getLocalVariablesAsync()).find(v =>
                         v.name === hPaddingName && v.variableCollectionId === collection.id
                     );
                     if (!hPaddingVar) {
@@ -4155,7 +4165,8 @@ figma.ui.onmessage = async (msg) => {
 
                 // Bind text style properties to variables if collection exists
                 try {
-                    const buttonCollection = figma.variables.getLocalVariableCollections().find(c => c.name === "Button");
+                    const collections = await figma.variables.getLocalVariableCollectionsAsync();
+                    const buttonCollection = collections.find(c => c.name === "Button");
                     if (buttonCollection) {
                         const allVariables = figma.variables.getLocalVariables();
 
@@ -4559,7 +4570,8 @@ figma.ui.onmessage = async (msg) => {
             const states = ['Normal', 'Hover', 'Click', 'Disable'];
 
             // Get the button collection for variable binding
-            let buttonCollection = figma.variables.getLocalVariableCollections().find(c => c.name === "Button");
+            const collections = await figma.variables.getLocalVariableCollectionsAsync();
+            let buttonCollection = collections.find(c => c.name === "Button");
 
             for (const size of sizes) {
                 for (const type of types) {
@@ -5001,7 +5013,8 @@ figma.ui.onmessage = async (msg) => {
 
             // Create input variables
             try {
-                let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Input");
+                const collections = await figma.variables.getLocalVariableCollectionsAsync();
+                let collection = collections.find(c => c.name === "Input");
                 if (!collection) {
                     collection = figma.variables.createVariableCollection("Input");
                 }
@@ -5113,7 +5126,8 @@ figma.ui.onmessage = async (msg) => {
                 textStyle.lineHeight = { value: lineHeightPx, unit: "PIXELS" };
 
                 try {
-                    const inputCollection = figma.variables.getLocalVariableCollections().find(c => c.name === "Input");
+                    const collections = await figma.variables.getLocalVariableCollectionsAsync();
+                    const inputCollection = collections.find(c => c.name === "Input");
                     if (inputCollection) {
                         const allVariables = figma.variables.getLocalVariables();
                         const fontSizeVar = allVariables.find(v => v.name === `input/text/${typeName}/fontSize` && v.variableCollectionId === inputCollection.id);
@@ -5167,7 +5181,7 @@ figma.ui.onmessage = async (msg) => {
             sharedInfoIcon.resize(16, 16);
             sharedInfoIcon.appendChild(infoIconNode);
 
-            function createInputField(type, state) {
+            async function createInputField(type, state) {
                 const input = figma.createComponent();
                 input.name = `Type=${type}, State=${state}`;
                 input.layoutMode = "VERTICAL";
@@ -5178,9 +5192,10 @@ figma.ui.onmessage = async (msg) => {
 
                 let labelColorVar, asteriskColorVar, helperColorVar;
                 try {
-                    const inputCollection = figma.variables.getLocalVariableCollections().find(c => c.name === "Input");
+                    const collections = await figma.variables.getLocalVariableCollectionsAsync();
+                    const inputCollection = collections.find(c => c.name === "Input");
                     if (inputCollection) {
-                        const allVariables = figma.variables.getLocalVariables();
+                        const allVariables = await figma.variables.getLocalVariablesAsync();
                         const stateMapObj = { 'Normal': 'default', 'Hover': 'hover', 'Click': 'active', 'Error': 'error', 'Disable': 'disabled' };
                         const varState = stateMapObj[state];
                         labelColorVar = allVariables.find(v => v.name === 'input/label/color' && v.variableCollectionId === inputCollection.id);
@@ -5275,14 +5290,15 @@ figma.ui.onmessage = async (msg) => {
                 let vPaddingVar, hPaddingVar, hPaddingLeftVar, radiusVar, fontSizeVar, lineHeightVar;
 
                 try {
-                    const inputCollection = figma.variables.getLocalVariableCollections().find(c => c.name === "Input");
+                    const collections = await figma.variables.getLocalVariableCollectionsAsync();
+                    const inputCollection = collections.find(c => c.name === "Input");
                     if (inputCollection) {
                         const stateMapObj = { 'Normal': 'default', 'Hover': 'hover', 'Click': 'active', 'Error': 'error', 'Disable': 'disabled' };
                         const typeMapObj = { 'Search': 'search', 'OTP': 'otp', 'Text Field': 'text', 'Phone Number': 'phone', 'Rich Text Box': 'rich_text' };
                         const varType = typeMapObj[type];
                         const varState = stateMapObj[state];
 
-                        const allVariables = figma.variables.getLocalVariables();
+                        const allVariables = await figma.variables.getLocalVariablesAsync();
                         bgVar = allVariables.find(v => v.name === `input/${varType}/${varState}/bg` && v.variableCollectionId === inputCollection.id);
                         borderVar = allVariables.find(v => v.name === `input/${varType}/${varState}/boarder` && v.variableCollectionId === inputCollection.id);
                         textVar = allVariables.find(v => v.name === `input/${varType}/${varState}/text` && v.variableCollectionId === inputCollection.id);

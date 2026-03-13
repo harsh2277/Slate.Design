@@ -12,7 +12,8 @@
     "allowedDomains": [
       "https://www.codetheorem.co",
       "https://fonts.googleapis.com",
-      "https://fonts.gstatic.com"
+      "https://fonts.gstatic.com",
+      "https://api.github.com"
     ]
   }
 }

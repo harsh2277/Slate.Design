@@ -100,6 +100,44 @@ function notifyUI(actionType, success, message, errorDetails = null) {
     figma.notify(finalMessage);
 }
 
+const neutralShades = [
+    '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF',
+    '#6B7280', '#4B5563', '#374151', '#1F2937', '#111827'
+];
+
+/**
+ * Adds a documentation frame to the main universal Design System frame.
+ */
+/**
+ * Adds documentation frames to the main universal Design System frame.
+ */
+function addToUniversalDoc(nodeOrNodes) {
+    const nodes = Array.isArray(nodeOrNodes) ? nodeOrNodes : [nodeOrNodes];
+    const CONTAINER_NAME = "Slate Design System";
+    let container = figma.currentPage.findChild(n => n.name === CONTAINER_NAME && n.type === "FRAME");
+
+    if (!container) {
+        container = figma.createFrame();
+        container.name = CONTAINER_NAME;
+        container.layoutMode = "VERTICAL";
+        container.itemSpacing = 100;
+        container.counterAxisSizingMode = "AUTO";
+        container.primaryAxisSizingMode = "AUTO";
+        figma.currentPage.appendChild(container);
+    }
+    container.fills = [];
+
+    for (const node of nodes) {
+        container.appendChild(node);
+        if (node.type === 'FRAME' || node.type === 'COMPONENT_SET') {
+            node.layoutAlign = "INHERIT";
+        }
+    }
+
+    figma.currentPage.selection = [container];
+    figma.viewport.scrollAndZoomIntoView([container]);
+}
+
 figma.ui.onmessage = async (msg) => {
     if (msg.type === "close-plugin") {
         figma.closePlugin();
@@ -164,6 +202,9 @@ figma.ui.onmessage = async (msg) => {
                 return { r, g, b };
             }
 
+            // Fetch variables once
+            const allVars = await figma.variables.getLocalVariablesAsync();
+
             // Create variables for each color
             for (const color of colors) {
                 const colorName = color.name;
@@ -176,12 +217,13 @@ figma.ui.onmessage = async (msg) => {
 
                     try {
                         // Check if variable already exists in this collection
-                        let variable = (await figma.variables.getLocalVariablesAsync()).find(v =>
+                        let variable = allVars.find(v =>
                             v.name === variableName && v.variableCollectionId === collection.id
                         );
 
                         if (!variable) {
                             variable = figma.variables.createVariable(variableName, collection, "COLOR");
+                            allVars.push(variable);
                         }
 
                         // Convert hex to RGB
@@ -236,21 +278,36 @@ figma.ui.onmessage = async (msg) => {
 
             // Add neutral colors if toggle is on
             if (includeNeutral) {
-                const neutralShades = [
-                    '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF',
-                    '#6B7280', '#4B5563', '#374151', '#1F2937', '#111827'
+                // Add absolute white and black to neutral
+                const extraNeutrals = [
+                    { name: 'White', color: '#FFFFFF' },
+                    { name: 'Black', color: '#000000' }
                 ];
+
+                for (const extra of extraNeutrals) {
+                    const variableName = `Neutral/${extra.name}`;
+                    let variable = allVars.find(v =>
+                        v.name === variableName && v.variableCollectionId === collection.id
+                    );
+                    if (!variable) {
+                        variable = figma.variables.createVariable(variableName, collection, "COLOR");
+                        allVars.push(variable);
+                    }
+                    variable.setValueForMode(lightModeId, hexToRgb(extra.color));
+                    variable.setValueForMode(darkModeId, hexToRgb(extra.name === 'White' ? '#000000' : '#FFFFFF'));
+                }
 
                 for (let i = 0; i < neutralShades.length; i++) {
                     const shadeNumber = (i + 1) * 100;
                     const variableName = `Neutral/${shadeNumber}`;
 
-                    let variable = (await figma.variables.getLocalVariablesAsync()).find(v =>
+                    let variable = allVars.find(v =>
                         v.name === variableName && v.variableCollectionId === collection.id
                     );
 
                     if (!variable) {
                         variable = figma.variables.createVariable(variableName, collection, "COLOR");
+                        allVars.push(variable);
                     }
 
                     const rgb = hexToRgb(neutralShades[i]);
@@ -555,8 +612,7 @@ figma.ui.onmessage = async (msg) => {
             frame.appendChild(footer);
 
             // Select and zoom to the created frame
-            figma.currentPage.selection = [frame];
-            figma.viewport.scrollAndZoomIntoView([frame]);
+            addToUniversalDoc(frame);
 
             notifyUI('spacing-doc', true, 'Spacing Documentation created!');
         } catch (error) {
@@ -850,8 +906,7 @@ figma.ui.onmessage = async (msg) => {
             frame.appendChild(footer);
 
             // Select and zoom to the created frame
-            figma.currentPage.selection = [frame];
-            figma.viewport.scrollAndZoomIntoView([frame]);
+            addToUniversalDoc(frame);
 
             notifyUI('padding-doc', true, 'Padding Documentation created!');
         } catch (error) {
@@ -1132,8 +1187,7 @@ figma.ui.onmessage = async (msg) => {
             frame.appendChild(footer);
 
             // Select and zoom to the created frame
-            figma.currentPage.selection = [frame];
-            figma.viewport.scrollAndZoomIntoView([frame]);
+            addToUniversalDoc(frame);
 
             notifyUI('radius-doc', true, 'Radius Documentation created!');
         } catch (error) {
@@ -1420,8 +1474,7 @@ figma.ui.onmessage = async (msg) => {
             frame.appendChild(footer);
 
             // Select and zoom to the created frame
-            figma.currentPage.selection = [frame];
-            figma.viewport.scrollAndZoomIntoView([frame]);
+            addToUniversalDoc(frame);
 
             notifyUI('stroke-doc', true, 'Stroke Documentation created!');
         } catch (error) {
@@ -1447,7 +1500,7 @@ figma.ui.onmessage = async (msg) => {
 
             for (const shadow of shadows) {
                 // Check if style already exists
-                let style = figma.getLocalEffectStyles().find(s => s.name === shadow.name);
+                let style = (await figma.getLocalEffectStylesAsync()).find(s => s.name === shadow.name);
 
                 if (!style) {
                     style = figma.createEffectStyle();
@@ -1682,8 +1735,7 @@ figma.ui.onmessage = async (msg) => {
             frame.appendChild(footer);
 
             // Select and zoom to the created frame
-            figma.currentPage.selection = [frame];
-            figma.viewport.scrollAndZoomIntoView([frame]);
+            addToUniversalDoc(frame);
 
             figma.notify('Shadow Token Documentation created successfully!');
         } catch (error) {
@@ -1697,7 +1749,7 @@ figma.ui.onmessage = async (msg) => {
             const grids = msg.grids;
 
             // Desktop Grid Style
-            let desktopStyle = figma.getLocalGridStyles().find(s => s.name === "Desktop Grid");
+            let desktopStyle = (await figma.getLocalGridStylesAsync()).find(s => s.name === "Desktop Grid");
             if (!desktopStyle) {
                 desktopStyle = figma.createGridStyle();
                 desktopStyle.name = "Desktop Grid";
@@ -1715,7 +1767,7 @@ figma.ui.onmessage = async (msg) => {
             ];
 
             // Tablet Grid Style
-            let tabletStyle = figma.getLocalGridStyles().find(s => s.name === "Tablet Grid");
+            let tabletStyle = (await figma.getLocalGridStylesAsync()).find(s => s.name === "Tablet Grid");
             if (!tabletStyle) {
                 tabletStyle = figma.createGridStyle();
                 tabletStyle.name = "Tablet Grid";
@@ -1733,7 +1785,7 @@ figma.ui.onmessage = async (msg) => {
             ];
 
             // Mobile Grid Style
-            let mobileStyle = figma.getLocalGridStyles().find(s => s.name === "Mobile Grid");
+            let mobileStyle = (await figma.getLocalGridStylesAsync()).find(s => s.name === "Mobile Grid");
             if (!mobileStyle) {
                 mobileStyle = figma.createGridStyle();
                 mobileStyle.name = "Mobile Grid";
@@ -2009,8 +2061,7 @@ figma.ui.onmessage = async (msg) => {
             frame.appendChild(footer);
 
             // Select and zoom to the created frame
-            figma.currentPage.selection = [frame];
-            figma.viewport.scrollAndZoomIntoView([frame]);
+            addToUniversalDoc(frame);
 
             figma.notify('Grid Token Documentation created successfully!');
         } catch (error) {
@@ -2025,22 +2076,33 @@ figma.ui.onmessage = async (msg) => {
             figma.notify('Creating text styles...', { timeout: 2000 });
             console.log('Starting text style creation...');
 
-            const baseFontSize = msg.baseFontSize;
-            const scale = msg.scale || 1.25; // Default scale if not provided
-            const primaryFont = msg.primaryFont;
-            console.log(`Primary font: ${primaryFont}, Base size: ${baseFontSize}, Scale: ${scale}`);
-
-            const typographyLevels = [
+            const baseFontSize = msg.baseFontSize || 16;
+            const scale = msg.scale || 1.25;
+            const primaryFont = msg.primaryFont || 'Inter';
+            
+            // Use provided styles or fallback to default levels
+            let typographyLevels = msg.styles || [
                 { name: 'H1', multiplier: Math.pow(scale, 5) },
                 { name: 'H2', multiplier: Math.pow(scale, 4) },
                 { name: 'H3', multiplier: Math.pow(scale, 3) },
                 { name: 'H4', multiplier: Math.pow(scale, 2) },
                 { name: 'H5', multiplier: scale },
                 { name: 'H6', multiplier: 1 },
-                { name: 'BODY1', multiplier: 1 },
-                { name: 'BODY2', multiplier: 0.875 },
-                { name: 'CAPTION', multiplier: 0.75 }
+                { name: 'Body/Large', multiplier: 1.125 },
+                { name: 'Body/Medium', multiplier: 1 },
+                { name: 'Body/Small', multiplier: 0.875 },
+                { name: 'Caption', multiplier: 0.75 }
             ];
+
+            // Normalize levels if they come with absolute fontSize instead of multiplier
+            typographyLevels = typographyLevels.map(level => {
+                if (level.fontSize && !level.multiplier) {
+                    return Object.assign({}, level, { multiplier: level.fontSize / baseFontSize });
+                }
+                return level;
+            });
+
+            console.log(`Creating typography styles. Base size: ${baseFontSize}, Font: ${primaryFont}`);
 
             // Get or create Typography collection
             const collections = await figma.variables.getLocalVariableCollectionsAsync();
@@ -2050,22 +2112,23 @@ figma.ui.onmessage = async (msg) => {
             }
             const modeId = collection.modes[0].modeId;
 
-            let fontWeights = [
+            const fontWeights = [
                 { name: 'Regular', weight: 400 },
                 { name: 'Medium', weight: 500 },
-                { name: 'Semibold', weight: 600 },
+                { name: 'SemiBold', weight: 600 },
                 { name: 'Bold', weight: 700 }
             ];
 
             const fontStyleMap = {
                 'Regular': ['Regular', 'Normal', 'Book', 'Roman'],
                 'Medium': ['Medium'],
-                'Semibold': ['SemiBold', 'Semi Bold', 'Demibold', 'Demi Bold'],
+                'SemiBold': ['SemiBold', 'Semi Bold', 'Demibold', 'Demi Bold'],
                 'Bold': ['Bold']
             };
 
             // Create/Update Font Family Variable
-            let fontFamilyVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === "font-family/primary");
+            let allVars = await figma.variables.getLocalVariablesAsync();
+            let fontFamilyVar = allVars.find(v => v.name === "font-family/primary" && v.variableCollectionId === collection.id);
             if (!fontFamilyVar) {
                 fontFamilyVar = figma.variables.createVariable("font-family/primary", collection, "STRING");
             }
@@ -2073,7 +2136,7 @@ figma.ui.onmessage = async (msg) => {
 
             let secondaryFontVar = null;
             if (msg.secondaryFont) {
-                secondaryFontVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === "font-family/secondary");
+                secondaryFontVar = allVars.find(v => v.name === "font-family/secondary" && v.variableCollectionId === collection.id);
                 if (!secondaryFontVar) {
                     secondaryFontVar = figma.variables.createVariable("font-family/secondary", collection, "STRING");
                 }
@@ -2081,42 +2144,69 @@ figma.ui.onmessage = async (msg) => {
             }
 
             // Create/Update Weight Variables
+            const weightVars = {};
             for (const weight of fontWeights) {
                 const weightVarName = `font-weight/${weight.name.toLowerCase()}`;
-                let weightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === weightVarName);
+                let weightVar = allVars.find(v => v.name === weightVarName && v.variableCollectionId === collection.id);
                 if (!weightVar) {
                     weightVar = figma.variables.createVariable(weightVarName, collection, "FLOAT");
+                    allVars.push(weightVar);
                 }
                 weightVar.setValueForMode(modeId, weight.weight);
+                weightVars[weight.name] = weightVar;
             }
 
             let createdCount = 0;
-            const fontsToCreate = [{ name: 'primary', family: primaryFont, var: fontFamilyVar }];
+            const fontsToCreate = [{ name: 'Primary', family: primaryFont, var: fontFamilyVar }];
             if (msg.secondaryFont) {
-                fontsToCreate.push({ name: 'secondary', family: msg.secondaryFont, var: secondaryFontVar });
+                fontsToCreate.push({ name: 'Secondary', family: msg.secondaryFont, var: secondaryFontVar });
+            }
+
+            // Create Size and Line Height Variables first (once for all fonts)
+            const styleVars = {};
+            for (const level of typographyLevels) {
+                const fontSize = level.fontSize || Math.round(baseFontSize * level.multiplier);
+                const lineHeightValue = level.lineHeight ? (typeof level.lineHeight === 'number' ? level.lineHeight * fontSize : (level.lineHeight.value || fontSize * 1.5)) : (fontSize * 1.5);
+                const lineHeight = Math.round(lineHeightValue);
+
+                const fontSizeVarName = `font-size/${level.name.toLowerCase().replace(/\//g, '-')}`;
+                let fontSizeVar = allVars.find(v => v.name === fontSizeVarName && v.variableCollectionId === collection.id);
+                if (!fontSizeVar) {
+                    fontSizeVar = figma.variables.createVariable(fontSizeVarName, collection, "FLOAT");
+                    allVars.push(fontSizeVar);
+                }
+                fontSizeVar.setValueForMode(modeId, fontSize);
+
+                const lineHeightVarName = `line-height/${level.name.toLowerCase().replace(/\//g, '-')}`;
+                let lineHeightVar = allVars.find(v => v.name === lineHeightVarName && v.variableCollectionId === collection.id);
+                if (!lineHeightVar) {
+                    lineHeightVar = figma.variables.createVariable(lineHeightVarName, collection, "FLOAT");
+                    allVars.push(lineHeightVar);
+                }
+                lineHeightVar.setValueForMode(modeId, lineHeight);
+
+                styleVars[level.name] = { fontSizeVar, lineHeightVar };
             }
 
             for (const fontInfo of fontsToCreate) {
+                console.log(`Processing font group: ${fontInfo.name} (${fontInfo.family})`);
+                
                 for (const level of typographyLevels) {
-                    const fontSize = Math.round(baseFontSize * level.multiplier);
-                    const lineHeight = Math.round(fontSize * 1.5); // Default line height
-
-                    // Create/Update Size and Line Height Variables
-                    const fontSizeVarName = `font-size/${level.name.toLowerCase()}`;
-                    let fontSizeVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === fontSizeVarName);
-                    if (!fontSizeVar) {
-                        fontSizeVar = figma.variables.createVariable(fontSizeVarName, collection, "FLOAT");
+                    // Skip if specific fontFamily requested and doesn't match
+                    if (level.fontFamily && level.fontFamily !== fontInfo.name.toLowerCase()) {
+                        continue;
                     }
-                    fontSizeVar.setValueForMode(modeId, fontSize);
 
-                    const lineHeightVarName = `line-height/${level.name.toLowerCase()}`;
-                    let lineHeightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === lineHeightVarName);
-                    if (!lineHeightVar) {
-                        lineHeightVar = figma.variables.createVariable(lineHeightVarName, collection, "FLOAT");
-                    }
-                    lineHeightVar.setValueForMode(modeId, lineHeight);
+                    const vars = styleVars[level.name];
+                    const fontSizeVar = vars ? vars.fontSizeVar : null;
+                    const lineHeightVar = vars ? vars.lineHeightVar : null;
 
                     for (const weight of fontWeights) {
+                        // Skip if specific weight requested and doesn't match
+                        if (level.fontWeight && level.fontWeight.toLowerCase() !== weight.name.toLowerCase()) {
+                            if (msg.styles) continue; 
+                        }
+
                         let fontLoaded = false;
                         let loadedStyle = weight.name;
                         const stylesToTry = fontStyleMap[weight.name] || [weight.name];
@@ -2127,15 +2217,32 @@ figma.ui.onmessage = async (msg) => {
                                 loadedStyle = style;
                                 fontLoaded = true;
                                 break;
-                            } catch (e) { continue; }
+                            } catch (e) {
+                                // Silently try next variant
+                                continue;
+                            }
                         }
 
-                        if (!fontLoaded) continue;
+                        if (!fontLoaded) {
+                            console.warn(`Could not load font ${fontInfo.family} with weight ${weight.name}, trying Inter fallback...`);
+                            for (const style of stylesToTry) {
+                                try {
+                                    await figma.loadFontAsync({ family: "Inter", style: style });
+                                    loadedStyle = style;
+                                    fontLoaded = true;
+                                    break;
+                                } catch (e) { continue; }
+                            }
+                        }
 
-                        const prefix = fontInfo.name.charAt(0).toUpperCase() + fontInfo.name.slice(1);
-                        const styleName = `${prefix}/${level.name}-${fontSize}px/${weight.name}`;
+                        if (!fontLoaded) {
+                            console.error(`Failed to load font ${fontInfo.family} and fallback Inter for ${weight.name}`);
+                            continue;
+                        }
 
-                        let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
+                        const groupName = fontInfo.name.charAt(0).toUpperCase() + fontInfo.name.slice(1);
+                        const styleName = `Typography/${groupName}/${level.name}/${weight.name}`;
+                        let textStyle = (await figma.getLocalTextStylesAsync()).find(s => s.name === styleName);
                         if (!textStyle) {
                             textStyle = figma.createTextStyle();
                             textStyle.name = styleName;
@@ -2144,14 +2251,12 @@ figma.ui.onmessage = async (msg) => {
                         textStyle.fontName = { family: fontInfo.family, style: loadedStyle };
 
                         // Bind variables
-                        const weightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === `font-weight/${weight.name.toLowerCase()}`);
-
                         try {
                             if (fontInfo.var) textStyle.setBoundVariable('fontFamily', fontInfo.var);
                         } catch (e) { }
 
                         try {
-                            if (weightVar) textStyle.setBoundVariable('fontWeight', weightVar);
+                            if (weightVars[weight.name]) textStyle.setBoundVariable('fontWeight', weightVars[weight.name]);
                         } catch (e) { }
 
                         try {
@@ -2624,8 +2729,7 @@ figma.ui.onmessage = async (msg) => {
                 framesToZoom.push(secondaryFrame);
             }
 
-            figma.currentPage.selection = framesToZoom;
-            figma.viewport.scrollAndZoomIntoView(framesToZoom);
+            addToUniversalDoc(framesToZoom);
             console.log('Typography documentation created successfully!');
 
             // NOW CREATE TEXT STYLES
@@ -2765,7 +2869,7 @@ figma.ui.onmessage = async (msg) => {
                             const prefix = fontInfo.name.charAt(0).toUpperCase() + fontInfo.name.slice(1);
                             const styleName = `${prefix}/${level.name}-${fontSize}px/${weight.name}`;
 
-                            let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
+                            let textStyle = (await figma.getLocalTextStylesAsync()).find(s => s.name === styleName);
                             if (!textStyle) {
                                 textStyle = figma.createTextStyle();
                                 textStyle.name = styleName;
@@ -2933,6 +3037,10 @@ figma.ui.onmessage = async (msg) => {
                         }
 
                         if (!fontLoaded) {
+                            console.warn(`Could not load font ${fontInfo.family} with style ${weight.name}, trying variants...`);
+                        }
+
+                        if (!fontLoaded) {
                             // Fallback to Inter
                             for (const style of stylesToTry) {
                                 try {
@@ -2948,9 +3056,10 @@ figma.ui.onmessage = async (msg) => {
                         if (!fontLoaded) continue;
 
                         const prefix = fontInfo.name.charAt(0).toUpperCase() + fontInfo.name.slice(1);
-                        const styleName = `${prefix}/${typo.name}-${typo.fontSize}px/${weight.name}`;
+                        const groupName = fontInfo.name.charAt(0).toUpperCase() + fontInfo.name.slice(1);
+                        const styleName = `Typography/${groupName}/${typo.name}/${weight.name}`;
 
-                        let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
+                        let textStyle = (await figma.getLocalTextStylesAsync()).find(s => s.name === styleName);
                         if (!textStyle) {
                             textStyle = figma.createTextStyle();
                             textStyle.name = styleName;
@@ -3437,10 +3546,6 @@ figma.ui.onmessage = async (msg) => {
 
             // Add Neutral Colors if toggle is on
             if (includeNeutral) {
-                const neutralShades = [
-                    '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF',
-                    '#6B7280', '#4B5563', '#374151', '#1F2937', '#111827'
-                ];
 
                 const colorSection = figma.createFrame();
                 colorSection.name = "Neutral Section";
@@ -3588,8 +3693,7 @@ figma.ui.onmessage = async (msg) => {
             frame.appendChild(footer);
 
             // Select and zoom to the created frame
-            figma.currentPage.selection = [frame];
-            figma.viewport.scrollAndZoomIntoView([frame]);
+            addToUniversalDoc(frame);
 
             figma.notify('Color Style Guide created successfully!');
         } catch (error) {
@@ -3826,8 +3930,10 @@ figma.ui.onmessage = async (msg) => {
         try {
             // Get user inputs
             const buttonText = msg.buttonText || 'Button';
-            const userRadius = (msg.radius !== undefined && msg.radius !== null) ? msg.radius : 24;
+            const userRadius = (msg.radius !== undefined && msg.radius !== null) ? msg.radius : 8;
             const userPrimaryColor = msg.primaryColor || '#1350FF';
+            const userSecondaryColor = msg.secondaryColor || '#D900FF';
+            const enableSecondaryColor = msg.enableSecondaryColor || false;
             const userTextColor = msg.textColor || '#FFFFFF';
 
             // First, create button variables
@@ -3837,6 +3943,18 @@ figma.ui.onmessage = async (msg) => {
                 let collection = collections.find(c => c.name === "Button");
                 if (!collection) {
                     collection = figma.variables.createVariableCollection("Button");
+                }
+
+                // Get the Colors collection to link to
+                let colorsCollection = collections.find(c => c.name === "Colors");
+                const allColors = colorsCollection ? await figma.variables.getLocalVariablesAsync() : [];
+                
+                function getColorAlias(colorName, shade) {
+                    if (!colorsCollection) return null;
+                    // Try to find the variable by name, case-insensitive
+                    const targetName = `${colorName}/${shade}`.toLowerCase();
+                    const found = allColors.find(v => (v.name.toLowerCase() === targetName || v.name.toLowerCase() === `status/${targetName}`) && v.variableCollectionId === colorsCollection.id);
+                    return found ? { type: 'VARIABLE_ALIAS', id: found.id } : null;
                 }
 
                 // Get mode ID
@@ -3861,190 +3979,212 @@ figma.ui.onmessage = async (msg) => {
                 function darkenColorVar(hex, percent) {
                     const rgb = hexToRgbVar(hex);
                     const factor = 1 - (percent / 100);
-                    const r = Math.round(rgb.r * 255 * factor);
-                    const g = Math.round(rgb.g * 255 * factor);
-                    const b = Math.round(rgb.b * 255 * factor);
+                    const r = Math.max(0, Math.round(rgb.r * 255 * factor));
+                    const g = Math.max(0, Math.round(rgb.g * 255 * factor));
+                    const b = Math.max(0, Math.round(rgb.b * 255 * factor));
                     return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
                 }
 
-                // Helper function to lighten a color for variables
-                function lightenColorVar(hex, percent) {
-                    const rgb = hexToRgbVar(hex);
-                    const factor = percent / 100;
-                    const r = Math.round(rgb.r * 255 + (255 - rgb.r * 255) * factor);
-                    const g = Math.round(rgb.g * 255 + (255 - rgb.g * 255) * factor);
-                    const b = Math.round(rgb.b * 255 + (255 - rgb.b * 255) * factor);
-                    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+                function getContrastColor(hex) {
+                    if (!hex || hex === 'transparent' || hex.startsWith('rgba')) return '#000000';
+                    try {
+                        const rgb = hexToRgbVar(hex);
+                        if (!rgb) return '#000000';
+                        const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114); // values are 0-1
+                        return brightness > 0.5 ? '#000000' : '#FFFFFF';
+                    } catch (e) {
+                        return '#000000';
+                    }
                 }
 
                 // Define button types and states
+                const typesList = ['Primary'];
+                if (enableSecondaryColor) typesList.push('Secondary');
+                typesList.push('Destructive', 'Ghost', 'Line', 'Link');
+                
                 const buttonTypes = ['primary', 'secondary', 'destructive', 'ghost', 'line', 'link'];
                 const buttonStates = ['default', 'hover', 'active', 'disabled'];
                 const properties = ['bg', 'text', 'border', 'icon'];
 
-                // Default color scheme
-                const primaryColor = userPrimaryColor;
-                const textColor = userTextColor;
-                const destructiveColor = '#FF0000';
-                const neutralColor = '#000000';
-
                 // Create variables for each button type, state, and property
+                const allButtonVars = await figma.variables.getLocalVariablesAsync();
+                
                 for (const type of buttonTypes) {
                     for (const state of buttonStates) {
                         for (const property of properties) {
                             const variableName = `button/${type}/${state}/${property}`;
 
-                            // Check if variable already exists
-                            let variable = (await figma.variables.getLocalVariablesAsync()).find(v =>
+                            let variable = allButtonVars.find(v =>
                                 v.name === variableName && v.variableCollectionId === collection.id
                             );
 
                             if (!variable) {
                                 variable = figma.variables.createVariable(variableName, collection, "COLOR");
+                                allButtonVars.push(variable); // Add to cache to prevent duplicate creation
                             }
 
-                            // Determine color based on type, state, and property
-                            let color;
-
+                            let color, alias = null;
                             if (type === 'primary') {
                                 if (state === 'default') {
-                                    if (property === 'bg') color = primaryColor;
-                                    else if (property === 'text') color = textColor;
-                                    else if (property === 'border') color = darkenColorVar(primaryColor, 20);
-                                    else if (property === 'icon') color = textColor;
+                                    if (property === 'bg') { color = userPrimaryColor; alias = getColorAlias('Primary', 600); }
+                                    else if (property === 'text') { 
+                                        color = getContrastColor(userPrimaryColor); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
+                                    else if (property === 'border') { color = darkenColorVar(userPrimaryColor, 10); alias = getColorAlias('Primary', 700); }
+                                    else if (property === 'icon') { 
+                                        color = getContrastColor(userPrimaryColor); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
                                 } else if (state === 'hover') {
-                                    if (property === 'bg') color = darkenColorVar(primaryColor, 10);
-                                    else if (property === 'text') color = textColor;
-                                    else if (property === 'border') color = darkenColorVar(primaryColor, 30);
-                                    else if (property === 'icon') color = textColor;
+                                    if (property === 'bg') { color = darkenColorVar(userPrimaryColor, 10); alias = getColorAlias('Primary', 700); }
+                                    else if (property === 'text') { 
+                                        color = getContrastColor(darkenColorVar(userPrimaryColor, 10)); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
+                                    else if (property === 'border') { color = darkenColorVar(userPrimaryColor, 20); alias = getColorAlias('Primary', 800); }
+                                    else if (property === 'icon') { 
+                                        color = getContrastColor(darkenColorVar(userPrimaryColor, 10)); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
                                 } else if (state === 'active') {
-                                    if (property === 'bg') color = darkenColorVar(primaryColor, 20);
-                                    else if (property === 'text') color = textColor;
-                                    else if (property === 'border') color = darkenColorVar(primaryColor, 30);
-                                    else if (property === 'icon') color = textColor;
+                                    if (property === 'bg') { color = darkenColorVar(userPrimaryColor, 20); alias = getColorAlias('Primary', 800); }
+                                    else if (property === 'text') { 
+                                        color = getContrastColor(darkenColorVar(userPrimaryColor, 20)); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
+                                    else if (property === 'border') { color = darkenColorVar(userPrimaryColor, 30); alias = getColorAlias('Primary', 900); }
+                                    else if (property === 'icon') { 
+                                        color = getContrastColor(darkenColorVar(userPrimaryColor, 20)); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
                                 } else if (state === 'disabled') {
-                                    if (property === 'bg') color = '#AAAAAA';
-                                    else if (property === 'text') color = '#FFFFFF';
-                                    else if (property === 'border') color = '#AAAAAA';
-                                    else if (property === 'icon') color = '#FFFFFF';
+                                    if (property === 'bg') { color = '#F3F4F6'; alias = getColorAlias('Neutral', 200); }
+                                    else if (property === 'text') { color = '#9CA3AF'; alias = getColorAlias('Neutral', 500); }
+                                    else if (property === 'border') { color = '#E5E7EB'; alias = getColorAlias('Neutral', 300); }
+                                    else if (property === 'icon') { color = '#9CA3AF'; alias = getColorAlias('Neutral', 500); }
                                 }
                             } else if (type === 'secondary') {
+                                const baseColor = enableSecondaryColor ? userSecondaryColor : '#F3F4F6';
+                                const colorKey = enableSecondaryColor ? 'Secondary' : 'Neutral';
+                                const baseShade = enableSecondaryColor ? 600 : 200;
                                 if (state === 'default') {
-                                    if (property === 'bg') color = lightenColorVar(primaryColor, 20);
-                                    else if (property === 'text') color = textColor;
-                                    else if (property === 'border') color = primaryColor;
-                                    else if (property === 'icon') color = textColor;
+                                    if (property === 'bg') { color = baseColor; alias = getColorAlias(colorKey, baseShade); }
+                                    else if (property === 'text') { 
+                                        color = getContrastColor(baseColor); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
+                                    else if (property === 'border') { color = darkenColorVar(baseColor, 10); alias = getColorAlias(colorKey, baseShade + 100); }
+                                    else if (property === 'icon') { 
+                                        color = getContrastColor(baseColor); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
                                 } else if (state === 'hover') {
-                                    if (property === 'bg') color = primaryColor;
-                                    else if (property === 'text') color = textColor;
-                                    else if (property === 'border') color = darkenColorVar(primaryColor, 20);
-                                    else if (property === 'icon') color = textColor;
+                                    if (property === 'bg') { color = darkenColorVar(baseColor, 10); alias = getColorAlias(colorKey, baseShade + 100); }
+                                    else if (property === 'text') { 
+                                        color = getContrastColor(darkenColorVar(baseColor, 10)); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
+                                    else if (property === 'border') { color = darkenColorVar(baseColor, 20); alias = getColorAlias(colorKey, baseShade + 200); }
+                                    else if (property === 'icon') { 
+                                        color = getContrastColor(darkenColorVar(baseColor, 10)); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
                                 } else if (state === 'active') {
-                                    if (property === 'bg') color = darkenColorVar(primaryColor, 10);
-                                    else if (property === 'text') color = textColor;
-                                    else if (property === 'border') color = darkenColorVar(primaryColor, 20);
-                                    else if (property === 'icon') color = textColor;
+                                    if (property === 'bg') { color = darkenColorVar(baseColor, 20); alias = getColorAlias(colorKey, baseShade + 200); }
+                                    else if (property === 'text') { 
+                                        color = getContrastColor(darkenColorVar(baseColor, 20)); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
+                                    else if (property === 'border') { color = darkenColorVar(baseColor, 30); alias = getColorAlias(colorKey, baseShade + 300); }
+                                    else if (property === 'icon') { 
+                                        color = getContrastColor(darkenColorVar(baseColor, 20)); 
+                                        alias = color === '#FFFFFF' ? getColorAlias('Neutral', 'White') : getColorAlias('Neutral', 'Black'); 
+                                    }
                                 } else if (state === 'disabled') {
-                                    if (property === 'bg') color = '#AAAAAA';
-                                    else if (property === 'text') color = '#FFFFFF';
-                                    else if (property === 'border') color = '#AAAAAA';
-                                    else if (property === 'icon') color = '#FFFFFF';
+                                    if (property === 'bg') { color = '#F3F4F6'; alias = getColorAlias('Neutral', 200); }
+                                    else if (property === 'text') { color = '#9CA3AF'; alias = getColorAlias('Neutral', 500); }
+                                    else if (property === 'border') { color = '#E5E7EB'; alias = getColorAlias('Neutral', 300); }
+                                    else if (property === 'icon') { color = '#9CA3AF'; alias = getColorAlias('Neutral', 500); }
                                 }
                             } else if (type === 'destructive') {
                                 if (state === 'default') {
-                                    if (property === 'bg') color = destructiveColor;
-                                    else if (property === 'text') color = '#FFFFFF';
-                                    else if (property === 'border') color = '#CC0000';
-                                    else if (property === 'icon') color = '#FFFFFF';
+                                    if (property === 'bg') { color = '#EF4444'; alias = getColorAlias('Status/Error', 600); }
+                                    else if (property === 'text') { color = '#FFFFFF'; alias = getColorAlias('Neutral', 'White'); }
+                                    else if (property === 'border') { color = '#DC2626'; alias = getColorAlias('Status/Error', 700); }
+                                    else if (property === 'icon') { color = '#FFFFFF'; alias = getColorAlias('Neutral', 'White'); }
                                 } else if (state === 'hover') {
-                                    if (property === 'bg') color = '#CC0000';
-                                    else if (property === 'text') color = '#FFFFFF';
-                                    else if (property === 'border') color = '#990000';
-                                    else if (property === 'icon') color = '#FFFFFF';
+                                    if (property === 'bg') { color = '#DC2626'; alias = getColorAlias('Status/Error', 700); }
+                                    else if (property === 'text') { color = '#FFFFFF'; alias = getColorAlias('Neutral', 'White'); }
+                                    else if (property === 'border') { color = '#B91C1C'; alias = getColorAlias('Status/Error', 800); }
+                                    else if (property === 'icon') { color = '#FFFFFF'; alias = getColorAlias('Neutral', 'White'); }
                                 } else if (state === 'active') {
-                                    if (property === 'bg') color = '#990000';
-                                    else if (property === 'text') color = '#FFFFFF';
-                                    else if (property === 'border') color = '#990000';
-                                    else if (property === 'icon') color = '#FFFFFF';
+                                    if (property === 'bg') { color = '#B91C1C'; alias = getColorAlias('Status/Error', 800); }
+                                    else if (property === 'text') { color = '#FFFFFF'; alias = getColorAlias('Neutral', 'White'); }
+                                    else if (property === 'border') { color = '#991B1B'; alias = getColorAlias('Status/Error', 900); }
+                                    else if (property === 'icon') { color = '#FFFFFF'; alias = getColorAlias('Neutral', 'White'); }
                                 } else if (state === 'disabled') {
-                                    if (property === 'bg') color = '#AAAAAA';
-                                    else if (property === 'text') color = '#FFFFFF';
-                                    else if (property === 'border') color = '#AAAAAA';
-                                    else if (property === 'icon') color = '#FFFFFF';
+                                    if (property === 'bg') { color = '#F3F4F6'; alias = getColorAlias('Neutral', 200); }
+                                    else if (property === 'text') { color = '#9CA3AF'; alias = getColorAlias('Neutral', 500); }
+                                    else if (property === 'border') { color = '#E5E7EB'; alias = getColorAlias('Neutral', 300); }
+                                    else if (property === 'icon') { color = '#9CA3AF'; alias = getColorAlias('Neutral', 500); }
                                 }
-                            } else if (type === 'ghost') {
+                            } else if (type === 'ghost' || type === 'line' || type === 'link') {
                                 if (state === 'default') {
-                                    if (property === 'bg') color = '#FFFFFF';
-                                    else if (property === 'text') color = neutralColor;
-                                    else if (property === 'border') color = '#FFFFFF';
-                                    else if (property === 'icon') color = neutralColor;
+                                    if (property === 'bg') { color = 'transparent'; alias = getColorAlias('Neutral', 'White'); }
+                                    else if (property === 'text') { color = '#000000'; alias = getColorAlias('Neutral', 'Black'); }
+                                    else if (property === 'border') { color = '#D1D5DB'; alias = getColorAlias('Neutral', 400); }
+                                    else if (property === 'icon') { color = '#000000'; alias = getColorAlias('Neutral', 'Black'); }
                                 } else if (state === 'hover') {
-                                    if (property === 'bg') color = '#E3E3E3';
-                                    else if (property === 'text') color = neutralColor;
-                                    else if (property === 'border') color = '#E3E3E3';
-                                    else if (property === 'icon') color = neutralColor;
+                                    if (property === 'bg') { color = '#F3F4F6'; alias = getColorAlias('Neutral', 200); }
+                                    else if (property === 'text') { color = '#374151'; alias = getColorAlias('Neutral', 800); }
+                                    else if (property === 'border') { color = '#9CA3AF'; alias = getColorAlias('Neutral', 500); }
+                                    else if (property === 'icon') { color = '#374151'; alias = getColorAlias('Neutral', 800); }
                                 } else if (state === 'active') {
-                                    if (property === 'bg') color = '#C6C6C6';
-                                    else if (property === 'text') color = neutralColor;
-                                    else if (property === 'border') color = '#C6C6C6';
-                                    else if (property === 'icon') color = neutralColor;
+                                    if (property === 'bg') { color = '#E5E7EB'; alias = getColorAlias('Neutral', 300); }
+                                    else if (property === 'text') { color = '#111827'; alias = getColorAlias('Neutral', 'Black'); }
+                                    else if (property === 'border') { color = '#9CA3AF'; alias = getColorAlias('Neutral', 500); }
+                                    else if (property === 'icon') { color = '#111827'; alias = getColorAlias('Neutral', 'Black'); }
                                 } else if (state === 'disabled') {
-                                    if (property === 'bg') color = '#FFFFFF';
-                                    else if (property === 'text') color = '#717171';
-                                    else if (property === 'border') color = '#FFFFFF';
-                                    else if (property === 'icon') color = '#717171';
+                                    if (property === 'bg') { color = 'transparent'; alias = getColorAlias('Neutral', 'White'); }
+                                    else if (property === 'text') { color = '#9CA3AF'; alias = getColorAlias('Neutral', 500); }
+                                    else if (property === 'border') { color = '#F3F4F6'; alias = getColorAlias('Neutral', 200); }
+                                    else if (property === 'icon') { color = '#9CA3AF'; alias = getColorAlias('Neutral', 500); }
                                 }
-                            } else if (type === 'line') {
-                                if (state === 'default') {
-                                    if (property === 'bg') color = '#FFFFFF';
-                                    else if (property === 'text') color = primaryColor;
-                                    else if (property === 'border') color = primaryColor;
-                                    else if (property === 'icon') color = primaryColor;
-                                } else if (state === 'hover') {
-                                    if (property === 'bg') color = lightenColorVar(primaryColor, 90);
-                                    else if (property === 'text') color = primaryColor;
-                                    else if (property === 'border') color = primaryColor;
-                                    else if (property === 'icon') color = primaryColor;
-                                } else if (state === 'active') {
-                                    if (property === 'bg') color = lightenColorVar(primaryColor, 70);
-                                    else if (property === 'text') color = primaryColor;
-                                    else if (property === 'border') color = primaryColor;
-                                    else if (property === 'icon') color = primaryColor;
-                                } else if (state === 'disabled') {
-                                    if (property === 'bg') color = '#AAAAAA';
-                                    else if (property === 'text') color = '#FFFFFF';
-                                    else if (property === 'border') color = '#AAAAAA';
-                                    else if (property === 'icon') color = '#FFFFFF';
-                                }
-                            } else if (type === 'link') {
-                                if (state === 'default') {
-                                    if (property === 'bg') color = '#FFFFFF';
-                                    else if (property === 'text') color = primaryColor;
-                                    else if (property === 'border') color = '#FFFFFF';
-                                    else if (property === 'icon') color = primaryColor;
-                                } else if (state === 'hover') {
-                                    if (property === 'bg') color = '#FFFFFF';
-                                    else if (property === 'text') color = darkenColorVar(primaryColor, 20);
-                                    else if (property === 'border') color = '#FFFFFF';
-                                    else if (property === 'icon') color = darkenColorVar(primaryColor, 20);
-                                } else if (state === 'active') {
-                                    if (property === 'bg') color = '#FFFFFF';
-                                    else if (property === 'text') color = neutralColor;
-                                    else if (property === 'border') color = '#FFFFFF';
-                                    else if (property === 'icon') color = neutralColor;
-                                } else if (state === 'disabled') {
-                                    if (property === 'bg') color = '#FFFFFF';
-                                    else if (property === 'text') color = '#8E8E8E';
-                                    else if (property === 'border') color = '#FFFFFF';
-                                    else if (property === 'icon') color = '#8E8E8E';
-                                }
+                            } else {
+                                // Default fallback
+                                color = '#000000';
                             }
 
-                            // Set the color value
-                            const rgb = hexToRgbVar(color);
-                            variable.setValueForMode(modeId, rgb);
+                            if (alias) {
+                                variable.setValueForMode(modeId, alias);
+                            } else {
+                                if (color === 'transparent') {
+                                    variable.setValueForMode(modeId, { r: 1, g: 1, b: 1 });
+                                } else {
+                                    try {
+                                        const rgb = hexToRgbVar(color || '#000000');
+                                        variable.setValueForMode(modeId, rgb);
+                                    } catch (e) {
+                                        variable.setValueForMode(modeId, { r: 0, g: 0, b: 0 });
+                                    }
+                                }
+                            }
                         }
                     }
+                }
+
+                // Helper to get alias from other collections
+                async function getTokenAlias(collectionName, type, value) {
+                    const colls = await figma.variables.getLocalVariableCollectionsAsync();
+                    const coll = colls.find(c => c.name === collectionName);
+                    if (!coll) return null;
+                    const baseV = (collectionName === 'Stroke') ? 1 : 2;
+                    const idx = Math.round(value / baseV);
+                    const vName = `${type.toLowerCase()}/${idx}`;
+                    const allV = await figma.variables.getLocalVariablesAsync();
+                    const foundV = allV.find(v => v.name === vName && v.variableCollectionId === coll.id);
+                    return foundV ? { type: 'VARIABLE_ALIAS', id: foundV.id } : null;
                 }
 
                 // Create padding variables for each size
@@ -4063,7 +4203,9 @@ figma.ui.onmessage = async (msg) => {
                     if (!vPaddingVar) {
                         vPaddingVar = figma.variables.createVariable(vPaddingName, collection, "FLOAT");
                     }
-                    vPaddingVar.setValueForMode(modeId, padding.vertical);
+                    const vAlias = await getTokenAlias('Padding', 'padding', padding.vertical);
+                    if (vAlias) vPaddingVar.setValueForMode(modeId, vAlias);
+                    else vPaddingVar.setValueForMode(modeId, padding.vertical);
 
                     // Horizontal padding
                     const hPaddingName = `button/padding/${sizeName}/horizontal`;
@@ -4073,7 +4215,9 @@ figma.ui.onmessage = async (msg) => {
                     if (!hPaddingVar) {
                         hPaddingVar = figma.variables.createVariable(hPaddingName, collection, "FLOAT");
                     }
-                    hPaddingVar.setValueForMode(modeId, padding.horizontal);
+                    const hAlias = await getTokenAlias('Padding', 'padding', padding.horizontal);
+                    if (hAlias) hPaddingVar.setValueForMode(modeId, hAlias);
+                    else hPaddingVar.setValueForMode(modeId, padding.horizontal);
                 }
 
                 // Create text style variables for each size
@@ -4086,7 +4230,7 @@ figma.ui.onmessage = async (msg) => {
                 for (const [sizeName, textStyle] of Object.entries(textConfig)) {
                     // Font size
                     const fontSizeName = `button/text/${sizeName}/fontSize`;
-                    let fontSizeVar = figma.variables.getLocalVariables().find(v =>
+                    let fontSizeVar = (await figma.variables.getLocalVariablesAsync()).find(v =>
                         v.name === fontSizeName && v.variableCollectionId === collection.id
                     );
                     if (!fontSizeVar) {
@@ -4096,7 +4240,7 @@ figma.ui.onmessage = async (msg) => {
 
                     // Line height
                     const lineHeightName = `button/text/${sizeName}/lineHeight`;
-                    let lineHeightVar = figma.variables.getLocalVariables().find(v =>
+                    let lineHeightVar = (await figma.variables.getLocalVariablesAsync()).find(v =>
                         v.name === lineHeightName && v.variableCollectionId === collection.id
                     );
                     if (!lineHeightVar) {
@@ -4107,23 +4251,27 @@ figma.ui.onmessage = async (msg) => {
 
                 // Create corner radius variable
                 const radiusName = `button/cornerRadius`;
-                let radiusVar = figma.variables.getLocalVariables().find(v =>
+                let radiusVar = (await figma.variables.getLocalVariablesAsync()).find(v =>
                     v.name === radiusName && v.variableCollectionId === collection.id
                 );
                 if (!radiusVar) {
                     radiusVar = figma.variables.createVariable(radiusName, collection, "FLOAT");
                 }
-                radiusVar.setValueForMode(modeId, userRadius);
+                const rAlias = await getTokenAlias('Radius', 'radius', userRadius);
+                if (rAlias) radiusVar.setValueForMode(modeId, rAlias);
+                else radiusVar.setValueForMode(modeId, userRadius);
 
                 // Create gap variable (space between icon and text)
                 const gapName = `button/gap`;
-                let gapVar = figma.variables.getLocalVariables().find(v =>
+                let gapVar = (await figma.variables.getLocalVariablesAsync()).find(v =>
                     v.name === gapName && v.variableCollectionId === collection.id
                 );
                 if (!gapVar) {
                     gapVar = figma.variables.createVariable(gapName, collection, "FLOAT");
                 }
-                gapVar.setValueForMode(modeId, 8);
+                const gAlias = await getTokenAlias('Spacing', 'spacing', 8);
+                if (gAlias) gapVar.setValueForMode(modeId, gAlias);
+                else gapVar.setValueForMode(modeId, 8);
 
             } catch (varError) {
                 console.log('Error creating variables:', varError);
@@ -4149,7 +4297,7 @@ figma.ui.onmessage = async (msg) => {
                 const styleName = `Button/${sizeName.toUpperCase()}`;
 
                 // Check if text style already exists
-                let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
+                let textStyle = (await figma.getLocalTextStylesAsync()).find(s => s.name === styleName);
 
                 if (!textStyle) {
                     textStyle = figma.createTextStyle();
@@ -4168,7 +4316,7 @@ figma.ui.onmessage = async (msg) => {
                     const collections = await figma.variables.getLocalVariableCollectionsAsync();
                     const buttonCollection = collections.find(c => c.name === "Button");
                     if (buttonCollection) {
-                        const allVariables = figma.variables.getLocalVariables();
+                        const allVariables = await figma.variables.getLocalVariablesAsync();
 
                         // Bind font size
                         const fontSizeVar = allVariables.find(v =>
@@ -4248,7 +4396,7 @@ figma.ui.onmessage = async (msg) => {
             sharedRightIconComponent.y = -2000;
 
             // Create button component function
-            function createButton(size, type, state, leftIconComp, rightIconComp, buttonCollection, textStylesMap) {
+            async function createButton(size, type, state, leftIconComp, rightIconComp, buttonCollection, textStylesMap) {
                 const button = figma.createComponent();
                 button.name = `Size=${size}, Type=${type}, State=${state}`;
 
@@ -4275,7 +4423,7 @@ figma.ui.onmessage = async (msg) => {
 
                 // Bind padding variables if available
                 if (buttonCollection) {
-                    const allVariables = figma.variables.getLocalVariables();
+                    const allVariables = await figma.variables.getLocalVariablesAsync();
 
                     // Bind vertical padding
                     const vPaddingVar = allVariables.find(v =>
@@ -4363,7 +4511,7 @@ figma.ui.onmessage = async (msg) => {
                 let bgVariable, textVariable, borderVariable, iconVariable;
 
                 if (buttonCollection) {
-                    const allVariables = figma.variables.getLocalVariables();
+                    const allVariables = await figma.variables.getLocalVariablesAsync();
                     bgVariable = allVariables.find(v =>
                         v.name === `button/${varType}/${varState}/bg` &&
                         v.variableCollectionId === buttonCollection.id
@@ -4402,19 +4550,22 @@ figma.ui.onmessage = async (msg) => {
                     else if (state === 'Disable') { bgColor = '#AAAAAA'; borderColor = '#AAAAAA'; hasBorder = true; textColor = '#FFFFFF'; }
                 } else if (type === 'Ghost') {
                     if (state === 'Normal') { bgColor = 'transparent'; textColor = '#000000'; }
-                    else if (state === 'Hover') { bgColor = '#E3E3E3'; textColor = '#000000'; }
-                    else if (state === 'Click') { bgColor = '#C6C6C6'; textColor = '#000000'; }
-                    else if (state === 'Disable') { bgColor = 'transparent'; textColor = '#717171'; }
+                    else if (state === 'Hover') { bgColor = '#F3F4F6'; textColor = '#374151'; }
+                    else if (state === 'Click') { bgColor = '#E5E7EB'; textColor = '#000000'; }
+                    else if (state === 'Disable') { bgColor = 'transparent'; textColor = '#9CA3AF'; }
                 } else if (type === 'Line') {
-                    if (state === 'Normal') { bgColor = 'transparent'; borderColor = userPrimaryColor; hasBorder = true; textColor = userPrimaryColor; }
-                    else if (state === 'Hover') { bgColor = `rgba(${Math.round(hexToRgb(userPrimaryColor).r * 255)}, ${Math.round(hexToRgb(userPrimaryColor).g * 255)}, ${Math.round(hexToRgb(userPrimaryColor).b * 255)}, 0.08)`; borderColor = userPrimaryColor; hasBorder = true; textColor = userPrimaryColor; }
-                    else if (state === 'Click') { bgColor = lightenColor(userPrimaryColor, 70); borderColor = userPrimaryColor; hasBorder = true; textColor = userPrimaryColor; }
-                    else if (state === 'Disable') { bgColor = '#AAAAAA'; borderColor = '#AAAAAA'; hasBorder = true; textColor = '#FFFFFF'; }
+                    const neutralBorder = '#D1D5DB';
+                    const neutralText = '#000000';
+                    if (state === 'Normal') { bgColor = 'transparent'; borderColor = neutralBorder; hasBorder = true; textColor = neutralText; }
+                    else if (state === 'Hover') { bgColor = '#F3F4F6'; borderColor = '#9CA3AF'; hasBorder = true; textColor = '#374151'; }
+                    else if (state === 'Click') { bgColor = '#E5E7EB'; borderColor = '#6B7280'; hasBorder = true; textColor = neutralText; }
+                    else if (state === 'Disable') { bgColor = 'transparent'; borderColor = '#E5E7EB'; hasBorder = true; textColor = '#9CA3AF'; }
                 } else if (type === 'Link') {
-                    if (state === 'Normal') { bgColor = 'transparent'; textColor = userPrimaryColor; hasUnderline = true; }
-                    else if (state === 'Hover') { bgColor = 'transparent'; textColor = darkenColor(userPrimaryColor, 20); hasUnderline = true; }
+                    const neutralText = '#000000';
+                    if (state === 'Normal') { bgColor = 'transparent'; textColor = neutralText; hasUnderline = true; }
+                    else if (state === 'Hover') { bgColor = 'transparent'; textColor = '#4B5563'; hasUnderline = true; }
                     else if (state === 'Click') { bgColor = 'transparent'; textColor = '#000000'; hasUnderline = true; }
-                    else if (state === 'Disable') { bgColor = 'transparent'; textColor = '#8E8E8E'; hasUnderline = true; }
+                    else if (state === 'Disable') { bgColor = 'transparent'; textColor = '#9CA3AF'; hasUnderline = true; }
                 }
 
                 // Set background with variable binding
@@ -4430,7 +4581,8 @@ figma.ui.onmessage = async (msg) => {
                 // Bind background to variable if available
                 if (bgVariable) {
                     try {
-                        button.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: bgVariable.id } } }];
+                        const opacity = (bgColor === 'transparent' ? 0 : (bgColor.startsWith('rgba') ? parseFloat(bgColor.match(/rgba\(.*\s*([\d.]+)\)/)[1]) : 1));
+                        button.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, opacity: opacity, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: bgVariable.id } } }];
                     } catch (e) {
                         console.log('Could not bind bg variable:', e);
                     }
@@ -4455,10 +4607,9 @@ figma.ui.onmessage = async (msg) => {
                 const leftIcon = leftIconComp.createInstance();
                 leftIcon.name = "Left Icon";
 
-                // Scale the icon properly based on size
-                const iconScale = config.iconSize / 20; // 20 is the base icon size
-                leftIcon.rescale(iconScale);
-                leftIcon.visible = true; // Make visible by default to see them
+                // Resize the icon properly based on size
+                leftIcon.resize(config.iconSize, config.iconSize);
+                leftIcon.visible = false; // Hide by default as requested
 
                 // Set icon color (icons use strokes, not fills)
                 try {
@@ -4497,7 +4648,7 @@ figma.ui.onmessage = async (msg) => {
                 text.characters = buttonText;
                 // Apply text style first
                 if (textStylesMap && textStylesMap[config.sizeName]) {
-                    text.textStyleId = textStylesMap[config.sizeName].id;
+                    await text.setTextStyleIdAsync(textStylesMap[config.sizeName].id);
                 } else {
                     text.fontSize = config.fontSize;
                     text.fontName = { family: "Inter", style: config.fontWeight };
@@ -4520,10 +4671,9 @@ figma.ui.onmessage = async (msg) => {
                 const rightIcon = rightIconComp.createInstance();
                 rightIcon.name = "Right Icon";
 
-                // Scale the icon properly based on size
-                const iconScaleRight = config.iconSize / 20; // 20 is the base icon size
-                rightIcon.rescale(iconScaleRight);
-                rightIcon.visible = true; // Make visible by default to see them
+                // Resize the icon properly based on size
+                rightIcon.resize(config.iconSize, config.iconSize);
+                rightIcon.visible = false; // Hide by default as requested
 
                 // Set icon color (icons use strokes, not fills)
                 try {
@@ -4566,7 +4716,9 @@ figma.ui.onmessage = async (msg) => {
             // Create component set
             const components = [];
             const sizes = ['SM', 'MD', 'LG'];
-            const types = ['Primary', 'Destructive', 'Ghost', 'Line', 'Link'];
+            const types = ['Primary'];
+            if (enableSecondaryColor) types.push('Secondary');
+            types.push('Destructive', 'Ghost', 'Line', 'Link');
             const states = ['Normal', 'Hover', 'Click', 'Disable'];
 
             // Get the button collection for variable binding
@@ -4576,7 +4728,7 @@ figma.ui.onmessage = async (msg) => {
             for (const size of sizes) {
                 for (const type of types) {
                     for (const state of states) {
-                        components.push(createButton(size, type, state, sharedLeftIconComponent, sharedRightIconComponent, buttonCollection, textStylesMap));
+                        components.push(await createButton(size, type, state, sharedLeftIconComponent, sharedRightIconComponent, buttonCollection, textStylesMap));
                     }
                 }
             }
@@ -4610,11 +4762,14 @@ figma.ui.onmessage = async (msg) => {
             // Rows 6-8: Ghost (SM, MD, LG)
             // Rows 9-11: Line (SM, MD, LG)
             // Rows 12-14: Link (SM, MD, LG)
-            const typesList = ['Primary', 'Destructive', 'Ghost', 'Line', 'Link'];
+            // Types list for layout (matches the types array above)
+            const finalTypesList = ['Primary'];
+            if (enableSecondaryColor) finalTypesList.push('Secondary');
+            finalTypesList.push('Destructive', 'Ghost', 'Line', 'Link');
 
-            for (let typeIndex = 0; typeIndex < typesList.length; typeIndex++) {
+            for (let typeIndex = 0; typeIndex < finalTypesList.length; typeIndex++) {
                 for (let sizeIndex = 0; sizeIndex < sizes.length; sizeIndex++) {
-                    const type = typesList[typeIndex];
+                    const type = finalTypesList[typeIndex];
                     const size = sizes[sizeIndex];
 
                     for (let stateIndex = 0; stateIndex < states.length; stateIndex++) {
@@ -4977,8 +5132,7 @@ figma.ui.onmessage = async (msg) => {
             docFrame.appendChild(footer);
 
             // Select created documentation frame
-            figma.currentPage.selection = [docFrame];
-            figma.viewport.scrollAndZoomIntoView([docFrame]);
+            addToUniversalDoc(docFrame);
 
             if (componentSet && componentSet !== components[0]) {
                 notifyUI('button-doc', true, 'Button Component Set with 72 variants created inside documentation frame!');
@@ -5022,13 +5176,24 @@ figma.ui.onmessage = async (msg) => {
 
                 const inputTypesArr = ['search', 'otp', 'text', 'phone', 'rich_text'];
                 const stateMapObj = { 'Normal': 'default', 'Hover': 'hover', 'Click': 'active', 'Error': 'error', 'Disable': 'disabled' };
-                const properties = ['bg', 'text', 'boarder', 'icon'];
+                const properties = ['bg', 'text', 'border', 'icon'];
+
+                // Get the Colors collection to link to
+                let colorsCollForInput = collections.find(c => c.name === "Colors");
+                const allInputColors = colorsCollForInput ? await figma.variables.getLocalVariablesAsync() : [];
+                
+                function getInputColorAlias(colorName, shade) {
+                    if (!colorsCollForInput) return null;
+                    const targetName = `${colorName}/${shade}`.toLowerCase();
+                    const found = allInputColors.find(v => (v.name.toLowerCase() === targetName || v.name.toLowerCase() === `status/${targetName}`) && v.variableCollectionId === colorsCollForInput.id);
+                    return found ? { type: 'VARIABLE_ALIAS', id: found.id } : null;
+                }
 
                 for (const type of inputTypesArr) {
                     for (const [uiState, varState] of Object.entries(stateMapObj)) {
                         for (const property of properties) {
                             const variableName = `input/${type}/${varState}/${property}`;
-                            let variable = figma.variables.getLocalVariables().find(v =>
+                            let variable = (await figma.variables.getLocalVariablesAsync()).find(v =>
                                 v.name === variableName && v.variableCollectionId === collection.id
                             );
                             if (!variable) {
@@ -5036,53 +5201,103 @@ figma.ui.onmessage = async (msg) => {
                             }
 
                             let bgColor, borderColor, textColor, iconColor;
+                            let bgAlias = null, borderAlias = null, textAlias = null, iconAlias = null;
+
                             if (uiState === 'Normal') {
                                 bgColor = '#FFFFFF'; borderColor = customBorderColor; textColor = '#8E8E8E'; iconColor = '#8E8E8E';
+                                bgAlias = getInputColorAlias('Neutral', 'White');
+                                borderAlias = getInputColorAlias('Neutral', 300);
+                                textAlias = getInputColorAlias('Neutral', 500);
+                                iconAlias = getInputColorAlias('Neutral', 500);
                             } else if (uiState === 'Hover') {
-                                bgColor = '#FFFFFF'; borderColor = '#9CA3AF'; textColor = '#8E8E8E'; iconColor = '#8E8E8E';
+                                bgColor = '#FFFFFF'; borderColor = '#D1D5DB'; textColor = '#8E8E8E'; iconColor = '#8E8E8E';
+                                bgAlias = getInputColorAlias('Neutral', 'White');
+                                borderAlias = getInputColorAlias('Neutral', 400);
+                                textAlias = getInputColorAlias('Neutral', 500);
+                                iconAlias = getInputColorAlias('Neutral', 500);
                             } else if (uiState === 'Click') {
                                 bgColor = '#FFFFFF'; borderColor = customPrimaryColor; textColor = '#8E8E8E'; iconColor = '#8E8E8E';
+                                bgAlias = getInputColorAlias('Neutral', 'White');
+                                borderAlias = getInputColorAlias('Primary', 600);
+                                textAlias = getInputColorAlias('Neutral', 500);
+                                iconAlias = getInputColorAlias('Neutral', 500);
                             } else if (uiState === 'Error') {
                                 bgColor = '#FFFFFF'; borderColor = '#EF4444'; textColor = '#EF4444'; iconColor = '#EF4444';
+                                bgAlias = getInputColorAlias('Neutral', 'White');
+                                borderAlias = getInputColorAlias('Status/Error', 600);
+                                textAlias = getInputColorAlias('Status/Error', 600);
+                                iconAlias = getInputColorAlias('Status/Error', 600);
                             } else {
-                                bgColor = '#F3F4F6'; borderColor = '#E5E7EB'; textColor = '#D1D5DB'; iconColor = '#D1D5DB';
+                                bgColor = '#F3F4F6'; borderColor = '#E5E7EB'; textColor = '#9CA3AF'; iconColor = '#9CA3AF';
+                                bgAlias = getInputColorAlias('Neutral', 200);
+                                borderAlias = getInputColorAlias('Neutral', 300);
+                                textAlias = getInputColorAlias('Neutral', 500);
+                                iconAlias = getInputColorAlias('Neutral', 500);
                             }
 
                             let colorH = bgColor;
-                            if (property === 'bg') colorH = bgColor;
-                            else if (property === 'text') colorH = textColor;
-                            else if (property === 'boarder') colorH = borderColor;
-                            else if (property === 'icon') colorH = iconColor;
+                            let propAlias = null;
+                            if (property === 'bg') { colorH = bgColor; propAlias = bgAlias; }
+                            else if (property === 'text') { colorH = textColor; propAlias = textAlias; }
+                            else if (property === 'border') { colorH = borderColor; propAlias = borderAlias; }
+                            else if (property === 'icon') { colorH = iconColor; propAlias = iconAlias; }
 
-                            const rgb = hexToRgb(colorH);
-                            variable.setValueForMode(modeId, rgb);
+                            if (propAlias) {
+                                variable.setValueForMode(modeId, propAlias);
+                            } else {
+                                variable.setValueForMode(modeId, hexToRgb(colorH));
+                            }
                         }
 
                         // Also helper text color by state
                         const helperColorName = `input/helper/${varState}/color`;
-                        let helperVar = figma.variables.getLocalVariables().find(v => v.name === helperColorName && v.variableCollectionId === collection.id);
+                        let helperVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === helperColorName && v.variableCollectionId === collection.id);
                         if (!helperVar) helperVar = figma.variables.createVariable(helperColorName, collection, "COLOR");
 
                         let helperHex = (uiState === 'Error') ? '#EF4444' : '#6B7280';
-                        helperVar.setValueForMode(modeId, hexToRgb(helperHex));
+                        let hAlias = (uiState === 'Error') ? getInputColorAlias('Status/Error', 600) : getInputColorAlias('Neutral', 600);
+                        if (hAlias) helperVar.setValueForMode(modeId, hAlias);
+                        else helperVar.setValueForMode(modeId, hexToRgb(helperHex));
                     }
                 }
 
                 // Add general label and asterisk color vars
-                let labelVar = figma.variables.getLocalVariables().find(v => v.name === 'input/label/color' && v.variableCollectionId === collection.id);
+                let labelVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === 'input/label/color' && v.variableCollectionId === collection.id);
                 if (!labelVar) labelVar = figma.variables.createVariable('input/label/color', collection, "COLOR");
-                labelVar.setValueForMode(modeId, hexToRgb('#374151'));
+                const lAlias = getInputColorAlias('Neutral', 'Black');
+                if (lAlias) labelVar.setValueForMode(modeId, lAlias);
+                else labelVar.setValueForMode(modeId, hexToRgb('#000000'));
 
-                let asteriskVar = figma.variables.getLocalVariables().find(v => v.name === 'input/asterisk/color' && v.variableCollectionId === collection.id);
+                let asteriskVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === 'input/asterisk/color' && v.variableCollectionId === collection.id);
                 if (!asteriskVar) asteriskVar = figma.variables.createVariable('input/asterisk/color', collection, "COLOR");
-                asteriskVar.setValueForMode(modeId, hexToRgb('#FF0000'));
+                const asAlias = getInputColorAlias('Status/Error', 600);
+                if (asAlias) asteriskVar.setValueForMode(modeId, asAlias);
+                else asteriskVar.setValueForMode(modeId, hexToRgb('#EF4444'));
+
+                // Helper to get alias from other collections
+                async function getInputTokenAlias(collectionName, type, value) {
+                    const colls = await figma.variables.getLocalVariableCollectionsAsync();
+                    const coll = colls.find(c => c.name === collectionName);
+                    if (!coll) return null;
+                    const baseV = (collectionName === 'Stroke') ? 1 : 2;
+                    const idx = Math.round(value / baseV);
+                    const vName = `${type.toLowerCase()}/${idx}`;
+                    const allV = await figma.variables.getLocalVariablesAsync();
+                    const foundV = allV.find(v => v.name === vName && v.variableCollectionId === coll.id);
+                    return foundV ? { type: 'VARIABLE_ALIAS', id: foundV.id } : null;
+                }
 
                 const spacingVars = { 'spacing/vertical': 10, 'spacing/horizontal': 12, 'spacing/horizontalLeft': 14, 'radius': customRadius };
                 for (const [key, val] of Object.entries(spacingVars)) {
                     const varName = `input/${key}`;
-                    let variable = figma.variables.getLocalVariables().find(v => v.name === varName && v.variableCollectionId === collection.id);
+                    let variable = (await figma.variables.getLocalVariablesAsync()).find(v => varName === v.name && v.variableCollectionId === collection.id);
                     if (!variable) variable = figma.variables.createVariable(varName, collection, "FLOAT");
-                    variable.setValueForMode(modeId, val);
+                    
+                    let aType = key.includes('spacing') ? 'padding' : 'radius';
+                    let collN = key.includes('spacing') ? 'Padding' : 'Radius';
+                    const sAlias = await getInputTokenAlias(collN, aType, val);
+                    if (sAlias) variable.setValueForMode(modeId, sAlias);
+                    else variable.setValueForMode(modeId, val);
                 }
 
                 const fontVars = {
@@ -5092,7 +5307,7 @@ figma.ui.onmessage = async (msg) => {
                 };
                 for (const [key, val] of Object.entries(fontVars)) {
                     const varName = `input/${key}`;
-                    let variable = figma.variables.getLocalVariables().find(v => v.name === varName && v.variableCollectionId === collection.id);
+                    let variable = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === varName && v.variableCollectionId === collection.id);
                     if (!variable) variable = figma.variables.createVariable(varName, collection, "FLOAT");
                     variable.setValueForMode(modeId, val);
                 }
@@ -5114,7 +5329,7 @@ figma.ui.onmessage = async (msg) => {
 
             for (const [typeName, config] of Object.entries(inputTextStyleConfig)) {
                 const styleName = `Input/${typeName.charAt(0).toUpperCase() + typeName.slice(1)}`;
-                let textStyle = figma.getLocalTextStyles().find(s => s.name === styleName);
+                let textStyle = (await figma.getLocalTextStylesAsync()).find(s => s.name === styleName);
                 if (!textStyle) {
                     textStyle = figma.createTextStyle();
                     textStyle.name = styleName;
@@ -5129,7 +5344,7 @@ figma.ui.onmessage = async (msg) => {
                     const collections = await figma.variables.getLocalVariableCollectionsAsync();
                     const inputCollection = collections.find(c => c.name === "Input");
                     if (inputCollection) {
-                        const allVariables = figma.variables.getLocalVariables();
+                        const allVariables = await figma.variables.getLocalVariablesAsync();
                         const fontSizeVar = allVariables.find(v => v.name === `input/text/${typeName}/fontSize` && v.variableCollectionId === inputCollection.id);
                         if (fontSizeVar) { textStyle.setBoundVariable('fontSize', fontSizeVar); }
 
@@ -5219,7 +5434,7 @@ figma.ui.onmessage = async (msg) => {
                     labelText.name = "Label";
                     labelText.characters = customLabelText;
                     if (inputTextStylesMap['label']) {
-                        labelText.textStyleId = inputTextStylesMap['label'].id;
+                        await labelText.setTextStyleIdAsync(inputTextStylesMap['label'].id);
                     } else {
                         labelText.fontSize = 14;
                         labelText.fontName = { family: "Inter", style: "Medium" };
@@ -5235,7 +5450,7 @@ figma.ui.onmessage = async (msg) => {
                     requiredAsterisk.name = "Required";
                     requiredAsterisk.characters = "*";
                     if (inputTextStylesMap['label']) {
-                        requiredAsterisk.textStyleId = inputTextStylesMap['label'].id;
+                        await requiredAsterisk.setTextStyleIdAsync(inputTextStylesMap['label'].id);
                     } else {
                         requiredAsterisk.fontSize = 14;
                         requiredAsterisk.fontName = { family: "Inter", style: "Medium" };
@@ -5300,7 +5515,7 @@ figma.ui.onmessage = async (msg) => {
 
                         const allVariables = await figma.variables.getLocalVariablesAsync();
                         bgVar = allVariables.find(v => v.name === `input/${varType}/${varState}/bg` && v.variableCollectionId === inputCollection.id);
-                        borderVar = allVariables.find(v => v.name === `input/${varType}/${varState}/boarder` && v.variableCollectionId === inputCollection.id);
+                        borderVar = allVariables.find(v => v.name === `input/${varType}/${varState}/border` && v.variableCollectionId === inputCollection.id);
                         textVar = allVariables.find(v => v.name === `input/${varType}/${varState}/text` && v.variableCollectionId === inputCollection.id);
                         iconVar = allVariables.find(v => v.name === `input/${varType}/${varState}/icon` && v.variableCollectionId === inputCollection.id);
                         vPaddingVar = allVariables.find(v => v.name === `input/spacing/vertical` && v.variableCollectionId === inputCollection.id);
@@ -5308,8 +5523,8 @@ figma.ui.onmessage = async (msg) => {
                         hPaddingLeftVar = allVariables.find(v => v.name === `input/spacing/horizontalLeft` && v.variableCollectionId === inputCollection.id);
                         radiusVar = allVariables.find(v => v.name === `input/radius` && v.variableCollectionId === inputCollection.id);
                         radiusVar = allVariables.find(v => v.name === `input/radius` && v.variableCollectionId === inputCollection.id);
-                        fontSizeVar = allVariables.find(v => v.name === `input/text/fontSize` && v.variableCollectionId === inputCollection.id);
-                        lineHeightVar = allVariables.find(v => v.name === `input/text/lineHeight` && v.variableCollectionId === inputCollection.id);
+                        fontSizeVar = allVariables.find(v => v.name === `input/text/label/fontSize` && v.variableCollectionId === inputCollection.id); // Use label font size for input text
+                        lineHeightVar = allVariables.find(v => v.name === `input/text/label/lineHeight` && v.variableCollectionId === inputCollection.id); // Use label line height for input text
                     }
                 } catch (e) { }
 
@@ -5395,12 +5610,13 @@ figma.ui.onmessage = async (msg) => {
                             }
                         });
                     } catch (e) { }
+                    searchIcon.resize(searchIcon.width * 0.8, searchIcon.height * 0.8);
                     searchIcon.name = "Search Icon";
                     const placeholderText = figma.createText();
                     placeholderText.name = "Placeholder";
                     placeholderText.characters = "Placeholder text...";
                     if (inputTextStylesMap['placeholder']) {
-                        placeholderText.textStyleId = inputTextStylesMap['placeholder'].id;
+                        await placeholderText.setTextStyleIdAsync(inputTextStylesMap['placeholder'].id);
                     } else {
                         placeholderText.fontSize = 14;
                         placeholderText.fontName = { family: "Inter", style: "Regular" };
@@ -5457,7 +5673,7 @@ figma.ui.onmessage = async (msg) => {
                         digitText.name = "0";
                         digitText.characters = "0";
                         if (inputTextStylesMap['label']) {
-                            digitText.textStyleId = inputTextStylesMap['label'].id; // Using Label style since mapped to medium
+                            await digitText.setTextStyleIdAsync(inputTextStylesMap['label'].id); // Using Label style since mapped to medium
                         } else {
                             digitText.fontSize = 14;
                             digitText.fontName = { family: "Inter", style: "Medium" };
@@ -5533,7 +5749,7 @@ figma.ui.onmessage = async (msg) => {
                     codeText.name = "+91";
                     codeText.characters = "+91";
                     if (inputTextStylesMap['label']) { // Use label style for medium texts like country code
-                        codeText.textStyleId = inputTextStylesMap['label'].id;
+                        await codeText.setTextStyleIdAsync(inputTextStylesMap['label'].id);
                     } else {
                         codeText.fontSize = 14;
                         codeText.fontName = { family: "Inter", style: "Medium" };
@@ -5592,7 +5808,7 @@ figma.ui.onmessage = async (msg) => {
                     phoneText.name = "Placeholder";
                     phoneText.characters = "1234567890";
                     if (inputTextStylesMap['label']) {
-                        phoneText.textStyleId = inputTextStylesMap['label'].id;
+                        await phoneText.setTextStyleIdAsync(inputTextStylesMap['label'].id);
                     } else {
                         phoneText.fontSize = 14;
                         phoneText.fontName = { family: "Inter", style: "Medium" };
@@ -5612,7 +5828,7 @@ figma.ui.onmessage = async (msg) => {
                     placeholderText.name = "Placeholder";
                     placeholderText.characters = "Placeholder text...";
                     if (inputTextStylesMap['placeholder']) {
-                        placeholderText.textStyleId = inputTextStylesMap['placeholder'].id;
+                        await placeholderText.setTextStyleIdAsync(inputTextStylesMap['placeholder'].id);
                     } else {
                         placeholderText.fontSize = 14;
                         placeholderText.fontName = { family: "Inter", style: "Regular" };
@@ -5646,7 +5862,7 @@ figma.ui.onmessage = async (msg) => {
                     placeholderText.name = "Placeholder";
                     placeholderText.characters = "Placeholder text...";
                     if (inputTextStylesMap['placeholder']) {
-                        placeholderText.textStyleId = inputTextStylesMap['placeholder'].id;
+                        await placeholderText.setTextStyleIdAsync(inputTextStylesMap['placeholder'].id);
                     } else {
                         placeholderText.fontSize = 14;
                         placeholderText.fontName = { family: "Inter", style: "Regular" };
@@ -5693,13 +5909,13 @@ figma.ui.onmessage = async (msg) => {
                 hintIcon.name = "Hint Icon";
                 hintIcon.resize(16, 16);
                 hintIcon.layoutAlign = "INHERIT";
-                hintIcon.visible = true;
+                hintIcon.visible = false; // Hide hint icon by default
 
                 const hintText = figma.createText();
                 hintText.name = "Hint Text";
                 hintText.characters = "Hint text to help users";
                 if (inputTextStylesMap['helper']) {
-                    hintText.textStyleId = inputTextStylesMap['helper'].id;
+                    await hintText.setTextStyleIdAsync(inputTextStylesMap['helper'].id);
                 } else {
                     hintText.fontSize = 12;
                     hintText.fontName = { family: "Inter", style: "Regular" };
@@ -5745,7 +5961,7 @@ figma.ui.onmessage = async (msg) => {
 
                 for (let stateIndex = 0; stateIndex < states.length; stateIndex++) {
                     const state = states[stateIndex];
-                    const component = createInputField(type, state);
+                    const component = await createInputField(type, state);
                     figma.currentPage.appendChild(component);
                     columnComponents.push(component);
                     allComponents.push(component);
@@ -6032,8 +6248,7 @@ figma.ui.onmessage = async (msg) => {
                     footer.appendChild(website);
                     docFrame.appendChild(footer);
 
-                    figma.currentPage.selection = [docFrame];
-                    figma.viewport.scrollAndZoomIntoView([docFrame]);
+                    addToUniversalDoc(docFrame);
                     notifyUI('input-doc', true, 'Input Field Component Set created inside documentation frame!');
                 } else {
                     notifyUI('input-doc', false, 'Failed to create component set');
@@ -6231,23 +6446,7 @@ figma.ui.onmessage = async (msg) => {
             footerSection.appendChild(websiteLabel);
             frame.appendChild(footerSection);
 
-            // Position the frame to avoid overlap
-            const existingFrames = figma.currentPage.findAll(n => n.name.includes("- Doc") || n.name.includes("Icon Set"));
-            if (existingFrames.length > 0) {
-                // Find the bottom-most frame
-                let maxY = -Infinity;
-                existingFrames.forEach(f => {
-                    if (f.y + f.height > maxY) maxY = f.y + f.height;
-                });
-                frame.y = maxY + 100; // 100px gap
-            } else {
-                frame.y = figma.viewport.center.y - (frame.height / 2);
-            }
-            frame.x = figma.viewport.center.x - (frame.width / 2);
-
-            figma.currentPage.selection = [frame];
-            // Only zoom if single doc, or just pan to the new one
-            // figma.viewport.scrollAndZoomIntoView([frame]);
+            addToUniversalDoc(frame);
 
             console.log(`Created documentation for ${library} - ${category} with ${iconsArray.length} icons.`);
             notifyUI('icons-doc', true, `Successfully created documentation with ${iconsArray.length} icons!`);

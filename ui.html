@@ -397,31 +397,32 @@
 
         /* Active States */
         .tab-button {
-            font-family: var(--font-primary);
-            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            padding: var(--padding-16) var(--padding-32);
+            padding: 12px 24px;
             border: none;
             background: transparent;
-            color: #1F2937;
+            color: #6B7280;
             transition: all 0.2s;
             flex: 1;
             text-align: center;
+            border-bottom: 2px solid transparent;
         }
 
         .tab-button:hover {
-            background: #F3F4F6;
+            color: #1350FF;
+            background: #F9FAFB;
         }
 
         .active-tab-button {
-            background: #4F46E5;
+            background: #1350FF;
             color: #FFFFFF;
-            font-weight: 500;
-        }
-
-        .active-tab-button:hover {
-            background: #4338CA;
+            font-weight: 600;
+            border-radius: 50px;
+            margin: 4px;
+            padding: 8px 16px;
         }
 
         /* Layout Helpers */
@@ -757,10 +758,11 @@
         }
 
         .auto-setup-color-input-wrapper {
+            position: relative;
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 16px;
+            padding: 8px 8px 8px 16px;
             border: 1px solid #E5E7EB;
             border-radius: 9999px;
             background: #FFFFFF;
@@ -836,61 +838,74 @@
         }
 
         .auto-setup-icon-card {
-            padding: 24px;
-            border: 2px solid #E5E7EB;
+            padding: 24px 16px;
+            border: 1px solid #E5E7EB;
             border-radius: 12px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
+            background: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .auto-setup-icon-card:hover {
-            border-color: #4F46E5;
+            border-color: #1350FF;
         }
 
         .auto-setup-icon-card.selected {
-            border-color: #4F46E5;
-            background: #EFF6FF;
+            border: 1px solid transparent;
+            background: linear-gradient(#FDF4FF, #FDF4FF) padding-box,
+                linear-gradient(90deg, #1350FF 0%, #D900FF 100%) border-box;
         }
 
         .auto-setup-icon-name {
             font-family: 'Poppins', sans-serif;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             color: #1F2937;
             margin-top: 12px;
         }
 
         .auto-setup-component-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 16px;
             margin-top: 24px;
         }
 
         .auto-setup-component-card {
-            padding: 20px;
-            border: 2px solid #E5E7EB;
+            padding: 20px 16px;
+            border: 1px solid #E5E7EB;
             border-radius: 12px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
+            background: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .auto-setup-component-card:hover {
-            border-color: #4F46E5;
+            border-color: #1350FF;
         }
 
         .auto-setup-component-card.selected {
-            border-color: #4F46E5;
-            background: #EFF6FF;
+            border: 1px solid transparent;
+            background: linear-gradient(#FDF4FF, #FDF4FF) padding-box,
+                linear-gradient(90deg, #1350FF 0%, #D900FF 100%) border-box;
         }
 
         .auto-setup-component-name {
             font-family: 'Poppins', sans-serif;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             color: #1F2937;
+            margin-top: 12px;
         }
 
         .auto-setup-footer {
@@ -934,7 +949,7 @@
         }
 
         .auto-setup-btn-primary {
-            background: #4F46E5;
+            background: #1350FF;
             color: #FFFFFF;
         }
 
@@ -971,6 +986,45 @@
             display: flex;
             gap: 12px;
             justify-content: center;
+        }
+
+        .auto-setup-loading {
+            text-align: center;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .auto-setup-loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 4px solid #F3F4F6;
+            border-top: 4px solid #2563EB;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 32px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .auto-setup-loading-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: 32px;
+            font-weight: 400;
+            color: #000000;
+            margin-bottom: 12px;
+        }
+
+        .auto-setup-loading-message {
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            color: #6B7280;
         }
 
         /* Main App Screen */
@@ -1116,10 +1170,10 @@
 
         .brand-color-picker-popup-unique {
             position: absolute;
-            top: calc(100% + 8px);
+            top: -20px; /* Position higher to encourage anchor popup above */
             left: 0;
-            width: auto;
-            height: auto;
+            width: 32px;
+            height: 32px;
             border: none;
             cursor: pointer;
             z-index: 1000;
@@ -1328,10 +1382,12 @@
 
         .add-color-modal-picker-hidden {
             position: absolute;
-            width: 0;
-            height: 0;
+            width: 32px;
+            height: 32px;
             opacity: 0;
             pointer-events: none;
+            top: 0;
+            right: 0;
         }
 
         .add-color-modal-buttons {
@@ -3013,7 +3069,7 @@
                             <div class="auto-setup-color-circle" id="auto-primary-circle"
                                 style="background-color: #1350FF;"
                                 onclick="document.getElementById('auto-primary-picker').click()"></div>
-                            <input type="color" id="auto-primary-picker" value="#1350FF" style="display: none;"
+                            <input type="color" id="auto-primary-picker" value="#1350FF" style="position: absolute; right: 8px; top: -10px; width: 32px; height: 32px; border: none; opacity: 0; cursor: pointer; visibility: hidden;"
                                 onchange="updateAutoColor('primary', this.value)">
                         </div>
                     </div>
@@ -3036,7 +3092,7 @@
                             <div class="auto-setup-color-circle" id="auto-secondary-circle"
                                 style="background-color: #D900FF;"
                                 onclick="document.getElementById('auto-secondary-picker').click()"></div>
-                            <input type="color" id="auto-secondary-picker" value="#D900FF" style="display: none;"
+                            <input type="color" id="auto-secondary-picker" value="#D900FF" style="position: absolute; right: 8px; top: -10px; width: 32px; height: 32px; border: none; opacity: 0; cursor: pointer; visibility: hidden;"
                                 onchange="updateAutoColor('secondary', this.value)">
                         </div>
                     </div>
@@ -3048,7 +3104,7 @@
                                 <div class="toggle-switch-knob-unique"></div>
                             </div>
                         </div>
-                        <div class="auto-setup-toggle-item" onclick="toggleAutoSetupOption('status')">
+                        <div class="auto-setup-toggle-item neutral-bg" onclick="toggleAutoSetupOption('status')">
                             <span class="auto-setup-toggle-label">Enable Status Colors</span>
                             <div class="toggle-switch-unique active" id="auto-status-toggle">
                                 <div class="toggle-switch-knob-unique"></div>
@@ -3065,7 +3121,7 @@
 
                     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 32px;">
                         <div
-                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #FFFFFF;">
                             <div
                                 style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
                                 Spacing</div>
@@ -3073,7 +3129,7 @@
                                 20 tokens</div>
                         </div>
                         <div
-                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #FFFFFF;">
                             <div
                                 style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
                                 Padding</div>
@@ -3081,7 +3137,7 @@
                                 20 tokens</div>
                         </div>
                         <div
-                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #FFFFFF;">
                             <div
                                 style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
                                 Border Radius</div>
@@ -3089,7 +3145,7 @@
                                 20 tokens</div>
                         </div>
                         <div
-                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #FFFFFF;">
                             <div
                                 style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
                                 Stroke</div>
@@ -3097,7 +3153,7 @@
                                 10 tokens</div>
                         </div>
                         <div
-                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #FFFFFF;">
                             <div
                                 style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
                                 Shadow</div>
@@ -3105,7 +3161,7 @@
                                 predefined styles</div>
                         </div>
                         <div
-                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #F9FAFB;">
+                            style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 12px; background: #FFFFFF;">
                             <div
                                 style="font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 8px;">
                                 Grid</div>
@@ -3157,87 +3213,41 @@
                     </div>
                 </div>
 
-                <!-- Step 4: Icon Library -->
+                <!-- Step 4: Components -->
                 <div class="auto-setup-step" id="auto-setup-step-4">
-                    <h2 class="auto-setup-step-title">Icon Library</h2>
-                    <p class="auto-setup-step-description">Choose an icon library for your design system</p>
-
-                    <div class="auto-setup-icon-grid">
-                        <div class="auto-setup-icon-card selected" onclick="selectAutoIcon(this, 'unicons')"
-                            data-library="unicons">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none"
-                                viewBox="0 0 72 72">
-                                <path fill="#595bff" fill-rule="evenodd"
-                                    d="M41.573 55.504a2.282 2.282 0 0 0-2.414-1.087 18.057 18.057 0 0 1-3.376.318c-10.29 0-18.576-8.584-18.098-18.986.427-9.289 7.96-16.828 17.242-17.255 10.396-.479 18.974 7.814 18.974 18.11 0 4.458-1.608 8.54-4.275 11.697a2.275 2.275 0 0 0-.244 2.607l5.173 8.966c.872 1.511 3.051 1.511 3.923 0L70.712 38.67a4.537 4.537 0 0 0 0-4.532L55.209 7.267A4.529 4.529 0 0 0 51.286 5H20.28a4.528 4.528 0 0 0-3.922 2.266L.855 34.136a4.535 4.535 0 0 0 0 4.533L16.358 65.54a4.528 4.528 0 0 0 3.922 2.266h24.468c1.744 0 2.833-1.888 1.962-3.4l-5.137-8.902Z"
-                                    clip-rule="evenodd" />
-                                <path fill="#595bff" fill-rule="evenodd"
-                                    d="M35.783 27.425c-5.003 0-9.059 4.058-9.059 9.065s4.056 9.065 9.06 9.065c5.003 0 9.058-4.058 9.058-9.065s-4.055-9.065-9.059-9.065Z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            <div class="auto-setup-icon-name">Unicons</div>
-                        </div>
-                        <div class="auto-setup-icon-card" onclick="selectAutoIcon(this, 'Vuesax-Icon')"
-                            data-library="Vuesax-Icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 1453.14 355.98">
-                                <g>
-                                    <polygon
-                                        points="333.73 29.11 272.23 29.11 166.93 192.18 61.64 29.11 0.13 29.11 166.93 287.42 333.73 29.11"
-                                        fill="#10B981" />
-                                    <polygon
-                                        points="166.93 316.16 25.71 97.46 0 97.46 166.93 355.98 333.87 97.46 308.15 97.46 166.93 316.16"
-                                        fill="#059669" />
-                                    <polygon
-                                        points="254.47 4.97 166.93 138.08 79.39 4.97 143.81 21.23 143.81 0 190.05 0 190.05 21.23 254.47 4.97"
-                                        fill="#10B981" />
-                                </g>
-                            </svg>
-                            <div class="auto-setup-icon-name">Vuesax Icon</div>
-                        </div>
-                        <div class="auto-setup-icon-card" onclick="selectAutoIcon(this, 'Box-Icon')"
-                            data-library="Box-Icon">
-                            <svg width="48" height="48" viewBox="0 0 32 32" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <circle r="10" cx="16" cy="16" fill="white" />
-                                <mask id="mask0_58_46" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="3" y="2"
-                                    width="27" height="28">
-                                    <path
-                                        d="M26.1261 6.88263L18.9116 2.76173C17.1255 1.74609 14.9308 1.74609 13.1447 2.76173L5.93016 6.88263C4.1207 7.92162 3 9.84782 3 11.9258V20.0742C3 22.1639 4.1207 24.0901 5.93016 25.1174L13.1447 29.2383C14.9308 30.2539 17.1255 30.2539 18.9116 29.2383L26.1261 25.1174C27.9356 24.0784 29.0563 22.1522 29.0563 20.0742V11.9258C29.0563 9.83615 27.9356 7.90994 26.1261 6.88263ZM22.4838 13.35L17.429 16.1634C17.1138 16.3385 16.9037 16.6771 16.9037 17.0507V22.6308C16.9037 23.8099 15.6196 24.5337 14.6156 23.9383L9.68918 21.0081C9.2339 20.7396 8.94205 20.2376 8.94205 19.7006V12.9181C8.94205 12.3694 9.24557 11.8557 9.7242 11.5872L16.1682 8.00334C16.6235 7.74651 17.1839 7.74651 17.6391 8.00334L22.4722 10.6883C23.5112 11.2604 23.5112 12.7663 22.4722 13.3383L22.4838 13.35Z"
-                                        fill="black" />
-                                </mask>
-                                <g mask="url(#mask0_58_46)">
-                                    <rect x="-3" y="-4" width="35" height="38" fill="url(#paint0_angular)" />
-                                </g>
-                                <defs>
-                                    <radialGradient id="paint0_angular" cx="0" cy="0" r="1"
-                                        gradientUnits="userSpaceOnUse"
-                                        gradientTransform="translate(14.5 15) rotate(90) scale(19)">
-                                        <stop offset="0" stop-color="#209BF6" />
-                                        <stop offset="0.25" stop-color="#12DA6C" />
-                                        <stop offset="0.5" stop-color="#E1FE42" />
-                                        <stop offset="0.75" stop-color="#ED7EFF" />
-                                        <stop offset="1" stop-color="#902FFB" />
-                                    </radialGradient>
-                                </defs>
-                            </svg>
-                            <div class="auto-setup-icon-name">Box Icon</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 5: Components -->
-                <div class="auto-setup-step" id="auto-setup-step-5">
                     <h2 class="auto-setup-step-title">Components</h2>
-                    <p class="auto-setup-step-description">Select components to include in your design system</p>
+                    <p class="auto-setup-step-description">Select essential components for your initial design system</p>
 
                     <div class="auto-setup-component-grid">
                         <div class="auto-setup-component-card selected" onclick="toggleAutoComponent(this)"
                             data-component="button">
-                            <div class="auto-setup-component-name">Button</div>
+                            <div style="width: 40px; height: 40px; background: #F9FAFB; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="2" y="6" width="20" height="12" rx="4" stroke="#1350FF" stroke-width="2"/>
+                                    <line x1="7" y1="12" x2="17" y2="12" stroke="#1350FF" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <div class="auto-setup-component-name">Buttons</div>
                         </div>
                         <div class="auto-setup-component-card selected" onclick="toggleAutoComponent(this)"
-                            data-component="textfield">
-                            <div class="auto-setup-component-name">Text Field</div>
+                            data-component="input">
+                            <div style="width: 40px; height: 40px; background: #F9FAFB; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="2" y="7" width="20" height="10" rx="3" stroke="#1350FF" stroke-width="2"/>
+                                    <line x1="6" y1="12" x2="10" y2="12" stroke="#1350FF" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <div class="auto-setup-component-name">Input Fields</div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Loading -->
+                <div class="auto-setup-step" id="auto-setup-step-5">
+                    <div class="auto-setup-loading">
+                        <div class="auto-setup-loading-spinner"></div>
+                        <h2 class="auto-setup-loading-title">Generating Your Design System</h2>
+                        <p class="auto-setup-loading-message">We're creating all your variables, styles, and components. This will only take a moment...</p>
                     </div>
                 </div>
 
@@ -3261,7 +3271,7 @@
             <!-- Footer with Navigation -->
             <div class="auto-setup-footer">
                 <div class="auto-setup-progress">
-                    <span id="auto-setup-progress-text">Step 1 of 4</span>
+                    <span id="auto-setup-progress-text">Step 1 of 5</span>
                 </div>
                 <div class="auto-setup-buttons">
                     <button class="auto-setup-btn auto-setup-btn-secondary" id="auto-setup-back-btn"
@@ -4649,7 +4659,7 @@
                                             <input type="text" class="component-property-color-hex"
                                                 id="primary-color-input" value="#1350FF">
                                             <input type="color" id="primary-color-picker" value="#1350FF"
-                                                style="position: absolute; bottom: -45px; right: 0; width: 50px; height: 40px; border: none; cursor: pointer; opacity: 0;">
+                                                style="position: absolute; top: 0; right: 0; width: 50px; height: 40px; border: none; cursor: pointer; opacity: 0;">
                                             <div class="component-property-color-circle" id="primary-color-circle"
                                                 style="background: #1350FF;"></div>
                                         </div>
@@ -4660,7 +4670,7 @@
                                             <input type="text" class="component-property-color-hex"
                                                 id="text-color-input" value="#FFFFFF">
                                             <input type="color" id="text-color-picker" value="#FFFFFF"
-                                                style="position: absolute; bottom: -45px; right: 0; width: 50px; height: 40px; border: none; cursor: pointer; opacity: 0;">
+                                                style="position: absolute; top: 0; right: 0; width: 50px; height: 40px; border: none; cursor: pointer; opacity: 0;">
                                             <div class="component-property-color-circle" id="text-color-circle"
                                                 style="background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.1);">
                                             </div>
@@ -4754,7 +4764,7 @@
                                                 id="textfield-bg-color-input" value="#3B82F6"
                                                 oninput="updateTextFieldPreview()">
                                             <input type="color" id="textfield-bg-color-picker" value="#3B82F6"
-                                                style="position: absolute; bottom: -45px; right: 0; width: 50px; height: 40px; border: none; cursor: pointer; opacity: 0;">
+                                                style="position: absolute; top: 0; right: 0; width: 50px; height: 40px; border: none; cursor: pointer; opacity: 0;">
                                             <div class="component-property-color-circle" id="textfield-bg-color-circle"
                                                 style="background: #3B82F6; border: 1px solid rgba(0, 0, 0, 0.1);">
                                             </div>
@@ -4767,7 +4777,7 @@
                                                 id="textfield-border-color-input" value="#E9EAEB"
                                                 oninput="updateTextFieldPreview()">
                                             <input type="color" id="textfield-border-color-picker" value="#E9EAEB"
-                                                style="position: absolute; bottom: -45px; right: 0; width: 50px; height: 40px; border: none; cursor: pointer; opacity: 0;">
+                                                style="position: absolute; top: 0; right: 0; width: 50px; height: 40px; border: none; cursor: pointer; opacity: 0;">
                                             <div class="component-property-color-circle"
                                                 id="textfield-border-color-circle" style="background: #E9EAEB;"></div>
                                         </div>
@@ -5933,7 +5943,7 @@
 
         // Auto Setup Functions
         let autoSetupCurrentStep = 1;
-        const autoSetupTotalSteps = 5;
+        const autoSetupTotalSteps = 4;
         let autoSetupData = {
             primaryColor: '#1350FF',
             secondaryColor: '#D900FF',
@@ -5944,9 +5954,10 @@
             secondaryFont: 'Instrument Serif',
             enableSecondaryFont: false,
             baseFontSize: 16,
-            iconLibrary: 'material',
+            iconLibrary: 'unicons',
             components: ['button', 'input']
         };
+        window.isAutoSetupRunning = false;
 
         function initializeAutoSetup() {
             autoSetupCurrentStep = 1;
@@ -6030,10 +6041,10 @@
         }
 
         function autoSetupNextStep() {
-            if (autoSetupCurrentStep < autoSetupTotalSteps) {
-                // Collect data from current step
-                collectAutoSetupStepData();
+            // Always collect data from the current step
+            collectAutoSetupStepData();
 
+            if (autoSetupCurrentStep < autoSetupTotalSteps) {
                 // Move to next step
                 autoSetupCurrentStep++;
                 updateAutoSetupUI();
@@ -6084,6 +6095,8 @@
             if (progressText) {
                 if (autoSetupCurrentStep <= autoSetupTotalSteps) {
                     progressText.textContent = `Step ${autoSetupCurrentStep} of ${autoSetupTotalSteps}`;
+                } else if (autoSetupCurrentStep === 5) {
+                    progressText.textContent = 'Generating...';
                 } else {
                     progressText.textContent = 'Complete';
                 }
@@ -6110,32 +6123,62 @@
             }
         }
 
+        function wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function updateLoadingMessage(msg) {
+            const loadingMsg = document.querySelector('.auto-setup-loading-message');
+            if (loadingMsg) {
+                loadingMsg.textContent = msg;
+            }
+        }
+
         async function generateAutoSetup() {
-            showLoadingToast('Generating your design system...');
+            // Show loading step immediately
+            autoSetupCurrentStep = 5;
+            updateAutoSetupUI();
+
+            window.isAutoSetupRunning = true;
 
             try {
                 // Step 1: Generate Colors
+                updateLoadingMessage("Creating brand colors...");
                 await generateAutoColors();
+                await wait(2000); // Wait for color doc to be added first
 
                 // Step 2: Generate Tokens
+                updateLoadingMessage("Generating tokens (Spacing, Radius, Grid)...");
                 await generateAutoTokens();
+                await wait(4000); // Give plenty of time for tokens and grid docs
 
                 // Step 3: Generate Typography
+                updateLoadingMessage("Setting up typography styles...");
                 await generateAutoTypography();
+                await wait(3000);
 
                 // Step 4: Generate Icons
+                updateLoadingMessage("Fetching and creating icons...");
                 await generateAutoIcons();
+                await wait(2000);
 
                 // Step 5: Generate Components
+                updateLoadingMessage("Building components...");
                 await generateAutoComponents();
+                await wait(3000);
 
-                // Show success step
+                // Final Step: Success
                 autoSetupCurrentStep = 6;
                 updateAutoSetupUI();
-
-                showSuccessToast('Design system created successfully!');
+                window.isAutoSetupRunning = false;
+                
+                // Final confirmation message (only if reached here)
+                parent.postMessage({ pluginMessage: { type: 'notify', message: 'Slate Design System created successfully!' } }, '*');
             } catch (error) {
+                console.error("[Auto Setup] Error during generation:", error);
+                window.isAutoSetupRunning = false;
                 showErrorToast('Error generating design system: ' + error.message);
+                // Optionally reset step? 
             }
         }
 
@@ -6161,8 +6204,16 @@
                         includeStatus: autoSetupData.enableStatus
                     }
                 }, '*');
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-color-style-guide',
+                        colors: colors,
+                        includeNeutral: autoSetupData.enableNeutral,
+                        includeStatus: autoSetupData.enableStatus
+                    }
+                }, '*');
 
-                setTimeout(resolve, 1000);
+                setTimeout(resolve, 1500);
             });
         }
 
@@ -6177,12 +6228,21 @@
                     }
                 }, '*');
 
+                // Generate spacing tokens
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-spacing-tokens',
+                        baseValue: 2,
+                        numberOfTokens: 20
+                    }
+                }, '*');
+
                 // Generate padding tokens
                 parent.postMessage({
                     pluginMessage: {
                         type: 'create-padding-tokens',
-                        baseValue: 4,
-                        numberOfTokens: 12
+                        baseValue: 2,
+                        numberOfTokens: 20
                     }
                 }, '*');
 
@@ -6190,8 +6250,8 @@
                 parent.postMessage({
                     pluginMessage: {
                         type: 'create-radius-tokens',
-                        baseValue: 4,
-                        numberOfTokens: 8
+                        baseValue: 2,
+                        numberOfTokens: 20
                     }
                 }, '*');
 
@@ -6200,7 +6260,7 @@
                     pluginMessage: {
                         type: 'create-stroke-tokens',
                         baseValue: 1,
-                        numberOfTokens: 6
+                        numberOfTokens: 10
                     }
                 }, '*');
 
@@ -6215,31 +6275,49 @@
                 parent.postMessage({
                     pluginMessage: {
                         type: 'create-grid-styles',
-                        grids: [
-                            { name: 'Desktop', columns: 12, gutter: 24, margin: 80 },
-                            { name: 'Tablet', columns: 8, gutter: 20, margin: 40 },
-                            { name: 'Mobile', columns: 4, gutter: 16, margin: 20 }
-                        ]
+                        grids: {
+                            desktop: { columns: 12, gutter: 24, margin: 80 },
+                            tablet: { columns: 8, gutter: 20, margin: 40 },
+                            mobile: { columns: 4, gutter: 16, margin: 20 }
+                        }
                     }
                 }, '*');
 
-                setTimeout(resolve, 2000);
+                // Generate docs for tokens first
+                parent.postMessage({ pluginMessage: { type: 'create-spacing-doc', baseValue: 2, numberOfTokens: 20 } }, '*');
+                setTimeout(() => parent.postMessage({ pluginMessage: { type: 'create-padding-doc', baseValue: 2, numberOfTokens: 20 } }, '*'), 500);
+                setTimeout(() => parent.postMessage({ pluginMessage: { type: 'create-radius-doc', baseValue: 2, numberOfTokens: 20 } }, '*'), 1000);
+                setTimeout(() => parent.postMessage({ pluginMessage: { type: 'create-stroke-doc', baseValue: 1, numberOfTokens: 10 } }, '*'), 1500);
+                setTimeout(() => parent.postMessage({ pluginMessage: { type: 'create-shadow-doc' } }, '*'), 2000);
+                
+                // Then Grid doc (enforce order Grid after Tokens)
+                setTimeout(() => {
+                    parent.postMessage({ pluginMessage: { type: 'create-grid-doc', grids: {
+                        desktop: { columns: 12, gutter: 24, margin: 80 },
+                        tablet: { columns: 8, gutter: 20, margin: 40 },
+                        mobile: { columns: 4, gutter: 16, margin: 20 }
+                    } } }, '*');
+                }, 2500);
+
+                setTimeout(resolve, 3000);
             });
         }
 
         async function generateAutoTypography() {
             return new Promise((resolve) => {
+                const useSecondary = autoSetupData.enableSecondaryFont;
                 const typographyData = {
-                    primaryFont: autoSetupData.primaryFont,
-                    secondaryFont: autoSetupData.enableSecondaryFont ? autoSetupData.secondaryFont : null,
-                    baseFontSize: autoSetupData.baseFontSize,
+                    primaryFont: autoSetupData.primaryFont || 'Inter',
+                    secondaryFont: useSecondary ? (autoSetupData.secondaryFont || 'Poppins') : null,
+                    baseFontSize: autoSetupData.baseFontSize || 16,
+                    scale: 1.25,
                     styles: [
-                        { name: 'H1', fontSize: 48, lineHeight: 1.2, fontWeight: 'Bold', fontFamily: 'primary' },
-                        { name: 'H2', fontSize: 40, lineHeight: 1.2, fontWeight: 'Bold', fontFamily: 'primary' },
-                        { name: 'H3', fontSize: 32, lineHeight: 1.3, fontWeight: 'SemiBold', fontFamily: 'primary' },
-                        { name: 'H4', fontSize: 24, lineHeight: 1.3, fontWeight: 'SemiBold', fontFamily: 'primary' },
-                        { name: 'H5', fontSize: 20, lineHeight: 1.4, fontWeight: 'Medium', fontFamily: 'primary' },
-                        { name: 'H6', fontSize: 18, lineHeight: 1.4, fontWeight: 'Medium', fontFamily: 'primary' },
+                        { name: 'H1', fontSize: 48, lineHeight: 1.2, fontWeight: 'Bold', fontFamily: useSecondary ? 'secondary' : 'primary' },
+                        { name: 'H2', fontSize: 40, lineHeight: 1.2, fontWeight: 'Bold', fontFamily: useSecondary ? 'secondary' : 'primary' },
+                        { name: 'H3', fontSize: 32, lineHeight: 1.3, fontWeight: 'SemiBold', fontFamily: useSecondary ? 'secondary' : 'primary' },
+                        { name: 'H4', fontSize: 24, lineHeight: 1.3, fontWeight: 'SemiBold', fontFamily: useSecondary ? 'secondary' : 'primary' },
+                        { name: 'H5', fontSize: 20, lineHeight: 1.4, fontWeight: 'Medium', fontFamily: useSecondary ? 'secondary' : 'primary' },
+                        { name: 'H6', fontSize: 18, lineHeight: 1.4, fontWeight: 'Medium', fontFamily: useSecondary ? 'secondary' : 'primary' },
                         { name: 'Body/Large', fontSize: 18, lineHeight: 1.6, fontWeight: 'Regular', fontFamily: 'primary' },
                         { name: 'Body/Medium', fontSize: 16, lineHeight: 1.6, fontWeight: 'Regular', fontFamily: 'primary' },
                         { name: 'Body/Small', fontSize: 14, lineHeight: 1.6, fontWeight: 'Regular', fontFamily: 'primary' },
@@ -6250,25 +6328,41 @@
                 parent.postMessage({
                     pluginMessage: {
                         type: 'create-typography-styles',
-                        typographyData: typographyData
+                        ...typographyData
                     }
                 }, '*');
 
-                setTimeout(resolve, 1500);
+                // Generate typography documentation
+                parent.postMessage({
+                    pluginMessage: {
+                        type: 'create-typography-doc',
+                        ...typographyData
+                    }
+                }, '*');
+
+                setTimeout(resolve, 2000);
             });
         }
 
         async function generateAutoIcons() {
-            return new Promise((resolve) => {
-                parent.postMessage({
-                    pluginMessage: {
-                        type: 'create-icons-doc',
-                        library: autoSetupData.iconLibrary
-                    }
-                }, '*');
+            const library = autoSetupData.iconLibrary || 'unicons';
+            const categories = iconCategoriesMap[library] || [];
+            if (categories.length === 0) {
+                console.warn(`[Auto Setup] No categories found for library: ${library}`);
+                return;
+            }
 
-                setTimeout(resolve, 1000);
-            });
+            const defaultCat = categories[0];
+            const gitLinks = {
+                'unicons': 'https://github.com/harsh2277/unicons.git',
+                'Vuesax-Icon': 'https://github.com/harsh2277/Vuesax-Icon.git',
+                'Box-Icon': 'https://github.com/harsh2277/Box-Icon.git'
+            };
+
+            const repo = `harsh2277/${library}`;
+            const gitLink = gitLinks[library] || '';
+
+            await fetchAndCreateDoc(repo, defaultCat.value, defaultCat.label, library, gitLink);
         }
 
         async function generateAutoComponents() {
@@ -6280,6 +6374,8 @@
                             pluginMessage: {
                                 type: 'create-button-doc',
                                 primaryColor: autoSetupData.primaryColor,
+                                secondaryColor: autoSetupData.secondaryColor,
+                                enableSecondaryColor: autoSetupData.enableSecondaryColor,
                                 cornerRadius: 8,
                                 paddingHorizontal: 24,
                                 paddingVertical: 12
@@ -6671,6 +6767,14 @@
                     }
                 }
 
+                if (window.isAutoSetupRunning) {
+                    // Skip all toasts during auto setup as we have a full screen loader
+                    if (!msg.success) {
+                        console.error('Auto setup error:', msg.message || msg.error);
+                    }
+                    return;
+                }
+
                 // Handle single doc or other actions
                 if (msg.success) {
                     showSuccessToast(msg.message || 'Action completed successfully!', toastId);
@@ -6987,46 +7091,48 @@
 
             // Clear existing shades
             const shadesGrid = document.getElementById('color-shades-grid');
-            if (!shadesGrid) return;
+            if (shadesGrid) {
+                shadesGrid.innerHTML = '';
 
-            shadesGrid.innerHTML = '';
+                // Create shade items
+                shades.forEach((shade, index) => {
+                    const shadeItem = document.createElement('div');
+                    shadeItem.className = 'color-shade-item';
 
-            // Create shade items
-            shades.forEach((shade, index) => {
-                const shadeItem = document.createElement('div');
-                shadeItem.className = 'color-shade-item';
+                    const shadeBox = document.createElement('div');
+                    shadeBox.className = 'color-shade-box';
+                    shadeBox.style.background = shade;
 
-                const shadeBox = document.createElement('div');
-                shadeBox.className = 'color-shade-box';
-                shadeBox.style.background = shade;
+                    // Add border for very light colors
+                    if (index === 0) {
+                        shadeBox.classList.add('with-border');
+                    }
 
-                // Add border for very light colors
-                if (index === 0) {
-                    shadeBox.classList.add('with-border');
-                }
+                    const shadeLabel = document.createElement('span');
+                    shadeLabel.className = 'color-shade-label';
+                    shadeLabel.textContent = 'Aa';
 
-                const shadeLabel = document.createElement('span');
-                shadeLabel.className = 'color-shade-label';
-                shadeLabel.textContent = 'Aa';
+                    // Update text color based on brightness
+                    const isLight = isLightColor(shade);
+                    if (!isLight) {
+                        shadeLabel.classList.add('light-text');
+                    }
 
-                // Update text color based on brightness
-                const isLight = isLightColor(shade);
-                if (!isLight) {
-                    shadeLabel.classList.add('light-text');
-                }
+                    shadeBox.appendChild(shadeLabel);
 
-                shadeBox.appendChild(shadeLabel);
+                    // Add indicator to base color
+                    if (index === baseIndex) {
+                        const indicator = document.createElement('div');
+                        indicator.className = 'color-shade-indicator';
+                        shadeBox.appendChild(indicator);
+                    }
 
-                // Add indicator to base color
-                if (index === baseIndex) {
-                    const indicator = document.createElement('div');
-                    indicator.className = 'color-shade-indicator';
-                    shadeBox.appendChild(indicator);
-                }
+                    shadeItem.appendChild(shadeBox);
+                    shadesGrid.appendChild(shadeItem);
+                });
+            }
 
-                shadeItem.appendChild(shadeBox);
-                shadesGrid.appendChild(shadeItem);
-            });
+            return shades;
         }
 
         // Lighten color

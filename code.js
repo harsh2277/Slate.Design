@@ -2082,16 +2082,16 @@ figma.ui.onmessage = async (msg) => {
             
             // Use provided styles or fallback to default levels
             let typographyLevels = msg.styles || [
-                { name: 'H1', multiplier: Math.pow(scale, 5) },
-                { name: 'H2', multiplier: Math.pow(scale, 4) },
-                { name: 'H3', multiplier: Math.pow(scale, 3) },
-                { name: 'H4', multiplier: Math.pow(scale, 2) },
-                { name: 'H5', multiplier: scale },
-                { name: 'H6', multiplier: 1 },
-                { name: 'Body/Large', multiplier: 1.125 },
-                { name: 'Body/Medium', multiplier: 1 },
-                { name: 'Body/Small', multiplier: 0.875 },
-                { name: 'Caption', multiplier: 0.75 }
+                { name: 'H1', multiplier: Math.pow(scale, 5), letterSpacing: 0 },
+                { name: 'H2', multiplier: Math.pow(scale, 4), letterSpacing: 0 },
+                { name: 'H3', multiplier: Math.pow(scale, 3), letterSpacing: 0 },
+                { name: 'H4', multiplier: Math.pow(scale, 2), letterSpacing: 0 },
+                { name: 'H5', multiplier: scale, letterSpacing: 0 },
+                { name: 'H6', multiplier: 1, letterSpacing: 0 },
+                { name: 'Body/Large', multiplier: 1.125, letterSpacing: 0 },
+                { name: 'Body/Medium', multiplier: 1, letterSpacing: 0 },
+                { name: 'Body/Small', multiplier: 0.875, letterSpacing: 0 },
+                { name: 'Caption', multiplier: 0.75, letterSpacing: 0 }
             ];
 
             // Normalize levels if they come with absolute fontSize instead of multiplier
@@ -2185,21 +2185,25 @@ figma.ui.onmessage = async (msg) => {
                 }
                 lineHeightVar.setValueForMode(modeId, lineHeight);
 
-                styleVars[level.name] = { fontSizeVar, lineHeightVar };
+                const letterSpacingVarName = `letter-spacing/${level.name.toLowerCase().replace(/\//g, '-')}`;
+                let letterSpacingVar = allVars.find(v => v.name === letterSpacingVarName && v.variableCollectionId === collection.id);
+                if (!letterSpacingVar) {
+                    letterSpacingVar = figma.variables.createVariable(letterSpacingVarName, collection, "FLOAT");
+                    allVars.push(letterSpacingVar);
+                }
+                letterSpacingVar.setValueForMode(modeId, level.letterSpacing || 0);
+
+                styleVars[level.name] = { fontSizeVar, lineHeightVar, letterSpacingVar };
             }
 
             for (const fontInfo of fontsToCreate) {
                 console.log(`Processing font group: ${fontInfo.name} (${fontInfo.family})`);
                 
                 for (const level of typographyLevels) {
-                    // Skip if specific fontFamily requested and doesn't match
-                    if (level.fontFamily && level.fontFamily !== fontInfo.name.toLowerCase()) {
-                        continue;
-                    }
-
                     const vars = styleVars[level.name];
                     const fontSizeVar = vars ? vars.fontSizeVar : null;
                     const lineHeightVar = vars ? vars.lineHeightVar : null;
+                    const letterSpacingVar = vars ? vars.letterSpacingVar : null;
 
                     for (const weight of fontWeights) {
                         // Skip if specific weight requested and doesn't match
@@ -2211,10 +2215,12 @@ figma.ui.onmessage = async (msg) => {
                         let loadedStyle = weight.name;
                         const stylesToTry = fontStyleMap[weight.name] || [weight.name];
 
+                        let loadedFamily = fontInfo.family;
                         for (const style of stylesToTry) {
                             try {
                                 await figma.loadFontAsync({ family: fontInfo.family, style: style });
                                 loadedStyle = style;
+                                loadedFamily = fontInfo.family;
                                 fontLoaded = true;
                                 break;
                             } catch (e) {
@@ -2229,6 +2235,7 @@ figma.ui.onmessage = async (msg) => {
                                 try {
                                     await figma.loadFontAsync({ family: "Inter", style: style });
                                     loadedStyle = style;
+                                    loadedFamily = "Inter";
                                     fontLoaded = true;
                                     break;
                                 } catch (e) { continue; }
@@ -2241,14 +2248,14 @@ figma.ui.onmessage = async (msg) => {
                         }
 
                         const groupName = fontInfo.name.charAt(0).toUpperCase() + fontInfo.name.slice(1);
-                        const styleName = `Typography/${groupName}/${level.name}/${weight.name}`;
+                        const styleName = `${groupName}/${level.name}/${weight.name}`;
                         let textStyle = (await figma.getLocalTextStylesAsync()).find(s => s.name === styleName);
                         if (!textStyle) {
                             textStyle = figma.createTextStyle();
                             textStyle.name = styleName;
                         }
 
-                        textStyle.fontName = { family: fontInfo.family, style: loadedStyle };
+                        textStyle.fontName = { family: loadedFamily, style: loadedStyle };
 
                         // Bind variables
                         try {
@@ -2268,6 +2275,11 @@ figma.ui.onmessage = async (msg) => {
                             if (lineHeightVar) textStyle.setBoundVariable('lineHeight', lineHeightVar);
                             else textStyle.lineHeight = { value: lineHeight, unit: "PIXELS" };
                         } catch (e) { textStyle.lineHeight = { value: lineHeight, unit: "PIXELS" }; }
+
+                        try {
+                            if (letterSpacingVar) textStyle.setBoundVariable('letterSpacing', letterSpacingVar);
+                            else textStyle.letterSpacing = { value: level.letterSpacing || 0, unit: "PIXELS" };
+                        } catch (e) { textStyle.letterSpacing = { value: level.letterSpacing || 0, unit: "PIXELS" }; }
 
                         createdCount++;
                     }
@@ -2391,7 +2403,7 @@ figma.ui.onmessage = async (msg) => {
             }
 
             // Use the same multipliers as the preview (based on 12px base font)
-            const typographyLevels = [
+            const typographyLevels = msg.styles || [
                 { name: 'H1', multiplier: 56 / 12, lineHeight: 1.2 },
                 { name: 'H2', multiplier: 48 / 12, lineHeight: 1.2 },
                 { name: 'H3', multiplier: 34 / 12, lineHeight: 1.3 },
@@ -2560,7 +2572,7 @@ figma.ui.onmessage = async (msg) => {
                     { label: `Font Family: ${primaryFont} ${primaryFontLoaded ? primaryLoadedStyle : 'Medium'}` },
                     { label: `Font Size: ${fontSize}px` },
                     { label: `Line Height: ${lineHeight}px` },
-                    { label: `Letter Spacing: 0px` }
+                    { label: `Letter Spacing: ${level.letterSpacing || 0}px` }
                 ];
 
                 for (const item of infoItems) {
@@ -2701,7 +2713,8 @@ figma.ui.onmessage = async (msg) => {
                     const infoItems = [
                         { label: `Font Family: ${secondaryFont} ${secondaryLoadedStyle}` },
                         { label: `Font Size: ${fontSize}px` },
-                        { label: `Line Height: ${lineHeight}px` }
+                        { label: `Line Height: ${lineHeight}px` },
+                        { label: `Letter Spacing: ${level.letterSpacing || 0}px` }
                     ];
 
                     for (const item of infoItems) {
@@ -2732,189 +2745,7 @@ figma.ui.onmessage = async (msg) => {
             addToUniversalDoc(framesToZoom);
             console.log('Typography documentation created successfully!');
 
-            // NOW CREATE TEXT STYLES
-            try {
-                console.log('Creating text styles...');
-
-                // Get or create Typography collection
-                const collections = await figma.variables.getLocalVariableCollectionsAsync();
-                let collection = collections.find(c => c.name === "Typography");
-                if (!collection) {
-                    collection = figma.variables.createVariableCollection("Typography");
-                }
-
-                const modeId = collection.modes[0].modeId;
-
-                // Create Font Family variables
-                let fontFamilyVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === "font-family/primary");
-                if (!fontFamilyVar) {
-                    fontFamilyVar = figma.variables.createVariable("font-family/primary", collection, "STRING");
-                }
-                fontFamilyVar.setValueForMode(modeId, primaryFont);
-                fontFamilyVar.description = "Primary font family for typography system";
-
-                // Create font weight variables
-                const fontWeights = [
-                    { name: 'Regular', weight: 400 },
-                    { name: 'Medium', weight: 500 },
-                    { name: 'Semibold', weight: 600 },
-                    { name: 'Bold', weight: 700 }
-                ];
-
-                for (const weight of fontWeights) {
-                    const weightVarName = `font-weight/${weight.name.toLowerCase()}`;
-                    let weightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === weightVarName);
-                    if (!weightVar) {
-                        weightVar = figma.variables.createVariable(weightVarName, collection, "FLOAT");
-                    }
-                    weightVar.setValueForMode(modeId, weight.weight);
-                    weightVar.description = `Font weight value for ${weight.name} (${weight.weight})`;
-                }
-
-                // Create Font Size, Line Height, and Letter Spacing variables for each level
-                for (const level of typographyLevels) {
-                    let fontSize = Math.round(baseFontSize * level.multiplier);
-                    if (fontSize % 2 !== 0) fontSize += 1;
-                    const lineHeight = Math.round(fontSize * level.lineHeight);
-
-                    // Font Size
-                    const fontSizeVarName = `font-size/${level.name.toLowerCase()}`;
-                    let fontSizeVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === fontSizeVarName);
-                    if (!fontSizeVar) {
-                        fontSizeVar = figma.variables.createVariable(fontSizeVarName, collection, "FLOAT");
-                    }
-                    fontSizeVar.setValueForMode(modeId, fontSize);
-                    fontSizeVar.description = `Font size for ${level.name} (${fontSize}px)`;
-
-                    // Line Height
-                    const lineHeightVarName = `line-height/${level.name.toLowerCase()}`;
-                    let lineHeightVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === lineHeightVarName);
-                    if (!lineHeightVar) {
-                        lineHeightVar = figma.variables.createVariable(lineHeightVarName, collection, "FLOAT");
-                    }
-                    lineHeightVar.setValueForMode(modeId, lineHeight);
-                    lineHeightVar.description = `Line height for ${level.name} (${lineHeight}px)`;
-
-                    // Letter Spacing
-                    const letterSpacingVarName = `letter-spacing/${level.name.toLowerCase()}`;
-                    let letterSpacingVar = (await figma.variables.getLocalVariablesAsync()).find(v => v.name === letterSpacingVarName);
-                    if (!letterSpacingVar) {
-                        letterSpacingVar = figma.variables.createVariable(letterSpacingVarName, collection, "FLOAT");
-                    }
-                    letterSpacingVar.setValueForMode(modeId, 0);
-                    letterSpacingVar.description = `Letter spacing for ${level.name} (0px)`;
-                }
-
-                // Create Text Styles
-                const fontStyleMap = {
-                    'Regular': ['Regular', 'Normal', 'Book', 'Roman'],
-                    'Medium': ['Medium'],
-                    'Semibold': ['SemiBold', 'Semi Bold', 'Demibold', 'Demi Bold'],
-                    'Bold': ['Bold']
-                };
-
-                let textStylesCreated = 0;
-
-                // Cache variables for faster lookup
-                const variableCache = {};
-                (await figma.variables.getLocalVariablesAsync()).forEach(v => {
-                    variableCache[v.name] = v;
-                });
-
-                for (const level of typographyLevels) {
-                    let fontSize = Math.round(baseFontSize * level.multiplier);
-                    if (fontSize % 2 !== 0) fontSize += 1;
-                    const lineHeight = Math.round(fontSize * level.lineHeight);
-
-                    const fontSizeVar = variableCache[`font-size/${level.name.toLowerCase()}`];
-                    const lineHeightVar = variableCache[`line-height/${level.name.toLowerCase()}`];
-                    const letterSpacingVar = variableCache[`letter-spacing/${level.name.toLowerCase()}`];
-
-                    const fontsToProcess = [{ name: 'primary', family: primaryFont }];
-
-                    for (const fontInfo of fontsToProcess) {
-                        for (const weight of fontWeights) {
-                            let fontLoaded = false;
-                            let loadedStyle = weight.name;
-                            let loadedFamily = fontInfo.family;
-
-                            const stylesToTry = fontStyleMap[weight.name] || [weight.name];
-
-                            // Try primary font
-                            for (const style of stylesToTry) {
-                                try {
-                                    await figma.loadFontAsync({ family: fontInfo.family, style: style });
-                                    loadedStyle = style;
-                                    loadedFamily = fontInfo.family;
-                                    fontLoaded = true;
-                                    break;
-                                } catch (e) { continue; }
-                            }
-
-                            // Try Inter fallback if primary failed
-                            if (!fontLoaded) {
-                                for (const style of stylesToTry) {
-                                    try {
-                                        await figma.loadFontAsync({ family: "Inter", style: style });
-                                        loadedStyle = style;
-                                        loadedFamily = "Inter";
-                                        fontLoaded = true;
-                                        break;
-                                    } catch (e) { continue; }
-                                }
-                            }
-
-                            if (!fontLoaded) continue;
-
-                            const prefix = fontInfo.name.charAt(0).toUpperCase() + fontInfo.name.slice(1);
-                            const styleName = `${prefix}/${level.name}-${fontSize}px/${weight.name}`;
-
-                            let textStyle = (await figma.getLocalTextStylesAsync()).find(s => s.name === styleName);
-                            if (!textStyle) {
-                                textStyle = figma.createTextStyle();
-                                textStyle.name = styleName;
-                            }
-
-                            textStyle.fontName = { family: loadedFamily, style: loadedStyle };
-
-                            // Bind variables
-                            const fontFamilyVar = variableCache[`font-family/${fontInfo.name}`];
-                            const fontWeightVar = variableCache[`font-weight/${weight.name.toLowerCase()}`];
-
-                            try {
-                                if (fontFamilyVar) textStyle.setBoundVariable('fontFamily', fontFamilyVar);
-                            } catch (e) { }
-
-                            try {
-                                if (fontWeightVar) textStyle.setBoundVariable('fontWeight', fontWeightVar);
-                            } catch (e) { }
-
-                            try {
-                                if (fontSizeVar) textStyle.setBoundVariable('fontSize', fontSizeVar);
-                                else textStyle.fontSize = fontSize;
-                            } catch (e) { textStyle.fontSize = fontSize; }
-
-                            try {
-                                if (lineHeightVar) textStyle.setBoundVariable('lineHeight', lineHeightVar);
-                                else textStyle.lineHeight = { value: lineHeight, unit: "PIXELS" };
-                            } catch (e) { textStyle.lineHeight = { value: lineHeight, unit: "PIXELS" }; }
-
-                            try {
-                                if (letterSpacingVar) textStyle.setBoundVariable('letterSpacing', letterSpacingVar);
-                                else textStyle.letterSpacing = { value: 0, unit: "PIXELS" };
-                            } catch (e) { textStyle.letterSpacing = { value: 0, unit: "PIXELS" }; }
-
-                            textStylesCreated++;
-                        }
-                    }
-                }
-
-                console.log(`Created ${textStylesCreated} text styles`);
-                notifyUI('typography-doc', true, `Typography documentation and ${textStylesCreated} text styles created!`);
-            } catch (styleError) {
-                console.error('Error creating text styles in doc:', styleError);
-                notifyUI('typography-doc', true, 'Typography documentation created, but some text styles failed: ' + styleError.message);
-            }
+            notifyUI('typography-doc', true, `Typography documentation created successfully!`);
         } catch (error) {
             console.error('Error creating typography doc:', error);
             notifyUI('typography-doc', false, 'Error creating typography doc', error.message);
@@ -4539,7 +4370,7 @@ figma.ui.onmessage = async (msg) => {
                     else if (state === 'Click') { bgColor = darkenColor(userPrimaryColor, 20); borderColor = darkenColor(userPrimaryColor, 30); hasBorder = true; textColor = userTextColor; }
                     else if (state === 'Disable') { bgColor = '#AAAAAA'; borderColor = '#AAAAAA'; hasBorder = true; textColor = '#FFFFFF'; }
                 } else if (type === 'Secondary') {
-                    if (state === 'Normal') { bgColor = lightenColor(userPrimaryColor, 20); borderColor = userPrimaryColor; hasBorder = true; textColor = userTextColor; }
+                    if (state === 'Normal') { bgColor = lightenColor(userPrimaryColor, 20); borderColor = userPrimaryColor; hasBorder = true; textColor = userPrimaryColor; }
                     else if (state === 'Hover') { bgColor = userPrimaryColor; borderColor = darkenColor(userPrimaryColor, 20); hasBorder = true; textColor = userTextColor; }
                     else if (state === 'Click') { bgColor = darkenColor(userPrimaryColor, 10); borderColor = darkenColor(userPrimaryColor, 20); hasBorder = true; textColor = userTextColor; }
                     else if (state === 'Disable') { bgColor = '#AAAAAA'; borderColor = '#AAAAAA'; hasBorder = true; textColor = '#FFFFFF'; }
@@ -4661,7 +4492,7 @@ figma.ui.onmessage = async (msg) => {
                 // Bind text color to variable if available
                 if (textVariable) {
                     try {
-                        text.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: textVariable.id } } }];
+                        text.fills = [{ type: 'SOLID', color: hexToRgb(textColor), boundVariables: { color: { type: 'VARIABLE_ALIAS', id: textVariable.id } } }];
                     } catch (e) {
                         console.log('Could not bind text variable:', e);
                     }
@@ -4830,6 +4661,7 @@ figma.ui.onmessage = async (msg) => {
 
                     // Add instance properties to the component set
                     componentSet.addComponentProperty("Button Text", "TEXT", buttonText);
+                    componentSet.addComponentProperty("Show Text", "BOOLEAN", true);
                     componentSet.addComponentProperty("Show Left Icon", "BOOLEAN", false);
 
                     // Only add instance swap if we found an instance to use as default
@@ -4854,8 +4686,6 @@ figma.ui.onmessage = async (msg) => {
                         }
                     }
 
-                    componentSet.addComponentProperty("Text", "BOOLEAN", true);
-
                     // Get the property IDs from the component set
                     const propDefs = componentSet.componentPropertyDefinitions;
                     let textPropId, showLeftIconPropId, leftIconPropId, showRightIconPropId, rightIconPropId, showTextPropId;
@@ -4874,7 +4704,7 @@ figma.ui.onmessage = async (msg) => {
                             showRightIconPropId = key;
                         } else if (propName === "Right Icon") {
                             rightIconPropId = key;
-                        } else if (propName === "Text") {
+                        } else if (propName === "Show Text") {
                             showTextPropId = key;
                         }
                     }

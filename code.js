@@ -4206,7 +4206,6 @@ figma.ui.onmessage = async (msg) => {
                 return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
             }
 
-            // Create shared icon components once (to be used for instance swap)
             // Left icon component
             const leftIconSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.8334 10.0003H4.16675M4.16675 10.0003L10.0001 15.8337M4.16675 10.0003L10.0001 4.16699" stroke="#000000" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
             const leftIconNode = figma.createNodeFromSvg(leftIconSvg);
@@ -4214,6 +4213,12 @@ figma.ui.onmessage = async (msg) => {
             sharedLeftIconComponent.name = "arrow-left";
             sharedLeftIconComponent.resize(20, 20);
             sharedLeftIconComponent.appendChild(leftIconNode);
+            
+            // Ensure scaling and centering
+            leftIconNode.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+            leftIconNode.x = (20 - leftIconNode.width) / 2;
+            leftIconNode.y = (20 - leftIconNode.height) / 2;
+            
             sharedLeftIconComponent.x = -2000;
             sharedLeftIconComponent.y = -2000;
 
@@ -4224,6 +4229,12 @@ figma.ui.onmessage = async (msg) => {
             sharedRightIconComponent.name = "arrow-right";
             sharedRightIconComponent.resize(20, 20);
             sharedRightIconComponent.appendChild(rightIconNode);
+            
+            // Ensure scaling and centering
+            rightIconNode.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+            rightIconNode.x = (20 - rightIconNode.width) / 2;
+            rightIconNode.y = (20 - rightIconNode.height) / 2;
+            
             sharedRightIconComponent.x = -2000;
             sharedRightIconComponent.y = -2000;
 

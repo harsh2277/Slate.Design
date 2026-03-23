@@ -3821,8 +3821,9 @@ figma.ui.onmessage = async (msg) => {
                     try {
                         const rgb = hexToRgbVar(hex);
                         if (!rgb) return '#000000';
-                        const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114); // values are 0-1
-                        return brightness > 0.5 ? '#000000' : '#FFFFFF';
+                        // rgb values are 0-1, so multiply by 255 before applying luminance formula
+                        const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) * 255;
+                        return brightness > 128000 ? '#000000' : '#FFFFFF';
                     } catch (e) {
                         return '#000000';
                     }
@@ -4231,6 +4232,21 @@ figma.ui.onmessage = async (msg) => {
                 const button = figma.createComponent();
                 button.name = `Size=${size}, Type=${type}, State=${state}`;
 
+                // Helper: get contrast text color (white or black) based on background
+                function getContrastTextColor(hex) {
+                    if (!hex || hex === 'transparent') return '#000000';
+                    try {
+                        const h = hex.replace('#', '');
+                        const r = parseInt(h.substring(0, 2), 16);
+                        const g = parseInt(h.substring(2, 4), 16);
+                        const b = parseInt(h.substring(4, 6), 16);
+                        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                        return brightness > 128 ? '#000000' : '#FFFFFF';
+                    } catch (e) {
+                        return '#000000';
+                    }
+                }
+
                 // Size configurations
                 const sizeConfig = {
                     'SM': { padding: 4, hPadding: 8, fontSize: 14, fontWeight: 'Medium', height: 28, iconSize: 16, sizeName: 'sm' },
@@ -4365,14 +4381,14 @@ figma.ui.onmessage = async (msg) => {
                 let bgColor, borderColor, textColor, hasBorder = false, hasUnderline = false;
 
                 if (type === 'Primary') {
-                    if (state === 'Normal') { bgColor = userPrimaryColor; borderColor = darkenColor(userPrimaryColor, 20); hasBorder = true; textColor = userTextColor; }
-                    else if (state === 'Hover') { bgColor = darkenColor(userPrimaryColor, 10); borderColor = darkenColor(userPrimaryColor, 30); hasBorder = true; textColor = userTextColor; }
-                    else if (state === 'Click') { bgColor = darkenColor(userPrimaryColor, 20); borderColor = darkenColor(userPrimaryColor, 30); hasBorder = true; textColor = userTextColor; }
+                    if (state === 'Normal') { bgColor = userPrimaryColor; borderColor = darkenColor(userPrimaryColor, 20); hasBorder = true; textColor = getContrastTextColor(userPrimaryColor); }
+                    else if (state === 'Hover') { bgColor = darkenColor(userPrimaryColor, 10); borderColor = darkenColor(userPrimaryColor, 30); hasBorder = true; textColor = getContrastTextColor(darkenColor(userPrimaryColor, 10)); }
+                    else if (state === 'Click') { bgColor = darkenColor(userPrimaryColor, 20); borderColor = darkenColor(userPrimaryColor, 30); hasBorder = true; textColor = getContrastTextColor(darkenColor(userPrimaryColor, 20)); }
                     else if (state === 'Disable') { bgColor = '#AAAAAA'; borderColor = '#AAAAAA'; hasBorder = true; textColor = '#FFFFFF'; }
                 } else if (type === 'Secondary') {
-                    if (state === 'Normal') { bgColor = lightenColor(userPrimaryColor, 20); borderColor = userPrimaryColor; hasBorder = true; textColor = userPrimaryColor; }
-                    else if (state === 'Hover') { bgColor = userPrimaryColor; borderColor = darkenColor(userPrimaryColor, 20); hasBorder = true; textColor = userTextColor; }
-                    else if (state === 'Click') { bgColor = darkenColor(userPrimaryColor, 10); borderColor = darkenColor(userPrimaryColor, 20); hasBorder = true; textColor = userTextColor; }
+                    if (state === 'Normal') { bgColor = lightenColor(userPrimaryColor, 20); borderColor = userPrimaryColor; hasBorder = true; textColor = getContrastTextColor(lightenColor(userPrimaryColor, 20)); }
+                    else if (state === 'Hover') { bgColor = userPrimaryColor; borderColor = darkenColor(userPrimaryColor, 20); hasBorder = true; textColor = getContrastTextColor(userPrimaryColor); }
+                    else if (state === 'Click') { bgColor = darkenColor(userPrimaryColor, 10); borderColor = darkenColor(userPrimaryColor, 20); hasBorder = true; textColor = getContrastTextColor(darkenColor(userPrimaryColor, 10)); }
                     else if (state === 'Disable') { bgColor = '#AAAAAA'; borderColor = '#AAAAAA'; hasBorder = true; textColor = '#FFFFFF'; }
                 } else if (type === 'Destructive') {
                     if (state === 'Normal') { bgColor = '#FF0000'; borderColor = '#CC0000'; hasBorder = true; textColor = '#FFFFFF'; }
@@ -4664,26 +4680,21 @@ figma.ui.onmessage = async (msg) => {
                     componentSet.addComponentProperty("Show Text", "BOOLEAN", true);
                     componentSet.addComponentProperty("Show Left Icon", "BOOLEAN", false);
 
-                    // Only add instance swap if we found an instance to use as default
-                    if (leftIconInstance && leftIconInstance.mainComponent) {
-                        try {
-                            componentSet.addComponentProperty("Left Icon", "INSTANCE_SWAP", leftIconInstance.mainComponent);
-                            console.log("Added Left Icon instance swap property");
-                        } catch (e) {
-                            console.log("Could not add Left Icon instance swap:", e);
-                        }
+                    // Use the shared icon components directly for INSTANCE_SWAP defaults
+                    try {
+                        componentSet.addComponentProperty("Left Icon", "INSTANCE_SWAP", sharedLeftIconComponent);
+                        console.log("Added Left Icon instance swap property");
+                    } catch (e) {
+                        console.log("Could not add Left Icon instance swap:", e);
                     }
 
                     componentSet.addComponentProperty("Show Right Icon", "BOOLEAN", false);
 
-                    // Only add instance swap if we found an instance to use as default
-                    if (rightIconInstance && rightIconInstance.mainComponent) {
-                        try {
-                            componentSet.addComponentProperty("Right Icon", "INSTANCE_SWAP", rightIconInstance.mainComponent);
-                            console.log("Added Right Icon instance swap property");
-                        } catch (e) {
-                            console.log("Could not add Right Icon instance swap:", e);
-                        }
+                    try {
+                        componentSet.addComponentProperty("Right Icon", "INSTANCE_SWAP", sharedRightIconComponent);
+                        console.log("Added Right Icon instance swap property");
+                    } catch (e) {
+                        console.log("Could not add Right Icon instance swap:", e);
                     }
 
                     // Get the property IDs from the component set

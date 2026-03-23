@@ -4654,138 +4654,66 @@ figma.ui.onmessage = async (msg) => {
             if (componentSet) {
                 componentSet.name = "Button";
 
-                // Add component properties
-                try {
-                    // First, get references to the icon instances from the first variant to use as defaults
-                    const firstVariant = componentSet.children.find(child => child.type === "COMPONENT");
-                    let leftIconInstance = null;
-                    let rightIconInstance = null;
-
-                    if (firstVariant) {
-                        leftIconInstance = firstVariant.findOne(node => node.name === "Left Icon" && node.type === "INSTANCE");
-                        rightIconInstance = firstVariant.findOne(node => node.name === "Right Icon" && node.type === "INSTANCE");
-
-                        console.log("Left icon instance found:", leftIconInstance ? "yes" : "no");
-                        console.log("Right icon instance found:", rightIconInstance ? "yes" : "no");
-                        if (leftIconInstance) {
-                            console.log("Left icon mainComponent:", leftIconInstance.mainComponent);
-                        }
-                        if (rightIconInstance) {
-                            console.log("Right icon mainComponent:", rightIconInstance.mainComponent);
-                        }
-                    }
-
-                    // Add instance properties to the component set
-                    componentSet.addComponentProperty("Button Text", "TEXT", buttonText);
-                    componentSet.addComponentProperty("Show Text", "BOOLEAN", true);
-                    componentSet.addComponentProperty("Show Left Icon", "BOOLEAN", false);
-
-                    // Use the shared icon components directly for INSTANCE_SWAP defaults
-                    try {
-                        componentSet.addComponentProperty("Left Icon", "INSTANCE_SWAP", sharedLeftIconComponent);
-                        console.log("Added Left Icon instance swap property");
-                    } catch (e) {
-                        console.log("Could not add Left Icon instance swap:", e);
-                    }
-
-                    componentSet.addComponentProperty("Show Right Icon", "BOOLEAN", false);
+                    // Simplified property addition
+                    let textPropId, showTextPropId, leftIconPropId, rightIconPropId;
 
                     try {
-                        componentSet.addComponentProperty("Right Icon", "INSTANCE_SWAP", sharedRightIconComponent);
-                        console.log("Added Right Icon instance swap property");
-                    } catch (e) {
-                        console.log("Could not add Right Icon instance swap:", e);
-                    }
-
-                    // Get the property IDs from the component set
-                    const propDefs = componentSet.componentPropertyDefinitions;
-                    let textPropId, showLeftIconPropId, leftIconPropId, showRightIconPropId, rightIconPropId, showTextPropId;
-
-                    for (const [key, prop] of Object.entries(propDefs)) {
-                        // Match by the property name we set
-                        const propName = key.split('#')[0]; // Property names in Figma can have # suffix
-
-                        if (propName === "Button Text") {
-                            textPropId = key;
-                        } else if (propName === "Show Left Icon") {
-                            showLeftIconPropId = key;
-                        } else if (propName === "Left Icon") {
-                            leftIconPropId = key;
-                        } else if (propName === "Show Right Icon") {
-                            showRightIconPropId = key;
-                        } else if (propName === "Right Icon") {
-                            rightIconPropId = key;
-                        } else if (propName === "Show Text") {
-                            showTextPropId = key;
+                        console.log("Adding Button properties...");
+                        // Use hardcoded defaults to ensure success
+                        textPropId = componentSet.addComponentProperty("Button Text", "TEXT", "Button");
+                        showTextPropId = componentSet.addComponentProperty("Show Text", "BOOLEAN", true);
+                        leftIconPropId = componentSet.addComponentProperty("Left Icon", "BOOLEAN", false);
+                        rightIconPropId = componentSet.addComponentProperty("Right Icon", "BOOLEAN", false);
+                        
+                        // Define Instance Swap properties with distinct names
+                        let swapLeftId, swapRightId;
+                        try {
+                            swapLeftId = componentSet.addComponentProperty("Select Left Icon", "INSTANCE_SWAP", sharedLeftIconComponent);
+                            swapRightId = componentSet.addComponentProperty("Select Right Icon", "INSTANCE_SWAP", sharedRightIconComponent);
+                        } catch (e) {
+                            console.log("Instance swap property addition failed (non-critical):", e);
                         }
-                    }
 
-                    console.log("Property IDs:", { textPropId, showLeftIconPropId, leftIconPropId, showRightIconPropId, rightIconPropId, showTextPropId });
-
-                    // Apply property bindings to each variant
-                    componentSet.children.forEach(variant => {
-                        if (variant.type === "COMPONENT") {
-                            // Bind text layer to text property
-                            const textLayer = variant.findOne(node => node.name === "Button Text");
-                            if (textLayer && textLayer.type === "TEXT" && textPropId && showTextPropId) {
-                                try {
-                                    textLayer.componentPropertyReferences = {
+                        // Apply property bindings
+                        for (const variant of componentSet.children) {
+                            if (variant.type === "COMPONENT") {
+                                // 1. Bind Text
+                                const textNode = variant.findOne(n => n.name === "Button Text");
+                                if (textNode && textNode.type === "TEXT") {
+                                    textNode.componentPropertyReferences = {
                                         characters: textPropId,
                                         visible: showTextPropId
                                     };
-                                    console.log("Bound text layer in variant:", variant.name);
-                                } catch (e) {
-                                    console.log("Could not bind text properties:", e);
                                 }
-                            }
 
-                            // Bind left icon visibility and instance swap to property
-                            const leftIconLayer = variant.findOne(node => node.name === "Left Icon");
-                            if (leftIconLayer) {
-                                try {
-                                    const refs = {};
-                                    if (showLeftIconPropId) {
-                                        refs.visible = showLeftIconPropId;
+                                // 2. Bind Left Icon
+                                const leftIconNode = variant.findOne(n => n.name === "Left Icon");
+                                if (leftIconNode) {
+                                    const refs = { visible: leftIconPropId };
+                                    if (swapLeftId && leftIconNode.type === "INSTANCE") {
+                                        refs.mainComponent = swapLeftId;
                                     }
-                                    if (leftIconPropId && leftIconLayer.type === "INSTANCE") {
-                                        refs.mainComponent = leftIconPropId;
-                                    }
-                                    if (Object.keys(refs).length > 0) {
-                                        leftIconLayer.componentPropertyReferences = refs;
-                                        console.log("Bound left icon in variant:", variant.name);
-                                    }
-                                } catch (e) {
-                                    console.log("Could not bind left icon:", e);
+                                    leftIconNode.componentPropertyReferences = refs;
                                 }
-                            }
 
-                            // Bind right icon visibility and instance swap to property
-                            const rightIconLayer = variant.findOne(node => node.name === "Right Icon");
-                            if (rightIconLayer) {
-                                try {
-                                    const refs = {};
-                                    if (showRightIconPropId) {
-                                        refs.visible = showRightIconPropId;
+                                // 3. Bind Right Icon
+                                const rightIconNode = variant.findOne(n => n.name === "Right Icon");
+                                if (rightIconNode) {
+                                    const refs = { visible: rightIconPropId };
+                                    if (swapRightId && rightIconNode.type === "INSTANCE") {
+                                        refs.mainComponent = swapRightId;
                                     }
-                                    if (rightIconPropId && rightIconLayer.type === "INSTANCE") {
-                                        refs.mainComponent = rightIconPropId;
-                                    }
-                                    if (Object.keys(refs).length > 0) {
-                                        rightIconLayer.componentPropertyReferences = refs;
-                                        console.log("Bound right icon in variant:", variant.name);
-                                    }
-                                } catch (e) {
-                                    console.log("Could not bind right icon:", e);
+                                    rightIconNode.componentPropertyReferences = refs;
                                 }
                             }
                         }
-                    });
-
-                    figma.notify("Button component set created with properties!");
-                } catch (error) {
-                    console.log("Error adding component properties:", error);
-                    figma.notify("Component created with some limitations: " + error.message);
-                }
+                        
+                        figma.notify("Button properties created: Text, Show Text, Left Icon, Right Icon");
+                        console.log("Button properties creation complete.");
+                    } catch (propError) {
+                        console.error("Critical error adding Button properties:", propError);
+                        figma.notify("Property Error: " + propError.message);
+                    }
             }
 
             // Create documentation frame

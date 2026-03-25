@@ -1,6 +1,6 @@
 {
   "name": "figma-design-system-maker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A comprehensive Figma plugin for creating and managing design system tokens, components, and variables",
   "main": "code.js",
   "scripts": {

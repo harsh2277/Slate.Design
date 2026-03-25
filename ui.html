@@ -9,37 +9,40 @@
 
     <script>
         // Font loading fallback with better error handling
-        document.fonts.ready.then(function () {
-            console.log('Fonts loaded successfully');
-            document.body.classList.add('fonts-loaded');
-        }).catch(function (error) {
-            console.warn('Font loading failed, using system fonts:', error);
-            document.body.classList.add('fonts-not-loaded');
-        });
-
-        // Ensure fonts are loaded before showing content with timeout
-        if (document.fonts && document.fonts.load) {
-            const fontPromises = [
-                document.fonts.load('400 16px Poppins').catch(() => console.warn('Poppins 400 failed to load')),
-                document.fonts.load('500 16px Poppins').catch(() => console.warn('Poppins 500 failed to load')),
-                document.fonts.load('600 16px Poppins').catch(() => console.warn('Poppins 600 failed to load')),
-                document.fonts.load('700 16px Poppins').catch(() => console.warn('Poppins 700 failed to load')),
-                document.fonts.load('400 16px "Instrument Serif"').catch(() => console.warn('Instrument Serif failed to load'))
-            ];
-
-            // Set a timeout to prevent indefinite waiting
-            Promise.race([
-                Promise.allSettled(fontPromises),
-                new Promise(resolve => setTimeout(resolve, 3000)) // 3 second timeout
-            ]).then(() => {
-                document.body.classList.add('fonts-ready');
+        // Wrap in DOMContentLoaded to ensure document.body exists
+        document.addEventListener('DOMContentLoaded', function () {
+            document.fonts.ready.then(function () {
+                console.log('Fonts loaded successfully');
+                document.body.classList.add('fonts-loaded');
+            }).catch(function (error) {
+                console.warn('Font loading failed, using system fonts:', error);
+                document.body.classList.add('fonts-not-loaded');
             });
-        } else {
-            // Fallback for browsers that don't support document.fonts
-            setTimeout(() => {
-                document.body.classList.add('fonts-ready');
-            }, 1000);
-        }
+
+            // Ensure fonts are loaded before showing content with timeout
+            if (document.fonts && document.fonts.load) {
+                const fontPromises = [
+                    document.fonts.load('400 16px Poppins').catch(() => console.warn('Poppins 400 failed to load')),
+                    document.fonts.load('500 16px Poppins').catch(() => console.warn('Poppins 500 failed to load')),
+                    document.fonts.load('600 16px Poppins').catch(() => console.warn('Poppins 600 failed to load')),
+                    document.fonts.load('700 16px Poppins').catch(() => console.warn('Poppins 700 failed to load')),
+                    document.fonts.load('400 16px "Instrument Serif"').catch(() => console.warn('Instrument Serif failed to load'))
+                ];
+
+                // Set a timeout to prevent indefinite waiting
+                Promise.race([
+                    Promise.allSettled(fontPromises),
+                    new Promise(resolve => setTimeout(resolve, 3000)) // 3 second timeout
+                ]).then(() => {
+                    document.body.classList.add('fonts-ready');
+                });
+            } else {
+                // Fallback for browsers that don't support document.fonts
+                setTimeout(() => {
+                    document.body.classList.add('fonts-ready');
+                }, 1000);
+            }
+        });
     </script>
     <style>
         :root {

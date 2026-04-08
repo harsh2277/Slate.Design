@@ -707,8 +707,164 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 40px;
+            padding: 32px 40px;
             overflow-y: auto;
+        }
+
+        .auto-setup-colors-header {
+            margin-bottom: 32px;
+        }
+
+        .auto-setup-colors-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            max-width: 720px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .auto-setup-color-card-large {
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            transition: all 0.2s;
+        }
+
+        .auto-setup-color-card-large:hover {
+            border-color: #D1D5DB;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .auto-setup-color-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .auto-setup-color-card-label {
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1F2937;
+        }
+
+        .auto-setup-color-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .auto-setup-color-input-row-large {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 8px 8px 8px 16px;
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 100px;
+            transition: all 0.2s;
+        }
+
+        .auto-setup-color-input-row-large:hover {
+            border-color: #D1D5DB;
+            background: #FFFFFF;
+        }
+
+        .auto-setup-color-input-row-large:focus-within {
+            border-color: #1350FF;
+            background: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(19, 80, 255, 0.1);
+        }
+
+        .auto-setup-color-input-large {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            color: #1F2937;
+            background: transparent;
+        }
+
+        .auto-setup-color-circle-xlarge {
+            width: 28px;
+            height: 28px;
+            border-radius: 100px;
+            border: 2px solid #E5E7EB;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .auto-setup-color-circle-xlarge:hover {
+            transform: scale(1.05);
+            border-color: #1350FF;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .auto-setup-shades-container-large {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            padding: 0;
+        }
+
+        .auto-setup-shade-card {
+            flex: 1;
+            height: 48px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .auto-setup-shade-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .auto-setup-status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .auto-setup-status-color-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px;
+            background: #F9FAFB;
+            border-radius: 100px;
+            border: 1px solid #E5E7EB;
+            transition: all 0.2s;
+        }
+
+        .auto-setup-status-color-item:hover {
+            background: #FFFFFF;
+            border-color: #D1D5DB;
+        }
+
+        .auto-setup-status-color-swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 100px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            flex-shrink: 0;
+        }
+
+        .auto-setup-status-color-label {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
         }
 
         .auto-setup-step {
@@ -775,6 +931,91 @@
             border: 2px solid #E5E7EB;
             cursor: pointer;
             flex-shrink: 0;
+        }
+
+        .auto-setup-color-frame {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            background: #FFFFFF;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .auto-setup-color-frame:hover {
+            border-color: #1350FF;
+        }
+
+        .auto-setup-color-frame.selected {
+            border-color: #1350FF;
+            background: #EFF6FF;
+        }
+
+        .auto-setup-color-input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #E5E7EB;
+            border-radius: 9999px;
+            background: #FFFFFF;
+        }
+
+        .auto-setup-shades-container {
+            display: flex;
+            gap: 4px;
+            width: 100%;
+            padding: 0;
+        }
+
+        .auto-setup-shade-card {
+            flex: 1;
+            height: 40px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .auto-setup-shade-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .auto-setup-shade-card:first-child {
+            border-top-left-radius: 6px;
+            border-bottom-left-radius: 6px;
+        }
+
+        .auto-setup-shade-card:last-child {
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
+        }
+
+        .auto-setup-color-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 8px 8px 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 9999px;
+            background: #FFFFFF;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .auto-setup-color-input-wrapper:hover {
+            border-color: #1350FF;
+        }
+
+        .auto-setup-color-input-wrapper.selected {
+            border-color: #1350FF;
+            background: #EFF6FF;
         }
 
         .auto-setup-toggle-group {
@@ -3054,58 +3295,88 @@
             <div class="auto-setup-wizard-container">
                 <!-- Step 1: Brand Colors -->
                 <div class="auto-setup-step active" id="auto-setup-step-1">
-                    <h2 class="auto-setup-step-title">Brand Colors</h2>
-                    <p class="auto-setup-step-description">Define your primary and secondary brand colors</p>
-
-                    <div class="auto-setup-input-group">
-                        <label class="auto-setup-input-label">Primary Color</label>
-                        <div class="auto-setup-color-input-wrapper">
-                            <input type="text" class="auto-setup-color-input" id="auto-primary-color" value="#1350FF"
-                                placeholder="#1350FF">
-                            <div class="auto-setup-color-circle" id="auto-primary-circle"
-                                style="background-color: #1350FF;"
-                                onclick="document.getElementById('auto-primary-picker').click()"></div>
-                            <input type="color" id="auto-primary-picker" value="#1350FF"
-                                style="position: absolute; right: 8px; top: -10px; width: 32px; height: 32px; border: none; opacity: 0; cursor: pointer; visibility: hidden;"
-                                onchange="updateAutoColor('primary', this.value)">
-                        </div>
+                    <!-- Header -->
+                    <div class="auto-setup-colors-header">
+                        <h2 class="auto-setup-step-title">Brand Colors</h2>
+                        <p class="auto-setup-step-description">Define your primary and secondary brand colors</p>
                     </div>
 
-                    <div class="auto-setup-input-group">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <label class="auto-setup-input-label" style="margin-bottom: 0;">Secondary Color</label>
-                            <div class="auto-setup-toggle-item" onclick="toggleSecondaryColor()"
-                                style="padding: 4px 8px; margin: 0; width: auto; border: none;">
-                                <div class="toggle-switch-unique" id="auto-secondary-color-toggle">
-                                    <div class="toggle-switch-knob-unique"></div>
+                    <!-- Single Column Layout -->
+                    <div class="auto-setup-colors-stack">
+                        <!-- Primary Color Card -->
+                        <div class="auto-setup-color-card-large">
+                            <div class="auto-setup-color-card-header">
+                                <label class="auto-setup-color-card-label">Primary Color</label>
+                            </div>
+                            <div class="auto-setup-color-card-body">
+                                <div class="auto-setup-color-input-row-large">
+                                    <input type="text" class="auto-setup-color-input-large" id="auto-primary-color" value="#1350FF"
+                                        placeholder="#1350FF" oninput="updateAutoColorInput('primary', this.value)">
+                                    <div class="auto-setup-color-circle-xlarge" id="auto-primary-circle"
+                                        style="background-color: #1350FF;"
+                                        onclick="document.getElementById('auto-primary-picker').click()"></div>
+                                    <input type="color" id="auto-primary-picker" value="#1350FF"
+                                        style="position: absolute; opacity: 0; pointer-events: none;"
+                                        onchange="updateAutoColor('primary', this.value)">
+                                </div>
+                                <div class="auto-setup-shades-container-large" id="auto-primary-shades">
+                                    <!-- Shades will be dynamically generated here -->
                                 </div>
                             </div>
                         </div>
-                        <div class="auto-setup-color-input-wrapper" id="auto-secondary-color-wrapper"
-                            style="opacity: 0.5; pointer-events: none;">
-                            <input type="text" class="auto-setup-color-input" id="auto-secondary-color" value="#D900FF"
-                                placeholder="#D900FF" disabled>
-                            <div class="auto-setup-color-circle" id="auto-secondary-circle"
-                                style="background-color: #D900FF;"
-                                onclick="document.getElementById('auto-secondary-picker').click()"></div>
-                            <input type="color" id="auto-secondary-picker" value="#D900FF"
-                                style="position: absolute; right: 8px; top: -10px; width: 32px; height: 32px; border: none; opacity: 0; cursor: pointer; visibility: hidden;"
-                                onchange="updateAutoColor('secondary', this.value)">
-                        </div>
-                    </div>
 
-                    <div class="auto-setup-toggle-group">
-                        <div class="auto-setup-toggle-item neutral-bg" onclick="toggleAutoSetupOption('neutral')">
-                            <span class="auto-setup-toggle-label">Enable Neutral Colors</span>
-                            <div class="toggle-switch-unique active" id="auto-neutral-toggle">
-                                <div class="toggle-switch-knob-unique"></div>
+                        <!-- Secondary Color Card -->
+                        <div class="auto-setup-color-card-large">
+                            <div class="auto-setup-color-card-header">
+                                <label class="auto-setup-color-card-label">Secondary Color</label>
+                                <div class="toggle-switch-unique" id="auto-secondary-color-toggle" onclick="toggleSecondaryColor()">
+                                    <div class="toggle-switch-knob-unique"></div>
+                                </div>
+                            </div>
+                            <div class="auto-setup-color-card-body" id="auto-secondary-color-wrapper" style="opacity: 0.3; pointer-events: none;">
+                                <div class="auto-setup-color-input-row-large">
+                                    <input type="text" class="auto-setup-color-input-large" id="auto-secondary-color" value="#D900FF"
+                                        placeholder="#D900FF" disabled oninput="updateAutoColorInput('secondary', this.value)">
+                                    <div class="auto-setup-color-circle-xlarge" id="auto-secondary-circle"
+                                        style="background-color: #D900FF;"
+                                        onclick="document.getElementById('auto-secondary-picker').click()"></div>
+                                    <input type="color" id="auto-secondary-picker" value="#D900FF"
+                                        style="position: absolute; opacity: 0; pointer-events: none;"
+                                        onchange="updateAutoColor('secondary', this.value)">
+                                </div>
+                                <div class="auto-setup-shades-container-large" id="auto-secondary-shades" style="display: none;">
+                                    <!-- Shades will be dynamically generated here -->
+                                </div>
                             </div>
                         </div>
-                        <div class="auto-setup-toggle-item neutral-bg" onclick="toggleAutoSetupOption('status')">
-                            <span class="auto-setup-toggle-label">Enable Status Colors</span>
-                            <div class="toggle-switch-unique active" id="auto-status-toggle">
-                                <div class="toggle-switch-knob-unique"></div>
+
+                        <!-- Neutral Colors Card -->
+                        <div class="auto-setup-color-card-large">
+                            <div class="auto-setup-color-card-header">
+                                <label class="auto-setup-color-card-label">Neutral Colors</label>
+                                <div class="toggle-switch-unique active" id="auto-neutral-toggle" onclick="toggleAutoSetupOption('neutral')">
+                                    <div class="toggle-switch-knob-unique"></div>
+                                </div>
+                            </div>
+                            <div class="auto-setup-color-card-body">
+                                <div class="auto-setup-shades-container-large" id="auto-neutral-preview">
+                                    <!-- Neutral shades preview -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Colors Card -->
+                        <div class="auto-setup-color-card-large">
+                            <div class="auto-setup-color-card-header">
+                                <label class="auto-setup-color-card-label">Status Colors</label>
+                                <div class="toggle-switch-unique active" id="auto-status-toggle" onclick="toggleAutoSetupOption('status')">
+                                    <div class="toggle-switch-knob-unique"></div>
+                                </div>
+                            </div>
+                            <div class="auto-setup-color-card-body">
+                                <div class="auto-setup-status-grid" id="auto-status-preview">
+                                    <!-- Status colors preview -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -5970,12 +6241,75 @@
         function initializeAutoSetup() {
             autoSetupCurrentStep = 1;
             updateAutoSetupUI();
+            
+            // Generate initial previews
+            setTimeout(() => {
+                const primaryColor = document.getElementById('auto-primary-color').value || '#1350FF';
+                generateAutoColorShades('primary', primaryColor);
+                updateNeutralPreview();
+                updateStatusPreview();
+            }, 100);
+        }
+
+        function updateNeutralPreview() {
+            const container = document.getElementById('auto-neutral-preview');
+            if (!container) return;
+            
+            const neutralShades = [
+                '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF',
+                '#6B7280', '#4B5563', '#374151', '#1F2937', '#111827'
+            ];
+            
+            container.innerHTML = '';
+            
+            neutralShades.forEach(shade => {
+                const shadeCard = document.createElement('div');
+                shadeCard.className = 'auto-setup-shade-card';
+                shadeCard.style.backgroundColor = shade;
+                shadeCard.title = shade;
+                container.appendChild(shadeCard);
+            });
+            
+            container.style.display = 'flex';
+            container.style.gap = '6px';
+        }
+
+        function updateStatusPreview() {
+            const container = document.getElementById('auto-status-preview');
+            if (!container) return;
+            
+            const statusColors = [
+                { name: 'Success', color: '#10B981' },
+                { name: 'Warning', color: '#F59E0B' },
+                { name: 'Error', color: '#EF4444' },
+                { name: 'Info', color: '#3B82F6' }
+            ];
+            
+            container.innerHTML = '';
+            
+            statusColors.forEach(status => {
+                const item = document.createElement('div');
+                item.className = 'auto-setup-status-color-item';
+                
+                const swatch = document.createElement('div');
+                swatch.className = 'auto-setup-status-color-swatch';
+                swatch.style.backgroundColor = status.color;
+                
+                const label = document.createElement('div');
+                label.className = 'auto-setup-status-color-label';
+                label.textContent = status.name;
+                
+                item.appendChild(swatch);
+                item.appendChild(label);
+                container.appendChild(item);
+            });
         }
 
         function toggleSecondaryColor() {
             const toggle = document.getElementById('auto-secondary-color-toggle');
             const wrapper = document.getElementById('auto-secondary-color-wrapper');
             const input = document.getElementById('auto-secondary-color');
+            const shadesContainer = document.getElementById('auto-secondary-shades');
 
             if (toggle && wrapper && input) {
                 toggle.classList.toggle('active');
@@ -5986,10 +6320,19 @@
                     wrapper.style.opacity = '1';
                     wrapper.style.pointerEvents = 'auto';
                     input.disabled = false;
+                    
+                    // Generate and show shades for secondary color
+                    const secondaryColor = input.value || '#D900FF';
+                    generateAutoColorShades('secondary', secondaryColor);
                 } else {
-                    wrapper.style.opacity = '0.5';
+                    wrapper.style.opacity = '0.3';
                     wrapper.style.pointerEvents = 'none';
                     input.disabled = true;
+                    
+                    // Hide shades container
+                    if (shadesContainer) {
+                        shadesContainer.style.display = 'none';
+                    }
                 }
             }
         }
@@ -6019,6 +6362,90 @@
             if (input) input.value = value.toUpperCase();
             if (circle) circle.style.backgroundColor = value;
             autoSetupData[type + 'Color'] = value;
+            
+            // Generate and display shades
+            generateAutoColorShades(type, value);
+        }
+
+        function updateAutoColorInput(type, value) {
+            // Validate hex color
+            if (value.startsWith('#') && /^#[0-9A-F]{6}$/i.test(value)) {
+                const circle = document.getElementById(`auto-${type}-circle`);
+                const picker = document.getElementById(`auto-${type}-picker`);
+                if (circle) circle.style.backgroundColor = value;
+                if (picker) picker.value = value;
+                autoSetupData[type + 'Color'] = value;
+                
+                // Generate and display shades
+                generateAutoColorShades(type, value);
+            }
+        }
+
+        function selectAutoColor(type) {
+            // Remove selected class from all color frames
+            document.querySelectorAll('.auto-setup-color-frame').forEach(frame => {
+                frame.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked frame
+            const wrapper = document.getElementById(`auto-${type}-color-wrapper`);
+            if (wrapper && wrapper.style.pointerEvents !== 'none') {
+                wrapper.classList.add('selected');
+            }
+        }
+
+        function generateAutoColorShades(type, baseColor) {
+            const shadesContainer = document.getElementById(`auto-${type}-shades`);
+            if (!shadesContainer) return;
+            
+            // Generate 10 shades
+            const shades = generateColorShadesArray(baseColor, 10);
+            
+            // Clear existing shades
+            shadesContainer.innerHTML = '';
+            
+            // Create shade cards
+            shades.forEach((shade, index) => {
+                const shadeCard = document.createElement('div');
+                shadeCard.className = 'auto-setup-shade-card';
+                shadeCard.style.backgroundColor = shade;
+                shadeCard.title = shade;
+                
+                shadesContainer.appendChild(shadeCard);
+            });
+            
+            // Show the shades container
+            shadesContainer.style.display = 'flex';
+        }
+
+        function generateColorShadesArray(baseColor, shadeCount = 10) {
+            // Convert hex to RGB
+            const hex = baseColor.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+
+            // Calculate the base color position (middle)
+            const baseIndex = Math.floor(shadeCount / 2);
+            const shades = [];
+
+            // Generate shades
+            for (let i = 0; i < shadeCount; i++) {
+                if (i < baseIndex) {
+                    // Lighter shades
+                    const amount = 1 - (i / baseIndex) * 0.95;
+                    shades.push(lightenColor(r, g, b, amount));
+                } else if (i === baseIndex) {
+                    // Base color
+                    shades.push(rgbToHex(r, g, b));
+                } else {
+                    // Darker shades
+                    const amount = ((i - baseIndex) / (shadeCount - baseIndex - 1)) * 0.90;
+                    shades.push(darkenColor(r, g, b, amount));
+                }
+            }
+
+            return shades;
         }
 
         function toggleAutoSetupOption(option) {
